@@ -87,14 +87,14 @@
 <meta property="og:site_name" content="牧码小子">
 <meta property="og:description" content="多数据源配置也算是一个常见的开发需求，Spring和SpringBoot中，对此都有相应的解决方案，不过一般来说，如果有多数据源的需求，我还是建议首选分布式数据库中间件MyCat去解决相关问题，之前有小伙伴在我的知识星球上提问，他的数据根据条件的不同，可能保存在四十多个不同的数据库中，怎么办？这种场景下使用多数据源其实就有些费事了，我给的建议是使用MyCat，然后分表策略使用sharding-by">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="http://www.javaboy.org/images/sb/sb/sb/sb/sb/sb/1-1.png">
-<meta property="og:image" content="http://www.javaboy.org/images/sb/sb/sb/sb/sb/sb/2-2.png">
-<meta property="og:image" content="http://www.javaboy.org/images/sb/sb/sb/sb/sb/sb/star.jpg">
-<meta property="og:updated_time" content="2019-04-08T07:10:58.262Z">
+<meta property="og:image" content="http://www.javaboy.org/images/sb/1-1.png">
+<meta property="og:image" content="http://www.javaboy.org/images/sb/2-2.png">
+<meta property="og:image" content="http://www.javaboy.org/images/sb/star.jpg">
+<meta property="og:updated_time" content="2019-04-08T07:15:49.518Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Spring Boot多数据源配置之JdbcTemplate">
 <meta name="twitter:description" content="多数据源配置也算是一个常见的开发需求，Spring和SpringBoot中，对此都有相应的解决方案，不过一般来说，如果有多数据源的需求，我还是建议首选分布式数据库中间件MyCat去解决相关问题，之前有小伙伴在我的知识星球上提问，他的数据根据条件的不同，可能保存在四十多个不同的数据库中，怎么办？这种场景下使用多数据源其实就有些费事了，我给的建议是使用MyCat，然后分表策略使用sharding-by">
-<meta name="twitter:image" content="http://www.javaboy.org/images/sb/sb/sb/sb/sb/sb/1-1.png">
+<meta name="twitter:image" content="http://www.javaboy.org/images/sb/1-1.png">
 
 
 
@@ -368,7 +368,7 @@
       
         <p>多数据源配置也算是一个常见的开发需求，Spring和SpringBoot中，对此都有相应的解决方案，不过一般来说，如果有多数据源的需求，我还是建议首选分布式数据库中间件MyCat去解决相关问题，之前有小伙伴在我的知识星球上提问，他的数据根据条件的不同，可能保存在四十多个不同的数据库中，怎么办？这种场景下使用多数据源其实就有些费事了，我给的建议是使用MyCat，然后分表策略使用sharding-by-intfile。当然如果一些简单的需求，还是可以使用多数据源的，Spring Boot中，JdbcTemplate、MyBatis以及Jpa都可以配置多数据源，本文就先和大伙聊一聊JdbcTemplate中多数据源的配置（关于JdbcTemplate的用法，如果还有小伙伴不了解，可以参考我的上篇文章<a href></a>）。  </p>
 <h2 id="创建工程"><a href="#创建工程" class="headerlink" title="创建工程"></a>创建工程</h2><p>首先是创建工程，和前文一样，创建工程时，也是选择Web、Jdbc以及MySQL驱动，如下图：  </p>
-<p><img src="http://www.javaboy.org/images/sb/sb/sb/sb/sb/sb/1-1.png" alt>  </p>
+<p><img src="http://www.javaboy.org/images/sb/1-1.png" alt>  </p>
 <p>创建成功之后，一定接下来手动添加Druid依赖，由于这里一会需要开发者自己配置DataSoruce，所以这里必须要使用<code>druid-spring-boot-starter</code>依赖，而不是传统的那个druid依赖，因为<code>druid-spring-boot-starter</code>依赖提供了DruidDataSourceBuilder类，这个可以用来构建一个DataSource实例，而传统的Druid则没有该类。完整的依赖如下：  </p>
 <figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-jdbc<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-web<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>mysql<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>mysql-connector-java<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>5.1.28<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">scope</span>&gt;</span>runtime<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.alibaba<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>druid-spring-boot-starter<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.1.10<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
 <h2 id="配置数据源"><a href="#配置数据源" class="headerlink" title="配置数据源."></a>配置数据源.</h2><p>接下来，在application.properties中配置数据源，不同于上文，这里的数据源需要配置两个，如下： </p>
@@ -438,9 +438,9 @@ spring.datasource.two.type=com.alibaba.druid.pool.DruidDataSource
 </code></pre>
 <p>和DataSource一样，Spring容器中的JdbcTemplate也是有两个，因此不能通过byType的方式注入进来，这里给大伙提供了两种注入思路，一种是使用@Resource注解，直接通过byName的方式注入进来，另外一种就是<code>@Autowired</code>注解加上<code>@Qualifier</code>注解，两者联合起来，实际上也是byName。将JdbcTemplate注入进来之后，jdbcTemplateOne和jdbcTemplateTwo此时就代表操作不同的数据源，使用不同的JdbcTemplate操作不同的数据源，实现了多数据源配置。  </p>
 <p>好了，这个问题就先说到这里，关于这个多数据源配置，还有一个小小的视频教程，加入我的星球免费观看：  </p>
-<p><img src="http://www.javaboy.org/images/sb/sb/sb/sb/sb/sb/2-2.png" alt>  </p>
+<p><img src="http://www.javaboy.org/images/sb/2-2.png" alt>  </p>
 <p>关于我的星球【Java达摩院】，大伙可以参考这篇文章<a href="https://mp.weixin.qq.com/s/hAoDC77itM7IpixxHriqUw" target="_blank" rel="noopener">推荐一个技术圈子，Java技能提升就靠它了</a>.  </p>
-<p><img src="http://www.javaboy.org/images/sb/sb/sb/sb/sb/sb/star.jpg" alt>  </p>
+<p><img src="http://www.javaboy.org/images/sb/star.jpg" alt>  </p>
 
       
     </div>
