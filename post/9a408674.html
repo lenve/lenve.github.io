@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Spring Boot,JdbcTemplate,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="多数据源配置也算是一个常见的开发需求，Spring和SpringBoot中，对此都有相应的解决方案，不过一般来说，如果有多数据源的需求，我还是建议首选分布式数据库中间件MyCat去解决相关问题，之前有小伙伴在我的知识星球上提问，他的数据根据条件的不同，可能保存在四十多个不同的数据库中，怎么办？这种场景下使用多数据源其实就有些费事了，我给的建议是使用MyCat，然后分表策略使用sharding-by">
+<meta name="keywords" content="Spring Boot,JdbcTemplate">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring Boot多数据源配置之JdbcTemplate">
+<meta property="og:url" content="http://yoursite.com/post/9a408674.html">
+<meta property="og:site_name" content="牧码小子">
+<meta property="og:description" content="多数据源配置也算是一个常见的开发需求，Spring和SpringBoot中，对此都有相应的解决方案，不过一般来说，如果有多数据源的需求，我还是建议首选分布式数据库中间件MyCat去解决相关问题，之前有小伙伴在我的知识星球上提问，他的数据根据条件的不同，可能保存在四十多个不同的数据库中，怎么办？这种场景下使用多数据源其实就有些费事了，我给的建议是使用MyCat，然后分表策略使用sharding-by">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://www.javaboy.org/images/1-1.png">
+<meta property="og:image" content="http://www.javaboy.org/images/2-2.png">
+<meta property="og:image" content="http://www.javaboy.org/images/star.jpg">
+<meta property="og:updated_time" content="2019-04-08T01:56:57.161Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Spring Boot多数据源配置之JdbcTemplate">
+<meta name="twitter:description" content="多数据源配置也算是一个常见的开发需求，Spring和SpringBoot中，对此都有相应的解决方案，不过一般来说，如果有多数据源的需求，我还是建议首选分布式数据库中间件MyCat去解决相关问题，之前有小伙伴在我的知识星球上提问，他的数据根据条件的不同，可能保存在四十多个不同的数据库中，怎么办？这种场景下使用多数据源其实就有些费事了，我给的建议是使用MyCat，然后分表策略使用sharding-by">
+<meta name="twitter:image" content="http://www.javaboy.org/images/1-1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/post/9a408674.html">
+
+
+
+
+
+  <title>Spring Boot多数据源配置之JdbcTemplate | 牧码小子</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">牧码小子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">江南一点雨</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/post/9a408674.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="江南一点雨">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://lenve.github.io/images/javaboy.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="牧码小子">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Spring Boot多数据源配置之JdbcTemplate</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-06T23:48:29+08:00">
+                2019-04-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Spring-Boot/" itemprop="url" rel="index">
+                    <span itemprop="name">Spring Boot</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/post/9a408674.html#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/post/9a408674.html" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>多数据源配置也算是一个常见的开发需求，Spring和SpringBoot中，对此都有相应的解决方案，不过一般来说，如果有多数据源的需求，我还是建议首选分布式数据库中间件MyCat去解决相关问题，之前有小伙伴在我的知识星球上提问，他的数据根据条件的不同，可能保存在四十多个不同的数据库中，怎么办？这种场景下使用多数据源其实就有些费事了，我给的建议是使用MyCat，然后分表策略使用sharding-by-intfile。当然如果一些简单的需求，还是可以使用多数据源的，Spring Boot中，JdbcTemplate、MyBatis以及Jpa都可以配置多数据源，本文就先和大伙聊一聊JdbcTemplate中多数据源的配置（关于JdbcTemplate的用法，如果还有小伙伴不了解，可以参考我的上篇文章<a href></a>）。  </p>
+<h2 id="创建工程"><a href="#创建工程" class="headerlink" title="创建工程"></a>创建工程</h2><p>首先是创建工程，和前文一样，创建工程时，也是选择Web、Jdbc以及MySQL驱动，如下图：  </p>
+<p><img src="http://www.javaboy.org/images/1-1.png" alt>  </p>
+<p>创建成功之后，一定接下来手动添加Druid依赖，由于这里一会需要开发者自己配置DataSoruce，所以这里必须要使用<code>druid-spring-boot-starter</code>依赖，而不是传统的那个druid依赖，因为<code>druid-spring-boot-starter</code>依赖提供了DruidDataSourceBuilder类，这个可以用来构建一个DataSource实例，而传统的Druid则没有该类。完整的依赖如下：  </p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-jdbc<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-web<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>mysql<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>mysql-connector-java<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>5.1.28<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">scope</span>&gt;</span>runtime<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.alibaba<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>druid-spring-boot-starter<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.1.10<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h2 id="配置数据源"><a href="#配置数据源" class="headerlink" title="配置数据源."></a>配置数据源.</h2><p>接下来，在application.properties中配置数据源，不同于上文，这里的数据源需要配置两个，如下： </p>
+<pre><code class="java">spring.datasource.one.url=jdbc:mysql:<span class="comment">///test01?useUnicode=true&amp;characterEncoding=utf-8</span>
+spring.datasource.one.username=root
+spring.datasource.one.password=root
+spring.datasource.one.type=com.alibaba.druid.pool.DruidDataSource
+
+spring.datasource.two.url=jdbc:mysql:<span class="comment">///test02?useUnicode=true&amp;characterEncoding=utf-8</span>
+spring.datasource.two.username=root
+spring.datasource.two.password=root
+spring.datasource.two.type=com.alibaba.druid.pool.DruidDataSource
+</code></pre>
+<p>这里通过one和two对数据源进行了区分，但是加了one和two之后，这里的配置就没法被SpringBoot自动加载了（因为前面的key变了），需要我们自己去加载DataSource了，此时，需要自己配置一个DataSourceConfig，用来提供两个DataSource Bean，如下：  </p>
+<pre><code class="java"><span class="meta">@Configuration</span>
+<span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DataSourceConfig</span> </span>{
+    <span class="meta">@Bean</span>
+    <span class="meta">@ConfigurationProperties</span>(prefix = <span class="string">"spring.datasource.one"</span>)
+    <span class="function">DataSource <span class="title">dsOne</span><span class="params">()</span> </span>{
+        <span class="keyword">return</span> DruidDataSourceBuilder.create().build();
+    }
+    <span class="meta">@Bean</span>
+    <span class="meta">@ConfigurationProperties</span>(prefix = <span class="string">"spring.datasource.two"</span>)
+    <span class="function">DataSource <span class="title">dsTwo</span><span class="params">()</span> </span>{
+        <span class="keyword">return</span> DruidDataSourceBuilder.create().build();
+    }
+}
+</code></pre>
+<p>这里提供了两个Bean，其中@ConfigurationProperties是Spring Boot提供的类型安全的属性绑定，以第一个Bean为例，<code>@ConfigurationProperties(prefix = &quot;spring.datasource.one&quot;)</code>表示使用<code>spring.datasource.one</code>前缀的数据库配置去创建一个DataSource，这样配置之后，我们就有了两个不同的DataSource，接下来再用这两个不同的DataSource去创建两个不同的JdbcTemplate。  </p>
+<h2 id="配置JdbcTemplate实例"><a href="#配置JdbcTemplate实例" class="headerlink" title="配置JdbcTemplate实例"></a>配置JdbcTemplate实例</h2><p>创建JdbcTemplateConfig类，用来提供两个不同的JdbcTemplate实例，如下：  </p>
+<pre><code class="java"><span class="meta">@Configuration</span>
+<span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">JdbcTemplateConfig</span> </span>{
+
+    <span class="meta">@Bean</span>
+    <span class="function">JdbcTemplate <span class="title">jdbcTemplateOne</span><span class="params">(@Qualifier(<span class="string">"dsOne"</span>)</span> DataSource dsOne) </span>{
+        <span class="keyword">return</span> <span class="keyword">new</span> JdbcTemplate(dsOne);
+    }
+
+    <span class="meta">@Bean</span>
+    <span class="function">JdbcTemplate <span class="title">jdbcTemplateTwo</span><span class="params">(@Qualifier(<span class="string">"dsTwo"</span>)</span> DataSource dsTwo) </span>{
+        <span class="keyword">return</span> <span class="keyword">new</span> JdbcTemplate(dsTwo);
+    }
+}
+</code></pre>
+<p>每一个JdbcTemplate的创建都需要一个DataSource，由于Spring容器中现在存在两个DataSource，默认使用类型查找，会报错，因此加上@Qualifier注解，表示按照名称查找。这里创建了两个JdbcTemplate实例，分别对应了两个DataSource。  </p>
+<p>接下来直接去使用这个JdbcTemplate就可以了。  </p>
+<h2 id="测试使用"><a href="#测试使用" class="headerlink" title="测试使用"></a>测试使用</h2><p>关于JdbcTemplate的详细用法大伙可以参考我的上篇文章，这里我主要演示数据源的差异，在Controller中注入两个不同的JdbcTemplate，这两个JdbcTemplate分别对应了不同的数据源，如下：  </p>
+<pre><code class="java"><span class="meta">@RestController</span>
+<span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HelloController</span> </span>{
+    <span class="meta">@Autowired</span>
+    <span class="meta">@Qualifier</span>(<span class="string">"jdbcTemplateOne"</span>)
+    JdbcTemplate jdbcTemplateOne;
+    <span class="meta">@Resource</span>(name = <span class="string">"jdbcTemplateTwo"</span>)
+    JdbcTemplate jdbcTemplateTwo;
+
+    <span class="meta">@GetMapping</span>(<span class="string">"/user"</span>)
+    <span class="function"><span class="keyword">public</span> List&lt;User&gt; <span class="title">getAllUser</span><span class="params">()</span> </span>{
+        List&lt;User&gt; list = jdbcTemplateOne.query(<span class="string">"select * from t_user"</span>, <span class="keyword">new</span> BeanPropertyRowMapper&lt;&gt;(User.class));
+        <span class="keyword">return</span> list;
+    }
+    <span class="meta">@GetMapping</span>(<span class="string">"/user2"</span>)
+    <span class="function"><span class="keyword">public</span> List&lt;User&gt; <span class="title">getAllUser2</span><span class="params">()</span> </span>{
+        List&lt;User&gt; list = jdbcTemplateTwo.query(<span class="string">"select * from t_user"</span>, <span class="keyword">new</span> BeanPropertyRowMapper&lt;&gt;(User.class));
+        <span class="keyword">return</span> list;
+    }
+}
+</code></pre>
+<p>和DataSource一样，Spring容器中的JdbcTemplate也是有两个，因此不能通过byType的方式注入进来，这里给大伙提供了两种注入思路，一种是使用@Resource注解，直接通过byName的方式注入进来，另外一种就是<code>@Autowired</code>注解加上<code>@Qualifier</code>注解，两者联合起来，实际上也是byName。将JdbcTemplate注入进来之后，jdbcTemplateOne和jdbcTemplateTwo此时就代表操作不同的数据源，使用不同的JdbcTemplate操作不同的数据源，实现了多数据源配置。  </p>
+<p>好了，这个问题就先说到这里，关于这个多数据源配置，还有一个小小的视频教程，加入我的星球免费观看：  </p>
+<p><img src="http://www.javaboy.org/images/2-2.png" alt>  </p>
+<p>关于我的星球【Java达摩院】，大伙可以参考这篇文章<a href="https://mp.weixin.qq.com/s/hAoDC77itM7IpixxHriqUw" target="_blank" rel="noopener">推荐一个技术圈子，Java技能提升就靠它了</a>.  </p>
+<p><img src="http://www.javaboy.org/images/star.jpg" alt>  </p>
+
+      
+    </div>
+    
+    
+    
+
+    
+      <div>
+        <div id="wechat_subscriber" style="display: block; padding: 10px 0; margin: 20px auto; width: 100%; text-align: center">
+    <img id="wechat_subscriber_qcode" src="https://lenve.github.io/images/javaboy.jpg" alt="江南一点雨 wechat" style="width: 200px; max-width: 100%;">
+    <div>关注我的技术公众号，回复 Java，获取松哥为你精心准备的Java干货！</div>
+</div>
+
+      </div>
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Spring-Boot/" rel="tag"># Spring Boot</a>
+          
+            <a href="/tags/JdbcTemplate/" rel="tag"># JdbcTemplate</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/post/b7973915.html" rel="next" title="Spring Boot数据持久化之JdbcTemplate">
+                <i class="fa fa-chevron-left"></i> Spring Boot数据持久化之JdbcTemplate
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/post/ecba96ae.html" rel="prev" title="最简单的SpringBoot整合MyBatis教程">
+                最简单的SpringBoot整合MyBatis教程 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+    </div>
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://lenve.github.io/images/javaboy.jpg" alt="江南一点雨">
+            
+              <p class="site-author-name" itemprop="name">江南一点雨</p>
+              <p class="site-description motion-element" itemprop="description">专注于 Spring Boot+微服务，扫码关注 公众号 牧码小子 ，回复 Java，领取松哥为你精心准备的 Java 干货! </p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">9</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#创建工程"><span class="nav-number">1.</span> <span class="nav-text">创建工程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#配置数据源"><span class="nav-number">2.</span> <span class="nav-text">配置数据源.</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#配置JdbcTemplate实例"><span class="nav-number">3.</span> <span class="nav-text">配置JdbcTemplate实例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#测试使用"><span class="nav-number">4.</span> <span class="nav-text">测试使用</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">江南一点雨</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+  <div style="display: none;">
+    <script src="//s95.cnzz.com/z_stat.php?id=1276890692&web_id=1276890692" language="JavaScript"></script>
+  </div>
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  
+  <script type="text/javascript">
+    var GUEST = ['nick','mail','link'];
+    var guest = '请输入用户名';
+    guest = guest.split(',').filter(item=>{
+      return GUEST.indexOf(item)>-1;
+    });
+    new Valine({
+        el: '#comments' ,
+        verify: false,
+        notify: false,
+        appId: 'pYy7R81OoVhAPVU88fTcGpiu-gzGzoHsz',
+        appKey: 'T0lR80CpbJDNQr5RCn98Oxvt',
+        placeholder: '畅所欲言吧～',
+        avatar:'https://lenve.github.io/images/javaboy.jpg',
+        guest_info:guest,
+        pageSize:'10' || 10,
+    });
+  </script>
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
