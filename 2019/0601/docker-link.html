@@ -16,7 +16,7 @@
 <meta property="og:description" content="数据卷容器以及和大家聊过了，本文我们再来看看使用数据卷容器实现数据的备份与恢复，然后再来看看容器的连接操作。">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="http://www.javaboy.org/images/og_image.png">
-<meta property="og:updated_time" content="2019-06-11T07:10:08.107Z">
+<meta property="og:updated_time" content="2019-06-11T07:11:50.278Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Docker 容器连接[Docker 系列-7]">
 <meta name="twitter:description" content="数据卷容器以及和大家聊过了，本文我们再来看看使用数据卷容器实现数据的备份与恢复，然后再来看看容器的连接操作。">
@@ -174,12 +174,49 @@
 <a id="more"></a>
 <p>利用数据卷容器可以实现实现数据的备份和恢复。</p>
 <h1 id="数据备份与恢复"><a href="#数据备份与恢复" class="headerlink" title="数据备份与恢复"></a>数据备份与恢复</h1><h2 id="备份"><a href="#备份" class="headerlink" title="备份"></a>备份</h2><p>数据的备份操作很容易，执行如下命令：  </p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">docker run --volumes-from mydata --name backupcontainer -v $(pwd):/backup/ ubuntu tar cvf /backup/backup.tar /usr/share/nginx/html/</span><br><span class="line">```  </span><br><span class="line"></span><br><span class="line">命令解释：</span><br><span class="line"></span><br><span class="line">1. 首先使用 `--volumes-from` 连接待备份容器。</span><br><span class="line">2. `-v` 参数用来将当前目录挂载到容器的 `/backup` 目录下。</span><br><span class="line">3. 接下来，将容器中 `/usr/share/nginx/html` 目录下的内容备份到 `/backup` 目录下的 `backup.tar` 文件中，由于已经设置将当前目录映射到容器的 `/backup` 目录，因为备份在容器 `/backup` 目录下的压缩文件在当前目录下可以立马看到。  </span><br><span class="line"></span><br><span class="line">执行结果如下：</span><br><span class="line"></span><br><span class="line">![19-1](http://www.javaboy.org/images/docker/19-1.png)  </span><br><span class="line"></span><br><span class="line">备份完成后，在当前目录下就可以看到 `/backup` 文件，打开压缩文件，发现就是 `/usr/share/nginx/html` 目录及内容。</span><br><span class="line"></span><br><span class="line">## 恢复</span><br><span class="line"></span><br><span class="line">数据的恢复则稍微麻烦一些，操作步骤如下：</span><br><span class="line"></span><br><span class="line">### 创建容器</span><br><span class="line"></span><br><span class="line">首先创建一个容器，这个容器就是要使用恢复的数据的容器，我这里创建一个 nginx 容器，如下：</span><br></pre></td></tr></table></figure>
-<p>docker run -itd -p 80:80 -v /usr/share/nginx/html/ –name nginx3 nginx<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">创建一个名为 nginx3 的容器，并且挂载一个数据卷。</span><br><span class="line"></span><br><span class="line">### 恢复</span><br><span class="line"></span><br><span class="line">数据恢复需要一个临时容器，如下：</span><br></pre></td></tr></table></figure></p>
-<p>docker run –volumes-from nginx3 -v $(pwd):/backup nginx tar xvf /backup/backup.tar<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">命令解释：  </span><br><span class="line"></span><br><span class="line">1. 首先还是使用 `--volumes-from` 参数连接上备份容器，即第一步创建出来的 `nginx3` 。</span><br><span class="line">2. 然后将当前目录映射到容器的 `/backup` 目录下。</span><br><span class="line">3. 然后执行解压操作，将 `backup.tar` 文件解压。解压文件位置描述是一个容器内的地址，但是该地址已经映射到宿主机中的当前目录了，因此这里要解压缩的文件实际上就是宿主机当前目录下的文件。</span><br><span class="line"></span><br><span class="line"># 容器连接</span><br><span class="line"></span><br><span class="line">一般来说，容器启动后，我们都是通过端口映射来使用容器提供的服务，实际上，端口映射只是使用容器服务的一种方式，除了这种方式外，还可以使用容器连接的方式来使用容器服务。</span><br><span class="line"></span><br><span class="line">例如，有两个容器，一个容器运行一个 `SpringBoot` 项目，另一个容器运行着 `mysql` 数据库，可以通过容器连接使 `SpringBoot` 直接访问到 `Mysql` 数据库，而不必通过端口映射来访问 `mysql` 服务。</span><br><span class="line"></span><br><span class="line">为了案例简单，我这里举另外一个例子：  </span><br><span class="line"></span><br><span class="line">&gt; 有两个容器，一个 `nginx` 容器，另一个 `ubuntu` ，我启动 `nginx` 容器，但是并不分配端口映射，然后再启动 `ubuntu` ，通过容器连接，在 `ubuntu` 中访问 `nginx` 。  </span><br><span class="line"></span><br><span class="line"></span><br><span class="line">具体操作步骤如下：  </span><br><span class="line"></span><br><span class="line">- 首先启动一个 nginx 容器，但是不分配端口，命令如下：</span><br></pre></td></tr></table></figure></p>
-<p>docker run -d –name nginx1 nginx<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">命令执行结果如下：  </span><br><span class="line"></span><br><span class="line">![20-1](http://www.javaboy.org/images/docker/20-1.png)  </span><br><span class="line"></span><br><span class="line">容器启动成功后，在宿主机中是无法访问的。  </span><br><span class="line"></span><br><span class="line">- 启动ubuntu</span><br><span class="line"></span><br><span class="line">接下来，启动一个 ubuntu ，并且和 nginx 建立连接，如下：</span><br></pre></td></tr></table></figure></p>
-<p>docker run -dit –name ubuntu –link nginx1:mylink ubuntu bash<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">这里使用 --link 建立连接，nginx1 是要建立连接的容器，后面的 mylink 则是连接的别名。  </span><br><span class="line"></span><br><span class="line">运行成功后，进入到 ubuntu 命令行：</span><br></pre></td></tr></table></figure></p>
-<p>docker exec -it ubuntu bash<br><code>`</code>  </p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run --volumes-from mydata --name backupcontainer -v $(pwd):/backup/ ubuntu tar cvf /backup/backup.tar /usr/share/nginx/html/</span><br></pre></td></tr></table></figure>
+<p>命令解释：</p>
+<ol>
+<li>首先使用 <code>--volumes-from</code> 连接待备份容器。</li>
+<li><code>-v</code> 参数用来将当前目录挂载到容器的 <code>/backup</code> 目录下。</li>
+<li>接下来，将容器中 <code>/usr/share/nginx/html</code> 目录下的内容备份到 <code>/backup</code> 目录下的 <code>backup.tar</code> 文件中，由于已经设置将当前目录映射到容器的 <code>/backup</code> 目录，因为备份在容器 <code>/backup</code> 目录下的压缩文件在当前目录下可以立马看到。  </li>
+</ol>
+<p>执行结果如下：</p>
+<p><img src="http://www.javaboy.org/images/docker/19-1.png" alt="19-1">  </p>
+<p>备份完成后，在当前目录下就可以看到 <code>/backup</code> 文件，打开压缩文件，发现就是 <code>/usr/share/nginx/html</code> 目录及内容。</p>
+<h2 id="恢复"><a href="#恢复" class="headerlink" title="恢复"></a>恢复</h2><p>数据的恢复则稍微麻烦一些，操作步骤如下：</p>
+<h3 id="创建容器"><a href="#创建容器" class="headerlink" title="创建容器"></a>创建容器</h3><p>首先创建一个容器，这个容器就是要使用恢复的数据的容器，我这里创建一个 nginx 容器，如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -itd -p 80:80 -v /usr/share/nginx/html/ --name nginx3 nginx</span><br></pre></td></tr></table></figure>
+<p>创建一个名为 nginx3 的容器，并且挂载一个数据卷。</p>
+<h3 id="恢复-1"><a href="#恢复-1" class="headerlink" title="恢复"></a>恢复</h3><p>数据恢复需要一个临时容器，如下：<br><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run --volumes-from nginx3 -v $(pwd):/backup nginx tar xvf /backup/backup.tar</span><br></pre></td></tr></table></figure></p>
+<p>命令解释：  </p>
+<ol>
+<li>首先还是使用 <code>--volumes-from</code> 参数连接上备份容器，即第一步创建出来的 <code>nginx3</code> 。</li>
+<li>然后将当前目录映射到容器的 <code>/backup</code> 目录下。</li>
+<li>然后执行解压操作，将 <code>backup.tar</code> 文件解压。解压文件位置描述是一个容器内的地址，但是该地址已经映射到宿主机中的当前目录了，因此这里要解压缩的文件实际上就是宿主机当前目录下的文件。</li>
+</ol>
+<h1 id="容器连接"><a href="#容器连接" class="headerlink" title="容器连接"></a>容器连接</h1><p>一般来说，容器启动后，我们都是通过端口映射来使用容器提供的服务，实际上，端口映射只是使用容器服务的一种方式，除了这种方式外，还可以使用容器连接的方式来使用容器服务。</p>
+<p>例如，有两个容器，一个容器运行一个 <code>SpringBoot</code> 项目，另一个容器运行着 <code>mysql</code> 数据库，可以通过容器连接使 <code>SpringBoot</code> 直接访问到 <code>Mysql</code> 数据库，而不必通过端口映射来访问 <code>mysql</code> 服务。</p>
+<p>为了案例简单，我这里举另外一个例子：  </p>
+<blockquote>
+<p>有两个容器，一个 <code>nginx</code> 容器，另一个 <code>ubuntu</code> ，我启动 <code>nginx</code> 容器，但是并不分配端口映射，然后再启动 <code>ubuntu</code> ，通过容器连接，在 <code>ubuntu</code> 中访问 <code>nginx</code> 。  </p>
+</blockquote>
+<p>具体操作步骤如下：  </p>
+<ul>
+<li>首先启动一个 nginx 容器，但是不分配端口，命令如下：  </li>
+</ul>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -d --name nginx1 nginx</span><br></pre></td></tr></table></figure>
+<p>命令执行结果如下：  </p>
+<p><img src="http://www.javaboy.org/images/docker/20-1.png" alt="20-1">  </p>
+<p>容器启动成功后，在宿主机中是无法访问的。  </p>
+<ul>
+<li>启动ubuntu</li>
+</ul>
+<p>接下来，启动一个 ubuntu ，并且和 nginx 建立连接，如下：  </p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -dit --name ubuntu --link nginx1:mylink ubuntu bash</span><br></pre></td></tr></table></figure>
+<p>这里使用 –link 建立连接，nginx1 是要建立连接的容器，后面的 mylink 则是连接的别名。  </p>
+<p>运行成功后，进入到 ubuntu 命令行：  </p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker exec -it ubuntu bash</span><br></pre></td></tr></table></figure>
 <p>然后，有两种方式查看 nginx 的信息：  </p>
 <p><strong>第一种</strong>   </p>
 <p>在 ubuntu 控制台直接输入 env ，查看环境变量信息：  </p>
