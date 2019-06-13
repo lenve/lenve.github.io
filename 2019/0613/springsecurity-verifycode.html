@@ -16,7 +16,7 @@
 <meta property="og:description" content="登录添加验证码是一个非常常见的需求，网上也有非常成熟的解决方案，其实，要是自己自定义登录实现这个并不难，但是如果需要在 Spring Security 框架中实现这个功能，还得稍费一点功夫，本文就和小伙伴来分享下在 Spring Security 框架中如何添加验证码。">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="http://www.javaboy.org/images/og_image.png">
-<meta property="og:updated_time" content="2019-06-13T12:20:52.574Z">
+<meta property="og:updated_time" content="2019-06-13T12:25:31.920Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="SpringSecurity登录添加验证码">
 <meta name="twitter:description" content="登录添加验证码是一个非常常见的需求，网上也有非常成熟的解决方案，其实，要是自己自定义登录实现这个并不难，但是如果需要在 Spring Security 框架中实现这个功能，还得稍费一点功夫，本文就和小伙伴来分享下在 Spring Security 框架中如何添加验证码。">
@@ -176,175 +176,14 @@
 <a id="more"></a>
 <p>关于 Spring Security 基本配置，这里就不再多说，小伙伴有不懂的可以参考我的书<a href="https://mp.weixin.qq.com/s/SS-B6tGKtTt6fMQRZFIkxw" target="_blank" rel="noopener">《SpringBoot+Vue全栈开发实战》</a>，本文主要来看如何加入验证码功能。  </p>
 <h1 id="准备验证码"><a href="#准备验证码" class="headerlink" title="准备验证码"></a>准备验证码</h1><p>要有验证码，首先得先准备好验证码，本文采用 Java 自画的验证码，代码如下：  </p>
-<pre><code class="java"><span class="comment">/**</span>
-<span class="comment"> * 生成验证码的工具类</span>
-<span class="comment"> */</span>
-<span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">VerifyCode</span> </span>{
-
-    <span class="keyword">private</span> <span class="keyword">int</span> width = <span class="number">100</span>;<span class="comment">// 生成验证码图片的宽度</span>
-    <span class="keyword">private</span> <span class="keyword">int</span> height = <span class="number">50</span>;<span class="comment">// 生成验证码图片的高度</span>
-    <span class="keyword">private</span> String[] fontNames = { <span class="string">"宋体"</span>, <span class="string">"楷体"</span>, <span class="string">"隶书"</span>, <span class="string">"微软雅黑"</span> };
-    <span class="keyword">private</span> Color bgColor = <span class="keyword">new</span> Color(<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>);<span class="comment">// 定义验证码图片的背景颜色为白色</span>
-    <span class="keyword">private</span> Random random = <span class="keyword">new</span> Random();
-    <span class="keyword">private</span> String codes = <span class="string">"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"</span>;
-    <span class="keyword">private</span> String text;<span class="comment">// 记录随机字符串</span>
-
-    <span class="comment">/**</span>
-<span class="comment">     * 获取一个随意颜色</span>
-<span class="comment">     * </span>
-<span class="comment">     * <span class="doctag">@return</span></span>
-<span class="comment">     */</span>
-    <span class="function"><span class="keyword">private</span> Color <span class="title">randomColor</span><span class="params">()</span> </span>{
-        <span class="keyword">int</span> red = random.nextInt(<span class="number">150</span>);
-        <span class="keyword">int</span> green = random.nextInt(<span class="number">150</span>);
-        <span class="keyword">int</span> blue = random.nextInt(<span class="number">150</span>);
-        <span class="keyword">return</span> <span class="keyword">new</span> Color(red, green, blue);
-    }
-
-    <span class="comment">/**</span>
-<span class="comment">     * 获取一个随机字体</span>
-<span class="comment">     * </span>
-<span class="comment">     * <span class="doctag">@return</span></span>
-<span class="comment">     */</span>
-    <span class="function"><span class="keyword">private</span> Font <span class="title">randomFont</span><span class="params">()</span> </span>{
-        String name = fontNames[random.nextInt(fontNames.length)];
-        <span class="keyword">int</span> style = random.nextInt(<span class="number">4</span>);
-        <span class="keyword">int</span> size = random.nextInt(<span class="number">5</span>) + <span class="number">24</span>;
-        <span class="keyword">return</span> <span class="keyword">new</span> Font(name, style, size);
-    }
-
-    <span class="comment">/**</span>
-<span class="comment">     * 获取一个随机字符</span>
-<span class="comment">     * </span>
-<span class="comment">     * <span class="doctag">@return</span></span>
-<span class="comment">     */</span>
-    <span class="function"><span class="keyword">private</span> <span class="keyword">char</span> <span class="title">randomChar</span><span class="params">()</span> </span>{
-        <span class="keyword">return</span> codes.charAt(random.nextInt(codes.length()));
-    }
-
-    <span class="comment">/**</span>
-<span class="comment">     * 创建一个空白的BufferedImage对象</span>
-<span class="comment">     * </span>
-<span class="comment">     * <span class="doctag">@return</span></span>
-<span class="comment">     */</span>
-    <span class="function"><span class="keyword">private</span> BufferedImage <span class="title">createImage</span><span class="params">()</span> </span>{
-        BufferedImage image = <span class="keyword">new</span> BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-        Graphics2D g2 = (Graphics2D) image.getGraphics();
-        g2.setColor(bgColor);<span class="comment">// 设置验证码图片的背景颜色</span>
-        g2.fillRect(<span class="number">0</span>, <span class="number">0</span>, width, height);
-        <span class="keyword">return</span> image;
-    }
-
-    <span class="function"><span class="keyword">public</span> BufferedImage <span class="title">getImage</span><span class="params">()</span> </span>{
-        BufferedImage image = createImage();
-        Graphics2D g2 = (Graphics2D) image.getGraphics();
-        StringBuffer sb = <span class="keyword">new</span> StringBuffer();
-        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">4</span>; i++) {
-            String s = randomChar() + <span class="string">""</span>;
-            sb.append(s);
-            g2.setColor(randomColor());
-            g2.setFont(randomFont());
-            <span class="keyword">float</span> x = i * width * <span class="number">1.0f</span> / <span class="number">4</span>;
-            g2.drawString(s, x, height - <span class="number">15</span>);
-        }
-        <span class="keyword">this</span>.text = sb.toString();
-        drawLine(image);
-        <span class="keyword">return</span> image;
-    }
-
-    <span class="comment">/**</span>
-<span class="comment">     * 绘制干扰线</span>
-<span class="comment">     * </span>
-<span class="comment">     * <span class="doctag">@param</span> image</span>
-<span class="comment">     */</span>
-    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">drawLine</span><span class="params">(BufferedImage image)</span> </span>{
-        Graphics2D g2 = (Graphics2D) image.getGraphics();
-        <span class="keyword">int</span> num = <span class="number">5</span>;
-        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; num; i++) {
-            <span class="keyword">int</span> x1 = random.nextInt(width);
-            <span class="keyword">int</span> y1 = random.nextInt(height);
-            <span class="keyword">int</span> x2 = random.nextInt(width);
-            <span class="keyword">int</span> y2 = random.nextInt(height);
-            g2.setColor(randomColor());
-            g2.setStroke(<span class="keyword">new</span> BasicStroke(<span class="number">1.5f</span>));
-            g2.drawLine(x1, y1, x2, y2);
-        }
-    }
-
-    <span class="function"><span class="keyword">public</span> String <span class="title">getText</span><span class="params">()</span> </span>{
-        <span class="keyword">return</span> text;
-    }
-
-    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">output</span><span class="params">(BufferedImage image, OutputStream out)</span> <span class="keyword">throws</span> IOException </span>{
-        ImageIO.write(image, <span class="string">"JPEG"</span>, out);
-    }
-}
-</code></pre>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 生成验证码的工具类</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">VerifyCode</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">private</span> <span class="hljs-keyword">int</span> width = <span class="hljs-number">100</span>;<span class="hljs-comment">// 生成验证码图片的宽度</span></span><br><span class="line">	<span class="hljs-keyword">private</span> <span class="hljs-keyword">int</span> height = <span class="hljs-number">50</span>;<span class="hljs-comment">// 生成验证码图片的高度</span></span><br><span class="line">	<span class="hljs-keyword">private</span> String[] fontNames = &#123; <span class="hljs-string">"宋体"</span>, <span class="hljs-string">"楷体"</span>, <span class="hljs-string">"隶书"</span>, <span class="hljs-string">"微软雅黑"</span> &#125;;</span><br><span class="line">	<span class="hljs-keyword">private</span> Color bgColor = <span class="hljs-keyword">new</span> Color(<span class="hljs-number">255</span>, <span class="hljs-number">255</span>, <span class="hljs-number">255</span>);<span class="hljs-comment">// 定义验证码图片的背景颜色为白色</span></span><br><span class="line">	<span class="hljs-keyword">private</span> Random random = <span class="hljs-keyword">new</span> Random();</span><br><span class="line">	<span class="hljs-keyword">private</span> String codes = <span class="hljs-string">"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"</span>;</span><br><span class="line">	<span class="hljs-keyword">private</span> String text;<span class="hljs-comment">// 记录随机字符串</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment">	 * 获取一个随意颜色</span></span><br><span class="line"><span class="hljs-comment">	 * </span></span><br><span class="line"><span class="hljs-comment">	 * <span class="hljs-doctag">@return</span></span></span><br><span class="line"><span class="hljs-comment">	 */</span></span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">private</span> Color <span class="hljs-title">randomColor</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">		<span class="hljs-keyword">int</span> red = random.nextInt(<span class="hljs-number">150</span>);</span><br><span class="line">		<span class="hljs-keyword">int</span> green = random.nextInt(<span class="hljs-number">150</span>);</span><br><span class="line">		<span class="hljs-keyword">int</span> blue = random.nextInt(<span class="hljs-number">150</span>);</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Color(red, green, blue);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment">	 * 获取一个随机字体</span></span><br><span class="line"><span class="hljs-comment">	 * </span></span><br><span class="line"><span class="hljs-comment">	 * <span class="hljs-doctag">@return</span></span></span><br><span class="line"><span class="hljs-comment">	 */</span></span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">private</span> Font <span class="hljs-title">randomFont</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">		String name = fontNames[random.nextInt(fontNames.length)];</span><br><span class="line">		<span class="hljs-keyword">int</span> style = random.nextInt(<span class="hljs-number">4</span>);</span><br><span class="line">		<span class="hljs-keyword">int</span> size = random.nextInt(<span class="hljs-number">5</span>) + <span class="hljs-number">24</span>;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Font(name, style, size);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment">	 * 获取一个随机字符</span></span><br><span class="line"><span class="hljs-comment">	 * </span></span><br><span class="line"><span class="hljs-comment">	 * <span class="hljs-doctag">@return</span></span></span><br><span class="line"><span class="hljs-comment">	 */</span></span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">char</span> <span class="hljs-title">randomChar</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> codes.charAt(random.nextInt(codes.length()));</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment">	 * 创建一个空白的BufferedImage对象</span></span><br><span class="line"><span class="hljs-comment">	 * </span></span><br><span class="line"><span class="hljs-comment">	 * <span class="hljs-doctag">@return</span></span></span><br><span class="line"><span class="hljs-comment">	 */</span></span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">private</span> BufferedImage <span class="hljs-title">createImage</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">		BufferedImage image = <span class="hljs-keyword">new</span> BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);</span><br><span class="line">		Graphics2D g2 = (Graphics2D) image.getGraphics();</span><br><span class="line">		g2.setColor(bgColor);<span class="hljs-comment">// 设置验证码图片的背景颜色</span></span><br><span class="line">		g2.fillRect(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, width, height);</span><br><span class="line">		<span class="hljs-keyword">return</span> image;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">public</span> BufferedImage <span class="hljs-title">getImage</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">		BufferedImage image = createImage();</span><br><span class="line">		Graphics2D g2 = (Graphics2D) image.getGraphics();</span><br><span class="line">		StringBuffer sb = <span class="hljs-keyword">new</span> StringBuffer();</span><br><span class="line">		<span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">4</span>; i++) &#123;</span><br><span class="line">			String s = randomChar() + <span class="hljs-string">""</span>;</span><br><span class="line">			sb.append(s);</span><br><span class="line">			g2.setColor(randomColor());</span><br><span class="line">			g2.setFont(randomFont());</span><br><span class="line">			<span class="hljs-keyword">float</span> x = i * width * <span class="hljs-number">1.0f</span> / <span class="hljs-number">4</span>;</span><br><span class="line">			g2.drawString(s, x, height - <span class="hljs-number">15</span>);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">this</span>.text = sb.toString();</span><br><span class="line">		drawLine(image);</span><br><span class="line">		<span class="hljs-keyword">return</span> image;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment">	 * 绘制干扰线</span></span><br><span class="line"><span class="hljs-comment">	 * </span></span><br><span class="line"><span class="hljs-comment">	 * <span class="hljs-doctag">@param</span> image</span></span><br><span class="line"><span class="hljs-comment">	 */</span></span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">drawLine</span><span class="hljs-params">(BufferedImage image)</span> </span>&#123;</span><br><span class="line">		Graphics2D g2 = (Graphics2D) image.getGraphics();</span><br><span class="line">		<span class="hljs-keyword">int</span> num = <span class="hljs-number">5</span>;</span><br><span class="line">		<span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; num; i++) &#123;</span><br><span class="line">			<span class="hljs-keyword">int</span> x1 = random.nextInt(width);</span><br><span class="line">			<span class="hljs-keyword">int</span> y1 = random.nextInt(height);</span><br><span class="line">			<span class="hljs-keyword">int</span> x2 = random.nextInt(width);</span><br><span class="line">			<span class="hljs-keyword">int</span> y2 = random.nextInt(height);</span><br><span class="line">			g2.setColor(randomColor());</span><br><span class="line">			g2.setStroke(<span class="hljs-keyword">new</span> BasicStroke(<span class="hljs-number">1.5f</span>));</span><br><span class="line">			g2.drawLine(x1, y1, x2, y2);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">getText</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> text;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">output</span><span class="hljs-params">(BufferedImage image, OutputStream out)</span> <span class="hljs-keyword">throws</span> IOException </span>&#123;</span><br><span class="line">		ImageIO.write(image, <span class="hljs-string">"JPEG"</span>, out);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>这个工具类很常见，网上也有很多，就是画一个简单的验证码，通过流将验证码写到前端页面，提供验证码的 Controller 如下：  </p>
-<pre><code class="java"><span class="meta">@RestController</span>
-<span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">VerifyCodeController</span> </span>{
-    <span class="meta">@GetMapping</span>(<span class="string">"/vercode"</span>)
-    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">code</span><span class="params">(HttpServletRequest req, HttpServletResponse resp)</span> <span class="keyword">throws</span> IOException </span>{
-        VerifyCode vc = <span class="keyword">new</span> VerifyCode();
-        BufferedImage image = vc.getImage();
-        String text = vc.getText();
-        HttpSession session = req.getSession();
-        session.setAttribute(<span class="string">"index_code"</span>, text);
-        VerifyCode.output(image, resp.getOutputStream());
-    }
-}
-</code></pre>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@RestController</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">VerifyCodeController</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@GetMapping</span>(<span class="hljs-string">"/vercode"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">code</span><span class="hljs-params">(HttpServletRequest req, HttpServletResponse resp)</span> <span class="hljs-keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        VerifyCode vc = <span class="hljs-keyword">new</span> VerifyCode();</span><br><span class="line">        BufferedImage image = vc.getImage();</span><br><span class="line">        String text = vc.getText();</span><br><span class="line">        HttpSession session = req.getSession();</span><br><span class="line">        session.setAttribute(<span class="hljs-string">"index_code"</span>, text);</span><br><span class="line">        VerifyCode.output(image, resp.getOutputStream());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>这里创建了一个 VerifyCode 对象，将生成的验证码字符保存到 session 中，然后通过流将图片写到前端，img标签如下：  </p>
-<pre><code class="html"><span class="tag">&lt;<span class="name">img</span> <span class="attr">src</span>=<span class="string">"/vercode"</span> <span class="attr">alt</span>=<span class="string">""</span>&gt;</span>
-</code></pre>
-<p>展示效果如下：  </p>
-<p><img src="http://www.javaboy.org/images/boot/p2-1.png" alt></p>
-<h1 id="自定义过滤器"><a href="#自定义过滤器" class="headerlink" title="自定义过滤器"></a>自定义过滤器</h1><p>在登陆页展示验证码这个就不需要我多说了，接下来我们来看看如何自定义验证码处理器：  </p>
-<pre><code class="java"><span class="meta">@Component</span>
-<span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">VerifyCodeFilter</span> <span class="keyword">extends</span> <span class="title">GenericFilterBean</span> </span>{
-    <span class="keyword">private</span> String defaultFilterProcessUrl = <span class="string">"/doLogin"</span>;
-
-    <span class="meta">@Override</span>
-    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doFilter</span><span class="params">(ServletRequest req, ServletResponse res, FilterChain chain)</span></span>
-<span class="function">            <span class="keyword">throws</span> IOException, ServletException </span>{
-        HttpServletRequest request = (HttpServletRequest) req;
-        HttpServletResponse response = (HttpServletResponse) res;
-        <span class="keyword">if</span> (<span class="string">"POST"</span>.equalsIgnoreCase(request.getMethod()) &amp;&amp; defaultFilterProcessUrl.equals(request.getServletPath())) {
-            <span class="comment">// 验证码验证</span>
-            String requestCaptcha = request.getParameter(<span class="string">"code"</span>);
-            String genCaptcha = (String) request.getSession().getAttribute(<span class="string">"index_code"</span>);
-            <span class="keyword">if</span> (StringUtils.isEmpty(requestCaptcha))
-                <span class="keyword">throw</span> <span class="keyword">new</span> AuthenticationServiceException(<span class="string">"验证码不能为空!"</span>);
-            <span class="keyword">if</span> (!genCaptcha.toLowerCase().equals(requestCaptcha.toLowerCase())) {
-                <span class="keyword">throw</span> <span class="keyword">new</span> AuthenticationServiceException(<span class="string">"验证码错误!"</span>);
-            }
-        }
-        chain.doFilter(request, response);
-    }
-}
-</code></pre>
+<figure class="highlight html hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">img</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"/vercode"</span> <span class="hljs-attr">alt</span>=<span class="hljs-string">""</span>&gt;</span></span><br><span class="line">```  </span><br><span class="line"></span><br><span class="line">展示效果如下：  </span><br><span class="line"></span><br><span class="line">![](http://www.javaboy.org/images/boot/p2-1.png)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># 自定义过滤器</span><br><span class="line"></span><br><span class="line">在登陆页展示验证码这个就不需要我多说了，接下来我们来看看如何自定义验证码处理器：  </span><br><span class="line"></span><br><span class="line">```java</span><br><span class="line">@Component</span><br><span class="line">public class VerifyCodeFilter extends GenericFilterBean &#123;</span><br><span class="line">    private String defaultFilterProcessUrl = "/doLogin";</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)</span><br><span class="line">            throws IOException, ServletException &#123;</span><br><span class="line">        HttpServletRequest request = (HttpServletRequest) req;</span><br><span class="line">        HttpServletResponse response = (HttpServletResponse) res;</span><br><span class="line">        if ("POST".equalsIgnoreCase(request.getMethod()) &amp;&amp; defaultFilterProcessUrl.equals(request.getServletPath())) &#123;</span><br><span class="line">            // 验证码验证</span><br><span class="line">            String requestCaptcha = request.getParameter("code");</span><br><span class="line">            String genCaptcha = (String) request.getSession().getAttribute("index_code");</span><br><span class="line">            if (StringUtils.isEmpty(requestCaptcha))</span><br><span class="line">                throw new AuthenticationServiceException("验证码不能为空!");</span><br><span class="line">            if (!genCaptcha.toLowerCase().equals(requestCaptcha.toLowerCase())) &#123;</span><br><span class="line">                throw new AuthenticationServiceException("验证码错误!");</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        chain.doFilter(request, response);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>自定义过滤器继承自 GenericFilterBean ，并实现其中的 doFilter 方法，在 doFilter 方法中，当请求方法是 POST ，并且请求地址是 <code>/doLogin</code> 时，获取参数中的 code 字段值，该字段保存了用户从前端页面传来的验证码，然后获取 session 中保存的验证码，如果用户没有传来验证码，则抛出验证码不能为空异常，如果用户传入了验证码，则判断验证码是否正确，如果不正确则抛出异常，否则执行 <code>chain.doFilter(request, response);</code> 使请求继续向下走。  </p>
 <h1 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h1><p>最后在 Spring Security 的配置中，配置过滤器，如下：  </p>
-<pre><code class="java"><span class="meta">@Configuration</span>
-<span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SecurityConfig</span> <span class="keyword">extends</span> <span class="title">WebSecurityConfigurerAdapter</span> </span>{
-
-    <span class="meta">@Autowired</span>
-    VerifyCodeFilter verifyCodeFilter;
-    ...
-    ...
-    <span class="meta">@Override</span>
-    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">configure</span><span class="params">(HttpSecurity http)</span> <span class="keyword">throws</span> Exception </span>{
-        http.addFilterBefore(verifyCodeFilter, UsernamePasswordAuthenticationFilter.class);
-        http.authorizeRequests()
-                .antMatchers(<span class="string">"/admin/**"</span>).hasRole(<span class="string">"admin"</span>)
-                ...
-                ...
-                .permitAll()
-                .and()
-                .csrf().disable();
-    }
-}
-</code></pre>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SecurityConfig</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">WebSecurityConfigurerAdapter</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Autowired</span></span><br><span class="line">    VerifyCodeFilter verifyCodeFilter;</span><br><span class="line">    ...</span><br><span class="line">    ...</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">configure</span><span class="hljs-params">(HttpSecurity http)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        http.addFilterBefore(verifyCodeFilter, UsernamePasswordAuthenticationFilter.class);</span><br><span class="line">        http.authorizeRequests()</span><br><span class="line">                .antMatchers(<span class="hljs-string">"/admin/**"</span>).hasRole(<span class="hljs-string">"admin"</span>)</span><br><span class="line">                ...</span><br><span class="line">                ...</span><br><span class="line">                .permitAll()</span><br><span class="line">                .and()</span><br><span class="line">                .csrf().disable();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>这里只贴出了部分核心代码，即 <code>http.addFilterBefore(verifyCodeFilter, UsernamePasswordAuthenticationFilter.class);</code> ，如此之后，整个配置就算完成了。<br>接下来在登录中，就需要传入验证码了，如果不传或者传错，都会抛出异常，例如不传的话，抛出如下异常：  </p>
 <p><img src="http://www.javaboy.org/images/boot/p2-2.png" alt>  </p>
 <p>好了，本文就先说到这里，有问题欢迎留言讨论。  </p>
