@@ -16,7 +16,7 @@
 <meta property="og:description" content="上篇文章和小伙伴们一起搭建了 redis 主从复制环境，但是还不完善，本文我想再和小伙伴们聊聊主从复制环境搭建的一些细节。">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="http://www.javaboy.org/images/og_image.png">
-<meta property="og:updated_time" content="2019-06-15T15:40:34.657Z">
+<meta property="og:updated_time" content="2019-06-15T15:54:46.213Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Redis 主从复制(二)">
 <meta name="twitter:description" content="上篇文章和小伙伴们一起搭建了 redis 主从复制环境，但是还不完善，本文我想再和小伙伴们聊聊主从复制环境搭建的一些细节。">
@@ -159,7 +159,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    8 分钟 读完 (大约 1253 个字)
+                    8 分钟 读完 (大约 1249 个字)
                 </span>
                 
                 
@@ -180,9 +180,9 @@
 <hr>
 <p>本文接上文，所用三个 redis 实例和上文一致，这里就不再赘述三个实例搭建方式。  </p>
 <h1 id="一场接力赛"><a href="#一场接力赛" class="headerlink" title="一场接力赛"></a>一场接力赛</h1><p>在上篇文章中，我们搭建的主从复制模式是下面这样的：  </p>
-<p><img src="http://www.javaboy.org/images/redis/p302.png" alt="p302">  </p>
+<p><img src="http://www.javaboy.org/images/redis/p302.png" alt>  </p>
 <p>实际上，一主二仆的主从复制，我们可以搭建成下面这种结构：  </p>
-<p><img src="http://www.javaboy.org/images/redis/p303.png" alt="p303">  </p>
+<p><img src="http://www.javaboy.org/images/redis/p303.png" alt>  </p>
 <p>搭建方式很简单，在前文基础上，我们只需要修改 6381 的 master 即可，在 6381 实例上执行如下命令，让 6381 从 6380 实例上复制数据，如下：  </p>
 <figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6381&gt; SLAVEOF 127.0.0.1 6380</span><br><span class="line">OK</span><br></pre></td></tr></table></figure>
 <p>此时，我们再看 6379 的 slave ，如下：  </p>
@@ -190,14 +190,14 @@
 <p>只有一个 slave，就 6380 ，我们再看 6380 的信息，如下：  </p>
 <figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6380&gt; info replication</span><br><span class="line"># Replication</span><br><span class="line">role:slave</span><br><span class="line">master_host:127.0.0.1</span><br><span class="line">master_port:6379</span><br><span class="line">master_link_status:up</span><br><span class="line">master_last_io_seconds_ago:1</span><br><span class="line">master_sync_in_progress:0</span><br><span class="line">slave_repl_offset:70</span><br><span class="line">slave_priority:100</span><br><span class="line">slave_read_only:1</span><br><span class="line">connected_slaves:1</span><br><span class="line">slave0:ip=127.0.0.1,port=6381,state=online,offset=70,lag=0</span><br><span class="line">master_replid:4a38bbfa37586c29139b4ca1e04e8a9c88793651</span><br><span class="line">master_replid2:0000000000000000000000000000000000000000</span><br><span class="line">master_repl_offset:70</span><br><span class="line">second_repl_offset:-1</span><br><span class="line">repl_backlog_active:1</span><br><span class="line">repl_backlog_size:1048576</span><br><span class="line">repl_backlog_first_byte_offset:1</span><br><span class="line">repl_backlog_histlen:70</span><br></pre></td></tr></table></figure>
 <p>6380 此时的角色是一个从机，它的主机是 6379，但是 6380 自己也有一个从机，那就是 6381 .此时我们的主从结构如下图：  </p>
-<p><img src="http://www.javaboy.org/images/redis/p304.png" alt="p304">  </p>
+<p><img src="http://www.javaboy.org/images/redis/p304.png" alt>  </p>
 <h1 id="哨兵模式"><a href="#哨兵模式" class="headerlink" title="哨兵模式"></a>哨兵模式</h1><p>结合上篇文章，我们一共介绍了两种主从模式了，但是这两种，不管是哪一种，都会存在这样一个问题，那就是当主机宕机时，就会发生群龙无首的情况，如果在主机宕机时，能够从从机中选出一个来充当主机，那么就不用我们每次去手动重启主机了，这就涉及到一个新的话题，那就是哨兵模式。  </p>
 <p>所谓的哨兵模式，其实并不复杂，我们还是在我们前面的基础上来搭建哨兵模式。假设现在我的 master 是 6379 ，两个从机分别是 6380 和 6381 ，两个从机都是从 6379 上复制数据。先按照上文的步骤，我们配置好一主二仆，然后在 redis 目录下打开 sentinel.conf 文件，做如下配置：  </p>
 <figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sentinel monitor mymaster 127.0.0.1 6379 1</span><br></pre></td></tr></table></figure>
 <p>其中 mymaster 是给要监控的主机取的名字，随意取，后面是主机地址，最后面的 2 表示有多少个 sentinel 认为主机挂掉了，就进行切换（我这里只有一个，因此设置为1）。好了，配置完成后，输入如下命令启动哨兵：  </p>
 <figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">redis-sentinel sentinel.conf</span><br></pre></td></tr></table></figure>
 <p>然后启动我们的一主二仆架构，启动成功后，关闭 master，观察哨兵窗口输出的日志，如下：  </p>
-<p><img src="http://www.javaboy.org/images/redis/p305.png" alt="p305">  </p>
+<p><img src="http://www.javaboy.org/images/redis/p305.png" alt>  </p>
 <p>小伙伴们可以看到，6379 挂掉之后，redis 内部重新举行了选举，6380 重新上位。此时，如果 6379 重启，也不再是扛把子了，只能屈身做一个 slave 了。  </p>
 <h1 id="注意问题"><a href="#注意问题" class="headerlink" title="注意问题"></a>注意问题</h1><p>由于所有的写操作都是先在 Master 上操作，然后同步更新到 Slave 上，所以从 Master 同步到 Slave 机器有一定的延迟，当系统很繁忙的时候，延迟问题会更加严重，Slave 机器数量的增加也会使这个问题更加严重。因此我们还需要集群来进一步提升 redis 性能，这个问题我们将在后面说到。</p>
 <p>OK,redis 主从复制问题我们就介绍这么多，更多资料小伙伴们可以参考官方文档<a href="http://www.redis.net.cn/tutorial/3501.html。小伙伴在看官方文档时，有什么问题欢迎留言讨论。" target="_blank" rel="noopener">http://www.redis.net.cn/tutorial/3501.html。小伙伴在看官方文档时，有什么问题欢迎留言讨论。</a></p>

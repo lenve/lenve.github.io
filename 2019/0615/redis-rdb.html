@@ -16,7 +16,7 @@
 <meta property="og:description" content="redis 的基础知识我们已经准备的差不多了，接下来两篇文章，我想和大家聊聊 redis 持久化这个话题。">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="http://www.javaboy.org/images/og_image.png">
-<meta property="og:updated_time" content="2019-06-15T15:38:10.448Z">
+<meta property="og:updated_time" content="2019-06-15T15:53:26.978Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Redis 快照持久化">
 <meta name="twitter:description" content="redis 的基础知识我们已经准备的差不多了，接下来两篇文章，我想和大家聊聊 redis 持久化这个话题。">
@@ -159,7 +159,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    11 分钟 读完 (大约 1643 个字)
+                    11 分钟 读完 (大约 1642 个字)
                 </span>
                 
                 
@@ -184,7 +184,7 @@
 <figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">save 900 1</span><br><span class="line">save 300 10</span><br><span class="line">save 60 10000</span><br><span class="line">stop-writes-on-bgsave-error yes</span><br><span class="line">rdbcompression yes</span><br><span class="line">dbfilename dump.rdb</span><br><span class="line">dir ./</span><br></pre></td></tr></table></figure>
 <p>前面三个 save 相关的选项表示备份的频率，分别表示 900 秒内至少一个键被更改则进行快照，300 秒内至少 10 个键被更改则进行快照，60 秒内至少 10000 个键被更改则进行快照， stop-writes-on-bgsave-error 表示在快照创建出错后，是否继续执行写命令， rdbcompression 则表示是否对快照文件进行压缩， dbfilename 表示生成的快照文件的名字，dir 则表示生成的快照文件的位置，在 redis 中，快照持久化默认就是开启的。我们可以通过如下步骤验证快照持久化的效果：  </p>
 <p>1.进入 redis 安装目录，如果有 dump.rdb 文件，先将之删除。如下：  </p>
-<p><img src="http://www.javaboy.org/images/redis/p299.png" alt="p299">  </p>
+<p><img src="http://www.javaboy.org/images/redis/p299.png" alt>  </p>
 <p>2.启动 redis ，随便向 redis 中存储几个数据，然后关闭redis并退出，如下：  </p>
 <figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost redis-4.0.8]# redis-server redis.conf</span><br><span class="line">[root@localhost redis-4.0.8]# redis-cli</span><br><span class="line">127.0.0.1:6379&gt; set k1 v1</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:6379&gt; set k2 v2</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:6379&gt; SHUTDOWN</span><br><span class="line">not connected&gt; exit</span><br></pre></td></tr></table></figure>
 <p>3.退出来后，我们发现刚刚删掉的 dump.rdb 文件又回来了，这就是生成的备份文件。<br>4.此时再次启动 redis 并进入，发现刚刚存储的数据都还在，这是因为 redis 在启动时加载了 dump.rdb 中的数据。好了，关闭 redis 并退出。<br>5.将 redis 目录下的 dump.rdb 文件删除。<br>6.再次启动 redis 并进入到控制台，所有的数据都不存在了。  </p>
@@ -199,7 +199,7 @@
 <p>4.还有一种情况也会触发 save 命令，那就是我们执行 shutdown 命令时，当我们用 shutdown 命令关闭 redis 时，此时也会执行一个 save 命令进行备份操作，并在备份操作完成后将服务器关闭。  </p>
 <p>5.还有一种特殊情况也会触发 bgsave 命令，就是在主从备份的时候。当从机连接上主机后，会发送一条 sync 命令来开始一次复制操作，此时主机会开始一次 bgsave 操作，并在 bgsave 操作结束后向从机发送快照数据实现数据同步。  </p>
 <h2 id="快照持久化的缺点"><a href="#快照持久化的缺点" class="headerlink" title="快照持久化的缺点"></a>快照持久化的缺点</h2><p>快照持久化有一些缺点，比如 save 命令会发生阻塞，bgsave 虽然不会发生阻塞，但是 fork 一个子进程又要耗费资源，在一些极端情况下，fork 子进程的时间甚至超过数据备份的时间。定期的持久化也会让我们存在数据丢失的风险，最坏的情况我们可能丢失掉最近一次备份到当下的数据，具体丢失多久的数据，要看我们项目的承受能力，我们可以根据项目的承受能力配饰 save 参数。  </p>
-<p>OK,快照持久化我们就介绍这么多，更多资料小伙伴们可以参考官方文档<a href="http://www.redis.net.cn/tutorial/3501.html。小伙伴在看官方文档时，有什么问题欢迎留言讨论。" target="_blank" rel="noopener">http://www.redis.net.cn/tutorial/3501.html。小伙伴在看官方文档时，有什么问题欢迎留言讨论。</a>    </p>
+<p>OK,快照持久化我们就介绍这么多，更多资料，小伙伴们可以参考<a href="http://www.redis.cn/commands.html" target="_blank" rel="noopener">官方文档</a>。小伙伴在看官方文档时，有什么问题欢迎留言讨论。</p>
 
         </div>
         
