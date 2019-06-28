@@ -161,6 +161,117 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-06-28T00:33:57.000Z">2019-06-28</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/MySQL/">MySQL</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    10 分钟 读完 (大约 1487 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/0628/mycat-install.html">分布式数据库中间件 MyCat 搞起来！</a>
+            
+        </h1>
+        <div class="content">
+            <p>关于 MyCat 的铺垫文章已经写了三篇了：</p>
+<ol>
+<li><a href="https://mp.weixin.qq.com/s/bcyjBgEqg6Or5zdi4jHaiA" target="_blank" rel="noopener">MySQL 只能做小项目？松哥要说几句公道话！</a></li>
+<li><a href="https://mp.weixin.qq.com/s/qUGANVj2mmoMwUZEV5Zc1w" target="_blank" rel="noopener">北冥有 Data，其名为鲲，鲲之大，一个 MySQL 放不下！</a></li>
+<li><a href="https://mp.weixin.qq.com/s/7pj5E2HvmiejBJrW0T86oQ" target="_blank" rel="noopener">What？Tomcat 竟然也算中间件？</a></li>
+</ol>
+<p>今天终于可以迎接我们的大 Boss 出场了！</p>
+<h1 id="MyCat-简介"><a href="#MyCat-简介" class="headerlink" title="MyCat 简介"></a>MyCat 简介</h1><p>前面文章我们提到，如果数据量比较大的话，我们需要对数据进行分库分表，分完之后，原本存在一个数据库中的数据，现在就存在多个数据库中了，就像下面这样：</p>
+<p><img src="http://www.javaboy.org/images/mysql/6-2.png" alt></p>
+<p>那么此时 MyCat 所扮演的角色就是分布式数据库中间件！</p>
+<p>MyCat 是一个开源的分布式数据库中间件，它实现了 MySQL 协议，在开发者眼里，他就是一个数据库代理，我们甚至可以使用 MySQL 的客户端工具以及命令行来访问 MyCat 。</p>
+<p>MyCat 现在已经不仅仅只支持 MySQL 了，同时也支持 MSSQL、Oracle、DB2、以及 PostgreSQL等主流数据库。甚至像 MongoDB 这种 NoSQL 也支持。</p>
+<h1 id="快速入门"><a href="#快速入门" class="headerlink" title="快速入门"></a>快速入门</h1><h2 id="搭建读写分离"><a href="#搭建读写分离" class="headerlink" title="搭建读写分离"></a>搭建读写分离</h2><p>要搞 MyCat ，一般要先搭建好 MySQL 的读写分离，MySQL 的读写分离可以参考松哥之前的这篇文章：</p>
+<ol>
+<li><a href="https://mp.weixin.qq.com/s/SC0OYM6yO_GxQh9DvSsnoQ" target="_blank" rel="noopener">提高性能，MySQL 读写分离环境搭建(二)</a></li>
+</ol>
+<h2 id="MyCat-安装"><a href="#MyCat-安装" class="headerlink" title="MyCat 安装"></a>MyCat 安装</h2><p>环境：</p>
+<ul>
+<li>CentOS7</li>
+<li>JDK1.8</li>
+</ul>
+<p>MyCat 使用 Java 开发，因此，运行 MyCat ，一定要具备 Java 环境，配置 Java 运行环境这个比较容易，网上资料也很多，我就不详细介绍了。</p>
+<p>Java 环境安装好之后，首先下载 MyCat：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wget http://dl.mycat.io/1.6.7.1/Mycat-server-1.6.7.1-release-20190213150257-linux.tar.gz</span><br></pre></td></tr></table></figure>
+<p>下载完成后，对下载文件进行解压。</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tar -zxvf Mycat-server-1.6.7.1-release-20190213150257-linux.tar.gz</span><br></pre></td></tr></table></figure>
+<p>解压成功后，会出现一个 <code>mycat</code> 目录，进入到 <code>mycat/conf</code> 目录，对 <code>mycat</code> 进行配置：</p>
+<p>首先来配置 <code>schema.xml</code> 文件：</p>
+<p><img src="http://www.javaboy.org/images/mysql/7-1.png" alt></p>
+<ol>
+<li>首先在 <code>schema</code> 中指定逻辑库的名字，逻辑库是指 <code>MyCat</code> 中的库，这个库不存储数据，数据存储在 <code>MySQL</code> 中的物理库中。</li>
+<li>逻辑库中配置逻辑表，配置逻辑表时，需要指定 <code>dataNode</code> 节点， <code>dataNode</code> 就是指数据库存储的位置</li>
+<li>配置  <code>dataNode</code> ，<code>dataNode</code> 指定  <code>dataHost</code> 和物理库的名字。</li>
+<li><code>dataHost</code> 则配置 <code>MySQL</code> 的主机和从机的位置，登录密码等。主机和从机都可以配置多个。</li>
+</ol>
+<p>配置完 schema.xml 后 ，接下来配置 server.xml。</p>
+<p>server.xml  中主要配置 MyCat 的登录用户名和密码，以及需要操作的逻辑库。</p>
+<p><img src="http://www.javaboy.org/images/mysql/7-2.png" alt></p>
+<p>配置完成后，接下来就可以启动 MyCat 了 。</p>
+<p>执行 MyCat 解压目录下的 bin 目录下的 mycat 命令，可以启动 MyCat</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bin/mycat start</span><br></pre></td></tr></table></figure>
+<p>如果启动后，提示无法创建 <code>mycat.pid</code> 文件，就自己手动创建一个 <code>mycat.pid</code> 文件。启动成功之后，就可以在本地连接 <code>MyCat</code> 了，连接方式和 <code>MySQL</code> 一样，唯一的区别在于端口号不同。</p>
+<p>在连接  <code>MyCat</code> 之前，先在 <code>MySQL</code> 物理库中创建 <code>db1</code>、<code>db2</code> 以及 <code>db3</code> 三个数据库。</p>
+<p>使用 <code>SQLyog</code> 连接：</p>
+<p><img src="http://www.javaboy.org/images/mysql/7-3.png" alt></p>
+<p>也可以在 <code>cmd</code> 命令行登录 <code>MyCat</code> ：</p>
+<p><img src="http://www.javaboy.org/images/mysql/7-4.png" alt></p>
+<p>登录成功后 ，在 <code>MyCat</code>  的窗口中，执行如下命令，创建表：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create table t_user (id integer primary key,username varchar(255))</span><br></pre></td></tr></table></figure>
+<p>执行成功后，我们会发现物理库中出现了相应的表。<br>接下来，手动往各个物理库的物理表中存储一条数据，然后在  MyCat 窗口中查询：</p>
+<p><img src="http://www.javaboy.org/images/mysql/7-5.png" alt></p>
+<p>这样就可以查询到 三个库中的三个表中的数据。</p>
+<h1 id="问题分析"><a href="#问题分析" class="headerlink" title="问题分析"></a>问题分析</h1><p>整个过程不难，但是有的小伙伴在第一次配置的过程中还是容易出错，因此我这里还是来说两句，出错了要如何定位。</p>
+<p>一般来说，配置 MyCat 出错，问题可能发生在两个阶段。第一个阶段就是客户端连接 MyCat 出错，第二个阶段就是 MyCat 连接 MySQL 出错。</p>
+<p>无论你是使用 SQLyog 还是 Navicat ，我们在连接数据库的过程中，都可以先测试连接，很多人卡在这一步。</p>
+<p>如果在测试连接的时候就连接不通，说明是 MyCat 的问题，这个时候检查步骤如下：</p>
+<ol>
+<li>首先当然是查看日志信息，看能不能找出端倪</li>
+<li>通过 jps 命令查看 mycat 是否成功启动</li>
+<li>检查 server.xml 中配置是否正确，用户名密码是否输入正确</li>
+</ol>
+<p>这是第一种可能的问题，第二种问题就是测试连接没问题，但是测试完后，却连接不上。反映到 Navicat 上，就是测试连接没问题，测完之后，点击连接名要打开连接时，Navicat 就崩了，出现这个问题一般是 MyCat 在连接 MySQL 出问题了，这个时候就要去检查 schema.xml 文件中关于 MySQL 主机和从机的配置是否正确，数据库地址是否正确，用户名密码是否正确。</p>
+<h1 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h1><p>好了，本文主要简单介绍了下 MyCat 的安装问题，下篇文章我们来看 MyCat 中的分片规则问题。</p>
+<p>参考资料：</p>
+<ol>
+<li><a href="http://www.mycat.io/" target="_blank" rel="noopener">MyCat 官方文档</a></li>
+</ol>
+
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
                 <time class="level-item has-text-grey" datetime="2019-06-25T08:40:08.000Z">2019-06-25</time>
                 
                 <div class="level-item">
@@ -412,7 +523,7 @@
                         文章
                     </p>
                     <p class="title has-text-weight-normal">
-                        84
+                        85
                     </p>
                 </div>
             </div>
@@ -432,7 +543,7 @@
                         标签
                     </p>
                     <p class="title has-text-weight-normal">
-                        29
+                        30
                     </p>
                 </div>
             </div>
@@ -510,7 +621,7 @@
                 <span class="level-item">MySQL</span>
             </span>
             <span class="level-end">
-                <span class="level-item tag">4</span>
+                <span class="level-item tag">5</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/Nginx/">
@@ -604,7 +715,7 @@
         <h3 class="menu-label">
             标签云
         </h3>
-        <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 10px;">Chrome</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/Git/" style="font-size: 16.67px;">Git</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 11.67px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 13.33px;">Jpa</a> <a href="/tags/MyBatis/" style="font-size: 13.33px;">MyBatis</a> <a href="/tags/MySQL/" style="font-size: 15px;">MySQL</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/Redis/" style="font-size: 18.33px;">Redis</a> <a href="/tags/Shiro/" style="font-size: 10px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Data/" style="font-size: 11.67px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 13.33px;">Spring Security</a> <a href="/tags/SpringMVC/" style="font-size: 11.67px;">SpringMVC</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Thymeleaf/" style="font-size: 10px;">Thymeleaf</a> <a href="/tags/Vue/" style="font-size: 15px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/docker/" style="font-size: 16.67px;">docker</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/学习资源/" style="font-size: 11.67px;">学习资源</a> <a href="/tags/杂谈/" style="font-size: 13.33px;">杂谈</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
+        <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 10px;">Chrome</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/Git/" style="font-size: 17.14px;">Git</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 11.43px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 12.86px;">Jpa</a> <a href="/tags/MyBatis/" style="font-size: 12.86px;">MyBatis</a> <a href="/tags/MyCat/" style="font-size: 10px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 15.71px;">MySQL</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/Redis/" style="font-size: 18.57px;">Redis</a> <a href="/tags/Shiro/" style="font-size: 10px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Data/" style="font-size: 11.43px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 12.86px;">Spring Security</a> <a href="/tags/SpringMVC/" style="font-size: 11.43px;">SpringMVC</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Thymeleaf/" style="font-size: 10px;">Thymeleaf</a> <a href="/tags/Vue/" style="font-size: 14.29px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/docker/" style="font-size: 17.14px;">docker</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/学习资源/" style="font-size: 11.43px;">学习资源</a> <a href="/tags/杂谈/" style="font-size: 12.86px;">杂谈</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
     </div>
 </div>
 
@@ -618,6 +729,19 @@
         <h3 class="menu-label">
             最新文章
         </h3>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-06-28T00:33:57.000Z">2019-06-28</time></div>
+                    <a href="/2019/0628/mycat-install.html" class="has-link-black-ter is-size-6">分布式数据库中间件 MyCat 搞起来！</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/MySQL/">MySQL</a>
+                    </p>
+                </div>
+            </div>
+        </article>
         
         <article class="media">
             
@@ -671,19 +795,6 @@
             </div>
         </article>
         
-        <article class="media">
-            
-            <div class="media-content">
-                <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-06-17T02:12:58.000Z">2019-06-17</time></div>
-                    <a href="/2019/0617/chrome-port.html" class="has-link-black-ter is-size-6">想让自己的项目6666，可是 Chrome 不答应！</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/Chrome/">Chrome</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
     </div>
 </div>
 
@@ -702,7 +813,7 @@
                     <span class="level-item">六月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">41</span>
+                    <span class="level-item tag">42</span>
                 </span>
             </a>
         </li>
@@ -862,6 +973,19 @@
             
             <div class="media-content">
                 <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-06-28T00:33:57.000Z">2019-06-28</time></div>
+                    <a href="/2019/0628/mycat-install.html" class="has-link-black-ter is-size-6">分布式数据库中间件 MyCat 搞起来！</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/MySQL/">MySQL</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
                     <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-06-26T01:09:40.000Z">2019-06-26</time></div>
                     <a href="/2019/0626/springboot-vue.html" class="has-link-black-ter is-size-6">我的第一本书，被选作大学教材了！</a>
                     <p class="is-size-7 is-uppercase">
@@ -910,19 +1034,6 @@
             </div>
         </article>
         
-        <article class="media">
-            
-            <div class="media-content">
-                <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-06-17T02:12:58.000Z">2019-06-17</time></div>
-                    <a href="/2019/0617/chrome-port.html" class="has-link-black-ter is-size-6">想让自己的项目6666，可是 Chrome 不答应！</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/Chrome/">Chrome</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
     </div>
 </div>
 
@@ -941,7 +1052,7 @@
                     <span class="level-item">六月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">41</span>
+                    <span class="level-item tag">42</span>
                 </span>
             </a>
         </li>
