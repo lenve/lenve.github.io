@@ -147,6 +147,108 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-07-05T04:14:59.000Z">2019-07-05</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/SpringBoot/">SpringBoot</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    9 分钟 读完 (大约 1408 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/0705/springboot-freemarker.html">Spring Boot 整合 Freemarker，50 多行配置是怎么省略掉的？</a>
+            
+        </h1>
+        <div class="content">
+            <p>Spring Boot2 系列教程接近完工，最近进入修修补补阶段。Freemarker 整合貌似还没和大家聊过，因此今天把这个补充上。</p>
+<p>已经完工的 Spring Boot2 教程，大家可以参考这里：</p>
+<ol>
+<li><a href="https://mp.weixin.qq.com/s/YXBFFtWvSwR6dVLbaGDxcQ" target="_blank" rel="noopener">干货|最新版 Spring Boot2.1.5 教程+案例合集</a></li>
+</ol>
+<h1 id="Freemarker-简介"><a href="#Freemarker-简介" class="headerlink" title="Freemarker 简介"></a>Freemarker 简介</h1><p>这是一个相当老牌的开源的免费的模版引擎。通过 Freemarker 模版，我们可以将数据渲染成 HTML 网页、电子邮件、配置文件以及源代码等。Freemarker 不是面向最终用户的，而是一个 Java 类库，我们可以将之作为一个普通的组件嵌入到我们的产品中。</p>
+<p>来看一张来自 Freemarker 官网的图片：</p>
+<p><img src="http://www.javaboy.org/images/boot/22-1.png" alt></p>
+<p>可以看到，Freemarker 可以将模版和数据渲染成 HTML 。</p>
+<p>Freemarker 模版后缀为 <code>.ftl</code>(FreeMarker Template Language)。FTL 是一种简单的、专用的语言，它不是像 Java 那样成熟的编程语言。在模板中，你可以专注于如何展现数据， 而在模板之外可以专注于要展示什么数据。</p>
+<p>好了，这是一个简单的介绍，接下来我们来看看 Freemarker 和 Spring Boot 的一个整合操作。</p>
+<h1 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h1><p>在 SSM 中整合 Freemarker ，所有的配置文件加起来，前前后后大约在 50 行左右，Spring Boot 中要几行配置呢？ 0 行！</p>
+<h2 id="1-创建工程"><a href="#1-创建工程" class="headerlink" title="1.创建工程"></a>1.创建工程</h2><p>首先创建一个 Spring Boot 工程，引入 Freemarker 依赖，如下图：</p>
+<p><img src="http://www.javaboy.org/images/boot/22-2.png" alt></p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-freemarker<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-web<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>工程创建完成后，在 <code>org.springframework.boot.autoconfigure.freemarker.FreeMarkerAutoConfiguration</code> 类中，可以看到关于 Freemarker 的自动化配置：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-meta">@ConditionalOnClass</span>(&#123; freemarker.template.Configuration.class, FreeMarkerConfigurationFactory.class &#125;)</span><br><span class="line"><span class="hljs-meta">@EnableConfigurationProperties</span>(FreeMarkerProperties.class)</span><br><span class="line"><span class="hljs-meta">@Import</span>(&#123; FreeMarkerServletWebConfiguration.class, FreeMarkerReactiveWebConfiguration.class,</span><br><span class="line">                FreeMarkerNonWebConfiguration.class &#125;)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">FreeMarkerAutoConfiguration</span> </span>&#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从这里可以看出，当 <code>classpath</code> 下存在 <code>freemarker.template.Configuration</code> 以及 <code>FreeMarkerConfigurationFactory</code> 时，配置才会生效，也就是说当我们引入了 <code>Freemarker</code> 之后，配置就会生效。但是这里的自动化配置只做了模板位置检查，其他配置则是在导入的 <code>FreeMarkerServletWebConfiguration</code> 配置中完成的。那么我们再来看看 <code>FreeMarkerServletWebConfiguration</code> 类，部分源码如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-meta">@ConditionalOnWebApplication</span>(type = ConditionalOnWebApplication.Type.SERVLET)</span><br><span class="line"><span class="hljs-meta">@ConditionalOnClass</span>(&#123; Servlet.class, FreeMarkerConfigurer.class &#125;)</span><br><span class="line"><span class="hljs-meta">@AutoConfigureAfter</span>(WebMvcAutoConfiguration.class)</span><br><span class="line"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">FreeMarkerServletWebConfiguration</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">AbstractFreeMarkerConfiguration</span> </span>&#123;</span><br><span class="line">        <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-title">FreeMarkerServletWebConfiguration</span><span class="hljs-params">(FreeMarkerProperties properties)</span> </span>&#123;</span><br><span class="line">                <span class="hljs-keyword">super</span>(properties);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="hljs-meta">@Bean</span></span><br><span class="line">        <span class="hljs-meta">@ConditionalOnMissingBean</span>(FreeMarkerConfig.class)</span><br><span class="line">        <span class="hljs-function"><span class="hljs-keyword">public</span> FreeMarkerConfigurer <span class="hljs-title">freeMarkerConfigurer</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">                FreeMarkerConfigurer configurer = <span class="hljs-keyword">new</span> FreeMarkerConfigurer();</span><br><span class="line">                applyProperties(configurer);</span><br><span class="line">                <span class="hljs-keyword">return</span> configurer;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="hljs-meta">@Bean</span></span><br><span class="line">        <span class="hljs-meta">@ConditionalOnMissingBean</span>(name = <span class="hljs-string">"freeMarkerViewResolver"</span>)</span><br><span class="line">        <span class="hljs-meta">@ConditionalOnProperty</span>(name = <span class="hljs-string">"spring.freemarker.enabled"</span>, matchIfMissing = <span class="hljs-keyword">true</span>)</span><br><span class="line">        <span class="hljs-function"><span class="hljs-keyword">public</span> FreeMarkerViewResolver <span class="hljs-title">freeMarkerViewResolver</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">                FreeMarkerViewResolver resolver = <span class="hljs-keyword">new</span> FreeMarkerViewResolver();</span><br><span class="line">                getProperties().applyToMvcViewResolver(resolver);</span><br><span class="line">                <span class="hljs-keyword">return</span> resolver;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们来简单看下这段源码：</p>
+<ol>
+<li>@ConditionalOnWebApplication 表示当前配置在 web 环境下才会生效。</li>
+<li>ConditionalOnClass 表示当前配置在存在 Servlet 和 FreeMarkerConfigurer 时才会生效。</li>
+<li>@AutoConfigureAfter 表示当前自动化配置在 WebMvcAutoConfiguration 之后完成。</li>
+<li>代码中，主要提供了 FreeMarkerConfigurer 和 FreeMarkerViewResolver。</li>
+<li>FreeMarkerConfigurer 是 Freemarker 的一些基本配置，例如 templateLoaderPath、defaultEncoding 等</li>
+<li>FreeMarkerViewResolver 则是视图解析器的基本配置，包含了viewClass、suffix、allowRequestOverride、allowSessionOverride 等属性。</li>
+</ol>
+<p>另外还有一点，在这个类的构造方法中，注入了 FreeMarkerProperties：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@ConfigurationProperties</span>(prefix = <span class="hljs-string">"spring.freemarker"</span>)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">FreeMarkerProperties</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">AbstractTemplateViewResolverProperties</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String DEFAULT_TEMPLATE_LOADER_PATH = <span class="hljs-string">"classpath:/templates/"</span>;</span><br><span class="line">        <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String DEFAULT_PREFIX = <span class="hljs-string">""</span>;</span><br><span class="line">        <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String DEFAULT_SUFFIX = <span class="hljs-string">".ftl"</span>;</span><br><span class="line">        <span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment">         * Well-known FreeMarker keys which are passed to FreeMarker's Configuration.</span></span><br><span class="line"><span class="hljs-comment">         */</span></span><br><span class="line">        <span class="hljs-keyword">private</span> Map&lt;String, String&gt; settings = <span class="hljs-keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>FreeMarkerProperties 中则配置了 Freemarker 的基本信息，例如模板位置在 <code>classpath:/templates/</code> ，再例如模板后缀为 <code>.ftl</code>，那么这些配置我们以后都可以在 application.properties 中进行修改。</p>
+<p>如果我们在 SSM 的 XML 文件中自己配置 Freemarker ，也不过就是配置这些东西。现在，这些配置由  FreeMarkerServletWebConfiguration​  帮我们完成了。</p>
+<h2 id="2-创建类"><a href="#2-创建类" class="headerlink" title="2.创建类"></a>2.创建类</h2><p>首先我们来创建一个 User 类，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">User</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">private</span> Long id;</span><br><span class="line">    <span class="hljs-keyword">private</span> String username;</span><br><span class="line">    <span class="hljs-keyword">private</span> String address;</span><br><span class="line">    <span class="hljs-comment">//省略 getter/setter</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>再来创建 <code>UserController</code>：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Controller</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserController</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@GetMapping</span>(<span class="hljs-string">"/index"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">index</span><span class="hljs-params">(Model model)</span> </span>&#123;</span><br><span class="line">        List&lt;User&gt; users = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">10</span>; i++) &#123;</span><br><span class="line">            User user = <span class="hljs-keyword">new</span> User();</span><br><span class="line">            user.setId((<span class="hljs-keyword">long</span>) i);</span><br><span class="line">            user.setUsername(<span class="hljs-string">"javaboy&gt;&gt;&gt;&gt;"</span> + i);</span><br><span class="line">            user.setAddress(<span class="hljs-string">"www.javaboy.org&gt;&gt;&gt;&gt;"</span> + i);</span><br><span class="line">            users.add(user);</span><br><span class="line">        &#125;</span><br><span class="line">        model.addAttribute(<span class="hljs-string">"users"</span>, users);</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-string">"index"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>最后在 freemarker 中渲染数据：</p>
+<figure class="highlight html hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">&lt;!DOCTYPE html&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">html</span> <span class="hljs-attr">lang</span>=<span class="hljs-string">"en"</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">head</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">charset</span>=<span class="hljs-string">"UTF-8"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">title</span>&gt;</span>Title<span class="hljs-tag">&lt;/<span class="hljs-name">title</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">head</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">body</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">table</span> <span class="hljs-attr">border</span>=<span class="hljs-string">"1"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>用户编号<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>用户名称<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>用户地址<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">#list</span> <span class="hljs-attr">users</span> <span class="hljs-attr">as</span> <span class="hljs-attr">user</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>$&#123;user.id&#125;<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>$&#123;user.username&#125;<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>$&#123;user.address&#125;<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">#list</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">table</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">body</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">html</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>运行效果如下：</p>
+<p><img src="http://www.javaboy.org/images/boot/22-3.png" alt></p>
+<h1 id="其他配置"><a href="#其他配置" class="headerlink" title="其他配置"></a>其他配置</h1><p>如果我们要修改模版文件位置等，可以在 application.properties 中进行配置：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">spring.freemarker.allow-request-override=false</span><br><span class="line">spring.freemarker.allow-session-override=false</span><br><span class="line">spring.freemarker.cache=false</span><br><span class="line">spring.freemarker.charset=UTF-8</span><br><span class="line">spring.freemarker.check-template-location=true</span><br><span class="line">spring.freemarker.content-type=text/html</span><br><span class="line">spring.freemarker.expose-request-attributes=false</span><br><span class="line">spring.freemarker.expose-session-attributes=false</span><br><span class="line">spring.freemarker.suffix=.ftl</span><br><span class="line">spring.freemarker.template-loader-path=classpath:/templates/</span><br></pre></td></tr></table></figure>
+<p>配置文件按照顺序依次解释如下：</p>
+<ol>
+<li>HttpServletRequest的属性是否可以覆盖controller中model的同名项</li>
+<li>HttpSession的属性是否可以覆盖controller中model的同名项</li>
+<li>是否开启缓存</li>
+<li>模板文件编码</li>
+<li>是否检查模板位置</li>
+<li>Content-Type的值</li>
+<li>是否将HttpServletRequest中的属性添加到Model中</li>
+<li>是否将HttpSession中的属性添加到Model中</li>
+<li>模板文件后缀</li>
+<li>模板文件位置</li>
+</ol>
+<p>好了，整合完成之后，Freemarker 的更多用法，就和在 SSM 中使用 Freemarker 一样了，这里我就不再赘述。</p>
+<h1 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h1><p>本文和大家简单聊一聊 Spring Boot 整合 Freemarker，算是对 Spring Boot2 教程的一个补充（后面还会有一些补充），有问题欢迎留言讨论。</p>
+<p>本项目案例，我已经上传到 GitHub 上，欢迎大家 star：<a href="https://github.com/lenve/javaboy-code-samples" target="_blank" rel="noopener">https://github.com/lenve/javaboy-code-samples</a></p>
+
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
                 <time class="level-item has-text-grey" datetime="2019-07-01T02:22:32.000Z">2019-07-01</time>
                 
                 <div class="level-item">
@@ -625,58 +727,6 @@
 
 
 
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-06-15T12:52:08.000Z">2019-06-15</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/Redis/">Redis</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    7 分钟 读完 (大约 989 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/0615/redis-jedis.html">Jedis 使用</a>
-            
-        </h1>
-        <div class="content">
-            <p>Redis 的知识我们已经介绍的差不多了，本文我们来看看如何使用 Java 操作 redis。</p>
-        </div>
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0615/redis-jedis.html#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
 
     
 <div class="card card-transparent">
@@ -743,7 +793,7 @@
                         文章
                     </p>
                     <p class="title has-text-weight-normal">
-                        86
+                        87
                     </p>
                 </div>
             </div>
@@ -753,7 +803,7 @@
                         分类
                     </p>
                     <p class="title has-text-weight-normal">
-                        15
+                        16
                     </p>
                 </div>
             </div>
@@ -763,7 +813,7 @@
                         标签
                     </p>
                     <p class="title has-text-weight-normal">
-                        32
+                        34
                     </p>
                 </div>
             </div>
@@ -868,6 +918,14 @@
                 <span class="level-item tag">33</span>
             </span>
         </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringBoot/">
+            <span class="level-start">
+                <span class="level-item">SpringBoot</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
         <a class="level is-marginless" href="/categories/SpringMVC/">
             <span class="level-start">
                 <span class="level-item">SpringMVC</span>
@@ -935,7 +993,7 @@
         <h3 class="menu-label">
             标签云
         </h3>
-        <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 10px;">Chrome</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/Git/" style="font-size: 17.14px;">Git</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 11.43px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 12.86px;">Jpa</a> <a href="/tags/MyBatis/" style="font-size: 12.86px;">MyBatis</a> <a href="/tags/MyCat/" style="font-size: 11.43px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 15.71px;">MySQL</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/Redis/" style="font-size: 18.57px;">Redis</a> <a href="/tags/Shiro/" style="font-size: 10px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Data/" style="font-size: 11.43px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 12.86px;">Spring Security</a> <a href="/tags/SpringMVC/" style="font-size: 11.43px;">SpringMVC</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Thymeleaf/" style="font-size: 10px;">Thymeleaf</a> <a href="/tags/Vue/" style="font-size: 14.29px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/docker/" style="font-size: 17.14px;">docker</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/中间件/" style="font-size: 10px;">中间件</a> <a href="/tags/前后端分离/" style="font-size: 10px;">前后端分离</a> <a href="/tags/学习资源/" style="font-size: 10px;">学习资源</a> <a href="/tags/杂谈/" style="font-size: 12.86px;">杂谈</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
+        <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 10px;">Chrome</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/Freemarker/" style="font-size: 10px;">Freemarker</a> <a href="/tags/Git/" style="font-size: 17.14px;">Git</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 11.43px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 12.86px;">Jpa</a> <a href="/tags/MyBatis/" style="font-size: 12.86px;">MyBatis</a> <a href="/tags/MyCat/" style="font-size: 11.43px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 15.71px;">MySQL</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/Redis/" style="font-size: 18.57px;">Redis</a> <a href="/tags/Shiro/" style="font-size: 10px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Data/" style="font-size: 11.43px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 12.86px;">Spring Security</a> <a href="/tags/SpringBoot/" style="font-size: 10px;">SpringBoot</a> <a href="/tags/SpringMVC/" style="font-size: 11.43px;">SpringMVC</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Thymeleaf/" style="font-size: 10px;">Thymeleaf</a> <a href="/tags/Vue/" style="font-size: 14.29px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/docker/" style="font-size: 17.14px;">docker</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/中间件/" style="font-size: 10px;">中间件</a> <a href="/tags/前后端分离/" style="font-size: 10px;">前后端分离</a> <a href="/tags/学习资源/" style="font-size: 10px;">学习资源</a> <a href="/tags/杂谈/" style="font-size: 12.86px;">杂谈</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
     </div>
 </div>
 
@@ -949,6 +1007,19 @@
         <h3 class="menu-label">
             最新文章
         </h3>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-07-05T04:14:59.000Z">2019-07-05</time></div>
+                    <a href="/2019/0705/springboot-freemarker.html" class="has-link-black-ter is-size-6">Spring Boot 整合 Freemarker，50 多行配置是怎么省略掉的？</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/SpringBoot/">SpringBoot</a>
+                    </p>
+                </div>
+            </div>
+        </article>
         
         <article class="media">
             
@@ -1002,19 +1073,6 @@
             </div>
         </article>
         
-        <article class="media">
-            
-            <div class="media-content">
-                <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-06-25T08:40:08.000Z">2019-06-25</time></div>
-                    <a href="/2019/0625/mysql.html" class="has-link-black-ter is-size-6">北冥有 Data，其名为鲲，鲲之大，一个 MySQL 放不下！</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/MySQL/">MySQL</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
     </div>
 </div>
 
@@ -1033,7 +1091,7 @@
                     <span class="level-item">七月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">1</span>
+                    <span class="level-item tag">2</span>
                 </span>
             </a>
         </li>
@@ -1204,6 +1262,19 @@
             
             <div class="media-content">
                 <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-07-05T04:14:59.000Z">2019-07-05</time></div>
+                    <a href="/2019/0705/springboot-freemarker.html" class="has-link-black-ter is-size-6">Spring Boot 整合 Freemarker，50 多行配置是怎么省略掉的？</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/SpringBoot/">SpringBoot</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
                     <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-07-01T02:22:32.000Z">2019-07-01</time></div>
                     <a href="/2019/0701/fronted-backend.html" class="has-link-black-ter is-size-6">前后端分离时代，Java 程序员的变与不变！</a>
                     <p class="is-size-7 is-uppercase">
@@ -1252,19 +1323,6 @@
             </div>
         </article>
         
-        <article class="media">
-            
-            <div class="media-content">
-                <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-06-25T08:40:08.000Z">2019-06-25</time></div>
-                    <a href="/2019/0625/mysql.html" class="has-link-black-ter is-size-6">北冥有 Data，其名为鲲，鲲之大，一个 MySQL 放不下！</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/MySQL/">MySQL</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
     </div>
 </div>
 
@@ -1283,7 +1341,7 @@
                     <span class="level-item">七月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">1</span>
+                    <span class="level-item tag">2</span>
                 </span>
             </a>
         </li>
