@@ -147,6 +147,170 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-07-12T04:50:12.000Z">2019-07-12</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/MySQL/">MySQL</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    20 分钟 读完 (大约 2977 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/0712/mycat-rule.html">数据库分库分表，都有哪些分片规则？</a>
+            
+        </h1>
+        <div class="content">
+            <p>上次和大伙聊了 MyCat 的安装，今天来说一个新的话题，就是数据库的分片。</p>
+<p>当我们把 MyCat + MySQL 的架构搭建完成之后，接下来面临的一个问题就是，数据库的分片规则：有那么多 MySQL ，一条记录通过 MyCat 到底要插入到哪个 MySQL 中？这就是我们今天要讨论的问题。</p>
+<p>关于数据库分库分表的问题，我们前面还有几篇铺垫的文章，阅读前面的文章有助于更好的理解本文：</p>
+<hr>
+<ol>
+<li><a href="https://mp.weixin.qq.com/s/_lsNyXHrsu131mHONQi5rg" target="_blank" rel="noopener">提高性能，MySQL 读写分离环境搭建(一)</a></li>
+<li><a href="https://mp.weixin.qq.com/s/SC0OYM6yO_GxQh9DvSsnoQ" target="_blank" rel="noopener">提高性能，MySQL 读写分离环境搭建(二)</a></li>
+<li><a href="https://mp.weixin.qq.com/s/bcyjBgEqg6Or5zdi4jHaiA" target="_blank" rel="noopener">MySQL 只能做小项目？松哥要说几句公道话！</a></li>
+<li><a href="https://mp.weixin.qq.com/s/qUGANVj2mmoMwUZEV5Zc1w" target="_blank" rel="noopener">北冥有 Data，其名为鲲，鲲之大，一个 MySQL 放不下！</a></li>
+<li><a href="https://mp.weixin.qq.com/s/7pj5E2HvmiejBJrW0T86oQ" target="_blank" rel="noopener">What？Tomcat 竟然也算中间件？</a></li>
+<li><a href="https://mp.weixin.qq.com/s/qWf5XZzhgpSuIGpE2T6iJg" target="_blank" rel="noopener">分布式数据库中间件 MyCat 搞起来！</a></li>
+</ol>
+<hr>
+<h1 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h1><h2 id="逻辑库"><a href="#逻辑库" class="headerlink" title="逻辑库"></a>逻辑库</h2><p>一般来说，对于应用而言，数据库中间件是透明的，应用并不需要去了解中间件复杂的运作过程，中间件对应用来说就是透明的，我们操作中间件就像操作一个普通的 MySQL 一样，这就是 MyCat 的优势之一。</p>
+<p>但是我们毕竟操作的不是 MySQL ，而是 MyCat ，MyCat 中的数据库并不真正存储数据，数据还是存储在 MySQL 中，因此，我们可以将 MyCat 看作是一个或者多个数据库集群构成的逻辑库。</p>
+<p><img src="http://www.javaboy.org/images/mysql/6-2.png" alt></p>
+<h2 id="逻辑表"><a href="#逻辑表" class="headerlink" title="逻辑表"></a>逻辑表</h2><p>逻辑表又有几种不同的划分：</p>
+<ul>
+<li>逻辑表</li>
+</ul>
+<p>既然有逻辑库，那么就会有逻辑表。</p>
+<p>因为数据库分片之后，本来存储在一张表中的数据现在被分散到 N 张表中去了，但是在应用程序眼里，还是只有一张表，它也只操作这一张表，这张表并不真正存储数据，数据存储在 N 张物理表中，这个并不真正存储数据的表称之为逻辑表。</p>
+<ul>
+<li>分片表</li>
+</ul>
+<p>分片表，是指那些原有的很大数据的表，需要切分到多个数据库的表，这样，每个分片都有一部分数据，所有分片构成了完整的数据。 </p>
+<ul>
+<li>非分片表</li>
+</ul>
+<p>一个数据库中并不是所有的表都很大，某些表是可以不用进行切分的，非分片是相对分片表来说的，就是那些不需要进行数据切分的表。</p>
+<ul>
+<li>ER 表</li>
+</ul>
+<p>关系型数据库是基于实体关系模型之上，通过其描述了真实世界中事物与关系，Mycat 中的 ER 表即是来源于此。根据这一思路，提出了基于 E-R 关系的数据分片策略，子表的记录与所关联的父表记录存放在同一个数据分片上，即子表依赖于父表，通过表分组保证数据 join 不会跨库操作。</p>
+<p>表分组是解决跨分片数据 join 的一种很好的思路，也是数据切分规划的重要一条规则。</p>
+<ul>
+<li>全局表</li>
+</ul>
+<p>一个真实的业务系统中，往往存在大量的类似字典表的表，这些表基本上很少变动，字典表具有以下几个特性：</p>
+<ul>
+<li>变动不频繁 </li>
+<li>数据量总体变化不大 </li>
+<li>数据规模不大，很少有超过数十万条记录</li>
+</ul>
+<p>对于这类的表，在分片的情况下，当业务表因为规模而进行分片以后，业务表与这些附属的字典表之间的关联，就成了比较棘手的问题，所以 MyCat 中通过数据冗余来解决这类表的 join ，即所有的分片都有一份数据的拷贝，所有将字典表或者符合字典表特性的一些表定义为全局表。</p>
+<p>数据冗余是解决跨分片数据 join 的一种很好的思路，也是数据切分规划的另外一条重要规则。</p>
+<h2 id="分片节点"><a href="#分片节点" class="headerlink" title="分片节点"></a>分片节点</h2><p>数据切分后，一个大表被分到不同的分片数据库上面，每个表分片所在的数据库就是分片节点（dataNode）。 </p>
+<h2 id="节点主机"><a href="#节点主机" class="headerlink" title="节点主机"></a>节点主机</h2><p>数据切分后，每个分片节点（dataNode）不一定都会独占一台机器，同一机器上面可以有多个分片数据库，这样一个或多个分片节点（dataNode）所在的机器就是节点主机（dataHost）,为了规避单节点主机并发数限制，尽量将读写压力高的分片节点（dataNode）均衡的放在不同的节点主机（dataHost）。 </p>
+<h2 id="分片规则"><a href="#分片规则" class="headerlink" title="分片规则"></a>分片规则</h2><p>前面讲了数据切分，一个大表被分成若干个分片表，就需要一定的规则，这样按照某种业务规则把数据分到某个分片的规则就是分片规则，数据切分选择合适的分片规则非常重要，将极大的避免后续数据处理的难度。 </p>
+<p>MyCat 提供的分片规则有如下几种：</p>
+<ul>
+<li>分片枚举</li>
+<li>固定分片 hash 算法</li>
+<li>范围约定</li>
+<li>取模</li>
+<li>按日期（天）分片</li>
+<li>取模范围约束</li>
+<li>截取数字做 hash 求模范围约束</li>
+<li>应用指定</li>
+<li>截取数字 hash 解析</li>
+<li>一致性 hash</li>
+<li>按单月小时拆分</li>
+<li>范围求模分片</li>
+<li>日期范围 hash 分片</li>
+<li>冷热数据分片</li>
+<li>自然月分片</li>
+</ul>
+<h1 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h1><p>这里向大家简单介绍 5 种规则。</p>
+<h2 id="global"><a href="#global" class="headerlink" title="global"></a>global</h2><p>有一些表，数据量不大，也不怎么修改，主要是查询操作，例如系统配置表，这一类表我们可以使用 global 这种分片规则。global 的特点是，该表会在所有的库中都创建，而且每一个库中都保存了该表的完整数据。具体配置方式，就是在 schema.xml 的 table 节点中添加一个 type 属性，值为 global：</p>
+<p><img src="http://www.javaboy.org/images/mysql/8-1.png" alt></p>
+<p>配置完成后，重启 mycat</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bin/mycat restart</span><br></pre></td></tr></table></figure>
+<p>重启完成后，要删除之前已经创建的 <code>t_user</code> 表，然后重新创建表，创建完成后，向表中插入数据，可以看到，db1、db2 以及 db3 中都有数据了。</p>
+<p><img src="http://www.javaboy.org/images/mysql/8-2.png" alt></p>
+<p>这里 虽然查询出来的记录只有一条，实际上 db1、db2 以及 db3 中都有该条记录。</p>
+<p>总结：global 适合于 数据量不大、以查询为主、增删改较少的表。</p>
+<h2 id="sharding-by-intfile"><a href="#sharding-by-intfile" class="headerlink" title="sharding-by-intfile"></a>sharding-by-intfile</h2><p>sharding-by-intfile 这个是枚举分片，就是在数据表中专门设计一个字段，以后根据这个字段的值来决定数据插入到哪个 dataNode 上。</p>
+<p>注意，在配置 sharding-by-intfile 规则时，一定要删除 type=”global” ，否则配置不会生效。具体配置如下：</p>
+<p><img src="http://www.javaboy.org/images/mysql/8-3.png" alt></p>
+<p>配置完成后，还需要指定枚举的数据。枚举的数据可以在 rule.xml　中查看。</p>
+<p><img src="http://www.javaboy.org/images/mysql/8-4.png" alt></p>
+<p>在 rule.xml 文件中，首先找到 tableRule 的名字为 sharding-by-intfile 的节点，这个节点中定义了两个属性，一个是 columns 表示一会在数据表中定义的枚举列的名字（数据表中一会需要创建一个名为 sharding_id 的列，这个列的值决定了该条数据保存在哪个数据库实例中），这个名字可以自定义；另外一个属性叫做 algorithm ，这是指 sharding-by-intfile 所对应的算法名称。根据这个名称，可以找到具体的算法：</p>
+<p><img src="http://www.javaboy.org/images/mysql/8-5.png" alt></p>
+<p>还是在 rule.xml 文件中，我们找到了 hash-int ，class 表示这个算法对应的 Java 类的路径。第一个属性 mapFile 表示相关的配置文件，从这个文件名可以看出，这个文件 就在 conf 目录下。</p>
+<p>打开 conf 目录下的 partition-hash-int.txt 文件，内容如下：</p>
+<p><img src="http://www.javaboy.org/images/mysql/8-6.png" alt></p>
+<p>前面的数字表示枚举的值 ，后面的数字表示 dataNode 的下标，所以前面的数字可以自定义，后面的数字不能随意定义。</p>
+<p>配置完成后，重启 MyCat ，然后进行测试：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">drop table if exists t_user;</span><br><span class="line">create table t_user (id integer primary key,username varchar(255),sharding_id integer);</span><br><span class="line">insert into t_user(id,username,sharding_id) values(1,&apos;www.javaboy.org&apos;,0);</span><br><span class="line">insert into t_user(id,username,sharding_id) values(1,&apos;www.javaboy.org&apos;,1);</span><br><span class="line">insert into t_user(id,username,sharding_id) values(1,&apos;www.javaboy.org&apos;,2);</span><br><span class="line">select  * from t_user;</span><br></pre></td></tr></table></figure>
+<p>执行完后，sharding_id 对应值分别为 0 、1 、2 的记录分别插入到 db1 、db2 以及 db3 中。</p>
+<h2 id="auto-sharding-long"><a href="#auto-sharding-long" class="headerlink" title="auto-sharding-long"></a>auto-sharding-long</h2><p>auto-sharding-long 表示按照既定的范围去存储数据。就是提前规划好某个字段的值在某个范围时，相应的记录存到某个 dataNode 中。</p>
+<p>配置方式，首先修改路由规则：</p>
+<p><img src="http://www.javaboy.org/images/mysql/8-7.png" alt></p>
+<p>然后去 rule.xml 中查看对应的算法了规则相关的配置：</p>
+<p><img src="http://www.javaboy.org/images/mysql/8-8.png" alt></p>
+<p>可以看到，默认是按照 id 的范围来划分数据的存储位置的，对应的算法就是 rang-long 。</p>
+<p>继续查看，可以找到算法对应的类，以及相关的配置文件，这个配置文件也在 conf 目录下，打开该文件：</p>
+<p><img src="http://www.javaboy.org/images/mysql/8-9.png" alt></p>
+<p>如上配置，表示 当 id 的取值在 0-5之间时，将数据存储到 db1 中，当 id 在 5-10 之间时，存储到 db2 中，当 id 的取值在 10-1500W 之间时，存储到 db3 中。</p>
+<p>配置完成后，重启 MyCat ，测试：</p>
+<p><img src="http://www.javaboy.org/images/mysql/8-10.png" alt></p>
+<h2 id="mod-long"><a href="#mod-long" class="headerlink" title="mod-long"></a>mod-long</h2><p>取模：根据表中的某一个字段，做取模操作。根据取模的结果将记录存放在不同的 dataNode 上。这种方式不需要再添加额外字段。</p>
+<p><img src="http://www.javaboy.org/images/mysql/8-11.png" alt></p>
+<p>然后去 rule.xml 中配置一下 dataNode 的个数。</p>
+<p><img src="http://www.javaboy.org/images/mysql/8-12.png" alt></p>
+<p>可以看到，取模的字段是 id ，取模的算法名称是 mod-long ，再看具体的算法：</p>
+<p><img src="http://www.javaboy.org/images/mysql/8-13.png" alt></p>
+<p>在具体的算法中，配置了 dataNode 的个数为 3。</p>
+<p>然后保存退出，重启 MyCat，进行测试：</p>
+<p><img src="http://www.javaboy.org/images/mysql/8-14.png" alt></p>
+<h2 id="sharding-by-murmur"><a href="#sharding-by-murmur" class="headerlink" title="sharding-by-murmur"></a>sharding-by-murmur</h2><p>前面介绍的几种方式，都存在一个问题，如果数据库要扩容，之前配置会失效，可能会出现数据库查询紊乱。因此我们要引入一致性 hash 这样一种分片规则，可以解决这个问题。具体配置和前面一样：</p>
+<p><img src="http://www.javaboy.org/images/mysql/8-15.png" alt></p>
+<p>另外需要注意，在 rule.xml 中修改默认 dataNode 的数量：</p>
+<p><img src="http://www.javaboy.org/images/mysql/8-16.png" alt></p>
+<p>修改完后，重启 MyCat ，进行测试。</p>
+<p>好了，本文主要向大家介绍了 MyCat 的五种不同的切片规则。有问题欢迎留言讨论。</p>
+<p>参考资料：</p>
+<ol>
+<li><a href="http://www.mycat.io/" target="_blank" rel="noopener">MyCat 官网</a></li>
+</ol>
+
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
                 <time class="level-item has-text-grey" datetime="2019-07-10T01:43:19.000Z">2019-07-10</time>
                 
                 <div class="level-item">
@@ -621,63 +785,6 @@
 
 
 
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-06-22T00:52:54.000Z">2019-06-22</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/MySQL/">MySQL</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    10 分钟 读完 (大约 1515 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/0622/mysql.html">MySQL 只能做小项目？松哥要说几句公道话！</a>
-            
-        </h1>
-        <div class="content">
-            <p>松哥上学那会，很多人对 MySQL 有一些偏见，偏见主要集中在以下几方面：</p>
-<ol>
-<li>MySQL 不支持事务（事实上 MyISAM 有表锁，但是效率比较低）</li>
-<li>MySQL 存储的数据量比较小，适合小项目，大项目还是得上 Oracle、DB2 等</li>
-</ol>
-<p>这么多年过去了，松哥自己在开发中一直是以 MySQL 为主，我觉得我有必要说两句公道话了。</p>
-        </div>
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0622/mysql.html#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
 
     
 <div class="card card-transparent">
@@ -696,7 +803,7 @@
             
             <li><span class="pagination-ellipsis has-text-black-ter">&hellip;</span></li>
             
-            <li><a class="pagination-link has-text-black-ter" href="/page/9/">9</a></li>
+            <li><a class="pagination-link has-text-black-ter" href="/page/10/">10</a></li>
             
         </ul>
     </nav>
@@ -744,7 +851,7 @@
                         文章
                     </p>
                     <p class="title has-text-weight-normal">
-                        90
+                        91
                     </p>
                 </div>
             </div>
@@ -842,7 +949,7 @@
                 <span class="level-item">MySQL</span>
             </span>
             <span class="level-end">
-                <span class="level-item tag">6</span>
+                <span class="level-item tag">7</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/Nginx/">
@@ -952,7 +1059,7 @@
         <h3 class="menu-label">
             标签云
         </h3>
-        <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 10px;">Chrome</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/Freemarker/" style="font-size: 10px;">Freemarker</a> <a href="/tags/Git/" style="font-size: 17.14px;">Git</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 11.43px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 12.86px;">Jpa</a> <a href="/tags/MyBatis/" style="font-size: 12.86px;">MyBatis</a> <a href="/tags/MyCat/" style="font-size: 11.43px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 15.71px;">MySQL</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/Redis/" style="font-size: 18.57px;">Redis</a> <a href="/tags/Shiro/" style="font-size: 10px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Data/" style="font-size: 11.43px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 12.86px;">Spring Security</a> <a href="/tags/SpringBoot/" style="font-size: 10px;">SpringBoot</a> <a href="/tags/SpringMVC/" style="font-size: 11.43px;">SpringMVC</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Thymeleaf/" style="font-size: 10px;">Thymeleaf</a> <a href="/tags/Vue/" style="font-size: 14.29px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/docker/" style="font-size: 17.14px;">docker</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/java/" style="font-size: 10px;">java</a> <a href="/tags/mail/" style="font-size: 10px;">mail</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/中间件/" style="font-size: 10px;">中间件</a> <a href="/tags/前后端分离/" style="font-size: 10px;">前后端分离</a> <a href="/tags/学习资源/" style="font-size: 10px;">学习资源</a> <a href="/tags/杂谈/" style="font-size: 14.29px;">杂谈</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
+        <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 10px;">Chrome</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/Freemarker/" style="font-size: 10px;">Freemarker</a> <a href="/tags/Git/" style="font-size: 17.14px;">Git</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 11.43px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 12.86px;">Jpa</a> <a href="/tags/MyBatis/" style="font-size: 12.86px;">MyBatis</a> <a href="/tags/MyCat/" style="font-size: 12.86px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 15.71px;">MySQL</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/Redis/" style="font-size: 18.57px;">Redis</a> <a href="/tags/Shiro/" style="font-size: 10px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Data/" style="font-size: 11.43px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 12.86px;">Spring Security</a> <a href="/tags/SpringBoot/" style="font-size: 10px;">SpringBoot</a> <a href="/tags/SpringMVC/" style="font-size: 11.43px;">SpringMVC</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Thymeleaf/" style="font-size: 10px;">Thymeleaf</a> <a href="/tags/Vue/" style="font-size: 14.29px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/docker/" style="font-size: 17.14px;">docker</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/java/" style="font-size: 10px;">java</a> <a href="/tags/mail/" style="font-size: 10px;">mail</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/中间件/" style="font-size: 10px;">中间件</a> <a href="/tags/前后端分离/" style="font-size: 10px;">前后端分离</a> <a href="/tags/学习资源/" style="font-size: 10px;">学习资源</a> <a href="/tags/杂谈/" style="font-size: 14.29px;">杂谈</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
     </div>
 </div>
 
@@ -966,6 +1073,19 @@
         <h3 class="menu-label">
             最新文章
         </h3>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-07-12T04:50:12.000Z">2019-07-12</time></div>
+                    <a href="/2019/0712/mycat-rule.html" class="has-link-black-ter is-size-6">数据库分库分表，都有哪些分片规则？</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/MySQL/">MySQL</a>
+                    </p>
+                </div>
+            </div>
+        </article>
         
         <article class="media">
             
@@ -1019,19 +1139,6 @@
             </div>
         </article>
         
-        <article class="media">
-            
-            <div class="media-content">
-                <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-07-01T02:22:32.000Z">2019-07-01</time></div>
-                    <a href="/2019/0701/fronted-backend.html" class="has-link-black-ter is-size-6">前后端分离时代，Java 程序员的变与不变！</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/前后端分离/">前后端分离</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
     </div>
 </div>
 
@@ -1050,7 +1157,7 @@
                     <span class="level-item">七月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">5</span>
+                    <span class="level-item tag">6</span>
                 </span>
             </a>
         </li>
@@ -1221,6 +1328,19 @@
             
             <div class="media-content">
                 <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-07-12T04:50:12.000Z">2019-07-12</time></div>
+                    <a href="/2019/0712/mycat-rule.html" class="has-link-black-ter is-size-6">数据库分库分表，都有哪些分片规则？</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/MySQL/">MySQL</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
                     <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-07-10T01:43:19.000Z">2019-07-10</time></div>
                     <a href="/2019/0710/vhr.html" class="has-link-black-ter is-size-6">公司倒闭 1 年了，而我当年的项目上了 GitHub 热榜</a>
                     <p class="is-size-7 is-uppercase">
@@ -1269,19 +1389,6 @@
             </div>
         </article>
         
-        <article class="media">
-            
-            <div class="media-content">
-                <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-07-01T02:22:32.000Z">2019-07-01</time></div>
-                    <a href="/2019/0701/fronted-backend.html" class="has-link-black-ter is-size-6">前后端分离时代，Java 程序员的变与不变！</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/前后端分离/">前后端分离</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
     </div>
 </div>
 
@@ -1300,7 +1407,7 @@
                     <span class="level-item">七月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">5</span>
+                    <span class="level-item tag">6</span>
                 </span>
             </a>
         </li>
