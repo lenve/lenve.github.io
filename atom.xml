@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://www.javaboy.org/"/>
-  <updated>2019-08-14T13:44:26.312Z</updated>
+  <updated>2019-08-14T13:48:17.638Z</updated>
   <id>http://www.javaboy.org/</id>
   
   <author>
@@ -15,6 +15,30 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Spring Boot 加入 Https 功能有那么难吗？</title>
+    <link href="http://www.javaboy.org/2019/0813/springboot-https.html"/>
+    <id>http://www.javaboy.org/2019/0813/springboot-https.html</id>
+    <published>2019-08-13T13:47:14.000Z</published>
+    <updated>2019-08-14T13:48:17.638Z</updated>
+    
+    <content type="html"><![CDATA[<p>https 现在已经越来越普及了，特别是做一些小程序或者公众号开发的时候，https 基本上都是刚需了。</p><a id="more"></a><p>不过一个 https 证书还是挺费钱的，个人开发者可以在各个云服务提供商那里申请一个免费的证书。我印象中有效期一年，可以申请 20 个。</p><p>今天要和大家聊的是在 Spring Boot 项目中，如何开启 https 配置，为我们的接口保驾护航。</p><h1 id="https-简介"><a href="#https-简介" class="headerlink" title="https 简介"></a>https 简介</h1><p>我们先来看看什么是 https，根据 wikipedia 上的介绍：</p><blockquote><p>超文本传输安全协议(HyperText Transfer Protocol Secure)，缩写：HTTPS；常称为 HTTP over TLS、HTTP over SSL 或 HTTP Secure）是一种通过计算机网络进行安全通信的传输协议。HTTPS 经由 HTTP 进行通信，但利用 SSL/TLS 来加密数据包。HTTPS 开发的主要目的，是提供对网站服务器的身份认证，保护交换数据的隐私与完整性。这个协议由网景公司(Netscape)在 1994 年首次提出，随后扩展到互联网上。</p></blockquote><p>历史上，HTTPS 连接经常用于网络上的交易支付和企业信息系统中敏感信息的传输。在 2000 年代末至 2010 年代初，HTTPS 开始广泛使用，以确保各类型的网页真实，保护账户和保持用户通信，身份和网络浏览的私密性。</p><p>另外，还有一种安全超文本传输协议（S-HTTP），也是 HTTP 安全传输的一种实现，但是 HTTPS 的广泛应用而成为事实上的 HTTP 安全传输实现，S-HTTP并没有得到广泛支持。</p><h1 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h1><p>首先我们需要有一个 https 证书，我们可以从各个云服务厂商处申请一个免费的，不过自己做实验没有必要这么麻烦，我们可以直接借助 Java 自带的 JDK 管理工具 keytool 来生成一个免费的 https 证书。</p><p>进入到 <code>%JAVVA_HOME%\bin</code> 目录下，执行如下命令生成一个数字证书：</p><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keytool -genkey -alias tomcathttps -keyalg RSA -keysize 2048  -keystore D:\javaboy.p12 -validity 365</span><br></pre></td></tr></table></figure><p>命令含义如下：</p><ul><li>genkey 表示要创建一个新的密钥。</li><li>alias 表示 keystore 的别名。</li><li>keyalg 表示使用的加密算法是 RSA ，一种非对称加密算法。</li><li>keysize 表示密钥的长度。</li><li>keystore 表示生成的密钥存放位置。</li><li>validity 表示密钥的有效时间，单位为天。</li></ul><p>具体生成过程如下图：</p><p><img src="http://www.javaboy.org/images/boot/30-1.png" alt></p><p>命令执行完成后 ，我们在 D 盘目录下会看到一个名为 javaboy.p12 的文件。如下图：</p><p><img src="http://www.javaboy.org/images/boot/30-2.png" alt></p><p>有了这个文件之后，我们的准备工作就算是 OK 了。</p><h1 id="引入-https"><a href="#引入-https" class="headerlink" title="引入 https"></a>引入 https</h1><p>接下来我们需要在项目中引入 https。</p><p>将上面生成的 javaboy.p12 拷贝到 Spring Boot 项目的 resources 目录下。然后在 application.properties 中添加如下配置：</p><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">server.ssl.key-store=classpath:javaboy.p12</span><br><span class="line">server.ssl.key-alias=tomcathttps</span><br><span class="line">server.ssl.key-store-password=111111</span><br></pre></td></tr></table></figure><p>其中：</p><ul><li>key-store表示密钥文件名。</li><li>key-alias表示密钥别名。</li><li>key-store-password就是在cmd命令执行过程中输入的密码。</li></ul><p>配置完成后，就可以启动 Spring Boot 项目了，此时如果我们直接使用 Http 协议来访问接口，就会看到如下错误：</p><p><img src="http://www.javaboy.org/images/boot/30-3.png" alt></p><p>改用 https 来访问 ，结果如下：</p><p><img src="http://www.javaboy.org/images/boot/30-4.png" alt></p><p>这是因为我们自己生成的 https 证书不被浏览器认可，不过没关系，我们直接点击继续访问就可以了（实际项目中只需要更换一个被浏览器认可的 https 证书即可）。</p><p><img src="http://www.javaboy.org/images/boot/30-5.png" alt></p><h1 id="请求转发"><a href="#请求转发" class="headerlink" title="请求转发"></a>请求转发</h1><p>考虑到 Spring Boot 不支持同时启动 HTTP 和 HTTPS ，为了解决这个问题，我们这里可以配置一个请求转发，当用户发起 HTTP 调用时，自动转发到 HTTPS 上。</p><p>具体配置如下：</p><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">TomcatConfig</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function">TomcatServletWebServerFactory <span class="hljs-title">tomcatServletWebServerFactory</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        TomcatServletWebServerFactory factory = <span class="hljs-keyword">new</span> TomcatServletWebServerFactory()&#123;</span><br><span class="line">            <span class="hljs-meta">@Override</span></span><br><span class="line">            <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">postProcessContext</span><span class="hljs-params">(Context context)</span> </span>&#123;</span><br><span class="line">                SecurityConstraint constraint = <span class="hljs-keyword">new</span> SecurityConstraint();</span><br><span class="line">                constraint.setUserConstraint(<span class="hljs-string">"CONFIDENTIAL"</span>);</span><br><span class="line">                SecurityCollection collection = <span class="hljs-keyword">new</span> SecurityCollection();</span><br><span class="line">                collection.addPattern(<span class="hljs-string">"/*"</span>);</span><br><span class="line">                constraint.addCollection(collection);</span><br><span class="line">                context.addConstraint(constraint);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        factory.addAdditionalTomcatConnectors(createTomcatConnector());</span><br><span class="line">        <span class="hljs-keyword">return</span> factory;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">private</span> Connector <span class="hljs-title">createTomcatConnector</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        Connector connector = <span class="hljs-keyword">new</span></span><br><span class="line">                Connector(<span class="hljs-string">"org.apache.coyote.http11.Http11NioProtocol"</span>);</span><br><span class="line">        connector.setScheme(<span class="hljs-string">"http"</span>);</span><br><span class="line">        connector.setPort(<span class="hljs-number">8081</span>);</span><br><span class="line">        connector.setSecure(<span class="hljs-keyword">false</span>);</span><br><span class="line">        connector.setRedirectPort(<span class="hljs-number">8080</span>);</span><br><span class="line">        <span class="hljs-keyword">return</span> connector;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>在这里，我们配置了 Http 的请求端口为 8081，所有来自 8081 的请求，将被自动重定向到 8080 这个 https 的端口上。</p><p>如此之后，我们再去访问 http 请求，就会自动重定向到 https。</p><h1 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h1><p>Spring Boot 中加入 https 其实很方便。如果你使用了 nginx 或者 tomcat 的话，https 也可以发非常方便的配置，从各个云服务厂商处申请到 https 证书之后，官方都会有一个详细的配置教程，一般照着做，就不会错了。</p>]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;https 现在已经越来越普及了，特别是做一些小程序或者公众号开发的时候，https 基本上都是刚需了。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="Spring Boot" scheme="http://www.javaboy.org/categories/Spring-Boot/"/>
+    
+    
+      <category term="Spring Boot" scheme="http://www.javaboy.org/tags/Spring-Boot/"/>
+    
+      <category term="Https" scheme="http://www.javaboy.org/tags/Https/"/>
+    
+  </entry>
   
   <entry>
     <title>Spring Boot 修改静态资源一定要重启项目才会生效吗？未必！</title>
@@ -468,28 +492,6 @@
     
     
       <category term="杂谈" scheme="http://www.javaboy.org/tags/%E6%9D%82%E8%B0%88/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>北冥有 Data，其名为鲲，鲲之大，一个 MySQL 放不下！</title>
-    <link href="http://www.javaboy.org/2019/0625/mysql.html"/>
-    <id>http://www.javaboy.org/2019/0625/mysql.html</id>
-    <published>2019-06-25T08:40:08.000Z</published>
-    <updated>2019-06-25T08:42:03.000Z</updated>
-    
-    <content type="html"><![CDATA[<p>千万量级的数据，用 MySQL 要怎么存？</p><a id="more"></a><p>初学者在看到这个问题的时候，可能首先想到的是 MySQL 一张表到底能存放多少条数据？</p><p>根据 MySQL 官方文档的介绍，MySQL 理论上限是 (2<sup>32</sup>)<sup>2</sup> 条数据，然而实际操作中，往往还受限于下面两条因素：</p><ol><li>myisam_data_pointer_size，MySQL 的 myisam_data_pointer_size 一般默认是 6，即 48 位，那么对应的行数就是 2<sup>48</sup>-1。</li><li>表的存储大小 256TB</li></ol><p>那有人会说，只要我的数据大小不超过上限，数据行数也不超过上限，是不是就没有问题了？其实不尽然。</p><p>在实际项目中，一般没有哪个项目真的触发到 MySQL 数据的上限了，因为当数据量变大了之后，查询速度会慢的吓人，而一般这个时候，你的数据量离 MySQL 的理论上限还远着呢！</p><p>传统的企业应用一般数据量都不大，数据也都比较容易处理，但是在互联网项目中，上千万、上亿的数据量并不鲜见。在这种时候，还要保证数据库的操作效率，我们就不得不考虑数据库的分库分表了。</p><p>那么接下来就和大家简单聊一聊数据库分库分表的问题。</p><h1 id="数据库切分"><a href="#数据库切分" class="headerlink" title="数据库切分"></a>数据库切分</h1><p>看这个名字就知道，就是把一个数据库切分成 N 多个数据库，然后存放在不同的数据库实例上面，这样做有两个好处：</p><ol><li>降低单台数据库实例的负载</li><li>可以方便的实现对数据库的扩容</li></ol><p>一般来说，数据库的切分有两种不同的切分规则：</p><ol><li>水平切分</li><li>垂直切分</li></ol><p>接下来我们就对这两种不同的切分规则分别进行介绍。</p><h2 id="水平切分"><a href="#水平切分" class="headerlink" title="水平切分"></a>水平切分</h2><p>先来一张简单的示意图，大家感受一下什么是水平切分：</p><p><img src="http://www.javaboy.org/images/mysql/5-1.png" alt></p><p>假设我的 DB 中有 table-1、table-2 以及 table-3 三张表，水平切分就是拿着我的绝世好剑，对准黑色的线条，砍一剑或者砍 N 剑！</p><p>砍完之后，将砍掉的部分放到另外一个数据库实例中，变成下面这样：</p><p><img src="http://www.javaboy.org/images/mysql/5-2.png" alt><br><img src="http://www.javaboy.org/images/mysql/5-3.png" alt></p><p>这样，原本放在一个 DB 中的 table 现在放在两个 DB 中了，观察之后我们发现：</p><ol><li>两个 DB 中表的个数都是完整的，就是原来 DB 中有几张表，现在还是几张。</li><li>每张表中的数据是不完整的，数据被拆分到了不同的 DB 中去了。</li></ol><p>这就是数据库的水平切分，也可以理解为按照数据行进行切分，即按照表中某个字段的<strong>某种规则</strong>来将表数据分散到多个库之中，每个表中包含一部分数据。</p><p>这里的某种规则都包含哪些规则呢？这就涉及到数据库的分片规则问题了，这个松哥在后面的文章中也会和大家一一展开详述。这里先简单说几个常见的分片规则：</p><ol><li>按照日期划分：不容日期的数据存放到不同的数据库中。 </li><li>对 ID 取模：对表中的 ID 字段进行取模运算，根据取模结果将数据保存到不同的实例中。 </li><li>使用一致性哈希算法进行切分。 </li></ol><p>详细的用法，将在后面的文章中和大家仔细说。</p><h2 id="垂直切分"><a href="#垂直切分" class="headerlink" title="垂直切分"></a>垂直切分</h2><p>先来一张简单的示意图，大家感受一下垂直切分：</p><p><img src="http://www.javaboy.org/images/mysql/5-4.png" alt></p><p>所谓的垂直切分就是拿着我的屠龙刀，对准了黑色的线条砍。砍完之后，将不同的表放到不同的数据库实例中去，变成下面这个样子：</p><p><img src="http://www.javaboy.org/images/mysql/5-5.png" alt><br><img src="http://www.javaboy.org/images/mysql/5-6.png" alt><br><img src="http://www.javaboy.org/images/mysql/5-7.png" alt></p><p>这个时候我们发现如下几个特点：</p><ol><li>每一个数据库实例中的表的数量都是不完整的。</li><li>每一个数据库实例中表的数据是完整的。</li></ol><p>这就是垂直切分。一般来说，垂直切分我们可以按照业务来划分，不同业务的表放到不同的数据库实例中。</p><p>老实说，在实际项目中，数据库垂直切分并不是一件容易的事，因为表之间往往存在着复杂的跨库 JOIN 问题，那么这个时候如何取舍，就要考验架构师的水平了！</p><h2 id="优缺点分析"><a href="#优缺点分析" class="headerlink" title="优缺点分析"></a>优缺点分析</h2><p>通过上面的介绍，相信大家对于水平切分和垂直切分已经有所了解，优缺点其实也很明显了，松哥再来和大家总结一下。</p><h3 id="水平切分-1"><a href="#水平切分-1" class="headerlink" title="水平切分"></a>水平切分</h3><ul><li>优点</li></ul><ol><li>水平切分最大的优势在于数据库的扩展性好，提前选好切分规则，数据库后期可以非常方便的进行扩容。</li><li>有效提高了数据库稳定性和系统的负载能力。拆分规则抽象好， join 操作基本可以数据库做。</li></ol><ul><li>缺点</li></ul><ol><li>水平切分后，分片事务一致性不容易解决。</li><li>拆分规则不易抽象，对架构师水平要求很高。</li><li>跨库 join 性能较差。 </li></ol><h3 id="垂直切分-1"><a href="#垂直切分-1" class="headerlink" title="垂直切分"></a>垂直切分</h3><ul><li>优点</li></ul><ol><li>一般按照业务拆分，拆分后业务清晰，可以结合微服务一起食用。 </li><li>系统之间整合或扩展相对要容易很多。</li><li>数据维护相对简单。</li></ol><ul><li>缺点</li></ul><ol><li>最大的问题在于存在单库性能瓶颈，数据表扩展不易。</li><li>跨库 join 不易。</li><li>事务处理复杂。</li></ol><h1 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h1><p>虽然 MySQL 中数据存储的理论上限比较高，但是在实际开发中我们不会等到数据存不下的时候才去考虑分库分表问题，因为在那之前，你就会明显的感觉到数据库的各项性能在下降，就要开始考虑分库分表了。</p><p>好了，今天主要是向大家介绍一点概念性的东西，算是我们分布式数据库中间件正式出场前的一点铺垫。</p><p>参考资料：</p><ol><li>MySQL 官方文档</li></ol>]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;千万量级的数据，用 MySQL 要怎么存？&lt;/p&gt;
-    
-    </summary>
-    
-      <category term="MySQL" scheme="http://www.javaboy.org/categories/MySQL/"/>
-    
-    
-      <category term="MySQL" scheme="http://www.javaboy.org/tags/MySQL/"/>
     
   </entry>
   
