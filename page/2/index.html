@@ -157,7 +157,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    10 分钟 读完 (大约 1525 个字)
+                    10 分钟 读完 (大约 1526 个字)
                 </span>
                 
                 
@@ -170,125 +170,17 @@
             
         </h1>
         <div class="content">
-            <p>熟悉 Linux 操作系统的小伙伴们应该知道 Linux 中有管道的说法，可以用来方便的处理数据。MongoDB2.2 版本也引入了新的数据聚合框架，一个文档可以经过多个节点组成的管道，每个节点都有自己特殊的功能，比如文档分组、文档过滤等，每一个节点都会接受一连串的文档，对这些文档做一些类型转换，然后将转换后的文档传递给下一个节点，最后一个节点则会将结果返回给客户端。本文我们就先来看几个基本的管道操作符。</p>
-<h2 id="match"><a href="#match" class="headerlink" title="$match"></a>$match</h2><p>$match 可以用来对文档进行筛选，筛选完成之后我们就可以在筛选获得到的文档子集上来做数据聚合操作了，我们之前介绍的查询的操作符在 $match 中都可以使用，比如获取集合中所有 author 为”杜甫”的文档，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.aggregate(&#123;$match:&#123;author:&quot;杜甫&quot;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>我们在实际使用时最好将 $match 放在管道的前面，这样可以减少后面管道的工作量，同时，我们在投射和分组之前执行 $match 还可以用索引。</p>
-<h2 id="project"><a href="#project" class="headerlink" title="$project"></a>$project</h2><h3 id="基本用法"><a href="#基本用法" class="headerlink" title="基本用法"></a>基本用法</h3><p>$project 可以用来 <strong> 提取想要的字段 </strong>，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.aggregate(&#123;$project:&#123;title:1,_id:0&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>1 表示要该字段，0 表示不要该字段，也可以对返回的字段进行 <strong> 重命名 </strong>，比如将 title 改为 articleTitle，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.aggregate(&#123;$project:&#123;&quot;articleTitle&quot;:&quot;$title&quot;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>不过这里有一个问题需要注意，如果原字段上有索引，重命名之后的字段上就没有索引了，因此最好在重命名之前使用索引。</p>
-<h3 id="数学表达式"><a href="#数学表达式" class="headerlink" title="数学表达式"></a>数学表达式</h3><p>数学表达式可以用来对一组数值进行加减乘除取模，比如我的数据结构如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;_id&quot; : ObjectId(&quot;59f841f5b998d8acc7d08863&quot;),</span><br><span class="line">    &quot;orderAddressL&quot; : &quot;ShenZhen&quot;,</span><br><span class="line">    &quot;prodMoney&quot; : 45.0,</span><br><span class="line">    &quot;freight&quot; : 13.0,</span><br><span class="line">    &quot;discounts&quot; : 3.0,</span><br><span class="line">    &quot;orderDate&quot; : ISODate(&quot;2017-10-31T09:27:17.342Z&quot;),</span><br><span class="line">    &quot;prods&quot; : [ </span><br><span class="line">        &quot;可乐&quot;, </span><br><span class="line">        &quot;奶茶&quot;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>订单的总费用为商品费用加上运费，查询如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.aggregate(&#123;$project:&#123;totalMoney:&#123;$add:[&quot;$prodMoney&quot;,&quot;$freight&quot;]&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>实际付款的费用是总费用减去折扣，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.aggregate(&#123;$project:&#123;totalPay:&#123;$subtract:[&#123;$add:[&quot;$prodMoney&quot;,&quot;$freight&quot;]&#125;,&quot;$discounts&quot;]&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>再来三个无厘头运算，比如计算 prodMoney 和 freight 和 discounts 的乘积：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.aggregate(&#123;$project:&#123;test1:&#123;$multiply:[&quot;$prodMoney&quot;,&quot;$freight&quot;,&quot;$discounts&quot;]&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>再比如求 $prodMoney 和 $freight 的商，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.aggregate(&#123;$project:&#123;test1:&#123;$divide:[&quot;$prodMoney&quot;,&quot;$freight&quot;]&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>再比如用 $freight 对 $prodMoney 取模，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.aggregate(&#123;$project:&#123;test1:&#123;$mod:[&quot;$prodMoney&quot;,&quot;$freight&quot;]&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>加法和乘法都可以接收多个参数，其余的都接收两个参数。</p>
-<h3 id="日期表达式"><a href="#日期表达式" class="headerlink" title="日期表达式"></a>日期表达式</h3><p>日期表达式可以从一个日期类型中提取出年、月、日、星期、时、分、秒等信息，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.aggregate(&#123;$project:&#123;&quot;年份&quot;:&#123;$year:&quot;$orderDate&quot;&#125;,&quot;月份&quot;:&#123;$month:&quot;$orderDate&quot;&#125;,&quot;一年中第几周&quot;:&#123;$week:&quot;$orderDate&quot;&#125;,&quot;日期&quot;:&#123;$dayOfMonth:&quot;$orderDate&quot;&#125;,&quot;星期&quot;:&#123;$dayOfWeek:&quot;$orderDate&quot;&#125;,&quot;一年中第几天&quot;:&#123;$dayOfYear:&quot;$orderDate&quot;&#125;,&quot;时&quot;:&#123;$hour:&quot;$orderDate&quot;&#125;,&quot;分&quot;:&#123;$minute:&quot;$orderDate&quot;&#125;,&quot;秒&quot;:&#123;$second:&quot;$orderDate&quot;&#125;,&quot;毫秒&quot;:&#123;$millisecond:&quot;$orderDate&quot;&#125;,&quot;自定义格式化时间&quot;:&#123;$dateToString:&#123;format:&quot;%Y年%m月%d %H:%M:%S&quot;,date:&quot;$orderDate&quot;&#125;&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>执行结果如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f841f5b998d8acc7d08861"</span>),</span><br><span class="line">    <span class="hljs-attr">"年份"</span> : <span class="hljs-number">2017</span>,</span><br><span class="line">    <span class="hljs-attr">"月份"</span> : <span class="hljs-number">10</span>,</span><br><span class="line">    <span class="hljs-attr">"一年中第几周"</span> : <span class="hljs-number">44</span>,</span><br><span class="line">    <span class="hljs-attr">"日期"</span> : <span class="hljs-number">31</span>,</span><br><span class="line">    <span class="hljs-attr">"星期"</span> : <span class="hljs-number">3</span>,</span><br><span class="line">    <span class="hljs-attr">"一年中第几天"</span> : <span class="hljs-number">304</span>,</span><br><span class="line">    <span class="hljs-attr">"时"</span> : <span class="hljs-number">9</span>,</span><br><span class="line">    <span class="hljs-attr">"分"</span> : <span class="hljs-number">27</span>,</span><br><span class="line">    <span class="hljs-attr">"秒"</span> : <span class="hljs-number">17</span>,</span><br><span class="line">    <span class="hljs-attr">"毫秒"</span> : <span class="hljs-number">342</span>,</span><br><span class="line">    <span class="hljs-attr">"自定义格式化时间"</span> : <span class="hljs-string">"2017年10月31 09:27:17"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>$dayOfWeek 返回的是星期，1 表示星期天，7 表示星期六，$week 表示本周是本年的第几周，从 0 开始计。$dateToString 是 MongoDB3.0+ 中的功能。格式化的字符还有以下几种：</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:left">字符</th>
-<th style="text-align:left">含义</th>
-<th style="text-align:left">取值范围</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">%Y</td>
-<td style="text-align:left">Year (4 digits, zero padded)</td>
-<td style="text-align:left">0000-9999</td>
-</tr>
-<tr>
-<td style="text-align:left">%m</td>
-<td style="text-align:left">Month (2 digits, zero padded)</td>
-<td style="text-align:left">01-12</td>
-</tr>
-<tr>
-<td style="text-align:left">%d</td>
-<td style="text-align:left">Day of Month (2 digits, zero padded)</td>
-<td style="text-align:left">01-31</td>
-</tr>
-<tr>
-<td style="text-align:left">%H</td>
-<td style="text-align:left">Hour (2 digits, zero padded, 24-hour clock)</td>
-<td style="text-align:left">00-23</td>
-</tr>
-<tr>
-<td style="text-align:left">%M</td>
-<td style="text-align:left">Minute (2 digits, zero padded)</td>
-<td style="text-align:left">00-59</td>
-</tr>
-<tr>
-<td style="text-align:left">%S</td>
-<td style="text-align:left">Second (2 digits, zero padded)</td>
-<td style="text-align:left">00-60</td>
-</tr>
-<tr>
-<td style="text-align:left">%L</td>
-<td style="text-align:left">Millisecond (3 digits, zero padded)</td>
-<td style="text-align:left">000-999</td>
-</tr>
-<tr>
-<td style="text-align:left">%j</td>
-<td style="text-align:left">Day of year (3 digits, zero padded)</td>
-<td style="text-align:left">001-366</td>
-</tr>
-<tr>
-<td style="text-align:left">%w</td>
-<td style="text-align:left">Day of week (1-Sunday, 7-Saturday)</td>
-<td style="text-align:left">1-7</td>
-</tr>
-<tr>
-<td style="text-align:left">%U</td>
-<td style="text-align:left">Week of year (2 digits, zero padded)</td>
-<td style="text-align:left">00-53</td>
-</tr>
-</tbody>
-</table>
-<h3 id="字符串表达式"><a href="#字符串表达式" class="headerlink" title="字符串表达式"></a>字符串表达式</h3><p>字符串表达式中有字符串的截取、拼接、转大写、转小写等操作，比如我截取 orderAddressL 前两个字符返回，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.aggregate(&#123;$project:&#123;addr:&#123;$substr:[&quot;$orderAddressL&quot;,0,2]&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>再比如我将 orderAddressL 和 orderDate 拼接后返回：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.aggregate(&#123;$project:&#123;addr:&#123;$concat:[&quot;$orderAddressL&quot;,&#123;$dateToString:&#123;format:&quot;--%Y年%m月%d&quot;,date:&quot;$orderDate&quot;&#125;&#125;]&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>结果如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f841f5b998d8acc7d08861"</span>),</span><br><span class="line">    <span class="hljs-attr">"addr"</span> : <span class="hljs-string">"NanJing--2017年10月31"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>再比如我将 orderAddressL 全部转为小写返回：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.aggregate(&#123;$project:&#123;addr:&#123;$toLower:&quot;$orderAddressL&quot;&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>再比如我将 orderAddressL 全部转为大写返回：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.aggregate(&#123;$project:&#123;addr:&#123;$toUpper:&quot;$orderAddressL&quot;&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<h3 id="逻辑表达式"><a href="#逻辑表达式" class="headerlink" title="逻辑表达式"></a>逻辑表达式</h3><p>想要比较两个数字的大小，可以使用 $cmp 操作符，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.aggregate(&#123;$project:&#123;test:&#123;$cmp:[&quot;$freight&quot;,&quot;$discounts&quot;]&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>如果第一个参数大于第二个参数返回正数，第一个参数小于第二个则返回负数，也可以利用 $strcasecmp 来比较字符串（中文无效）：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.aggregate(&#123;$project:&#123;test:&#123;$strcasecmp:[&#123;$dateToString:&#123;format:&quot;..%Y年%m月%d&quot;,date:&quot;$orderDate&quot;&#125;&#125;,&quot;$orderAddressL&quot;]&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>至于我们之前介绍的 $eq/$ne/$gt/$gte/$lt/$lte 等操作符在这里一样是适用的。另外还有 and、$or、$not 等表达式可用，以 $and 为例，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.aggregate(&#123;$project:&#123;test:&#123;$and:[&#123;&quot;$eq&quot;:[&quot;$freight&quot;,&quot;$prodMoney&quot;]&#125;,&#123;&quot;$eq&quot;:[&quot;$freight&quot;,&quot;$discounts&quot;]&#125;]&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>$and 中的每个参数都为 true 时返回 true，$or 则表示参数中有一个为 true 就返回 true，$not 则会对它的参数的值取反，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.aggregate(&#123;$project:&#123;test:&#123;$not:&#123;&quot;$eq&quot;:[&quot;$freight&quot;,&quot;$prodMoney&quot;]&#125;&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>另外还有两个流程控制语句，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.aggregate(&#123;$project:&#123;test:&#123;$cond:[false,&quot;trueExpr&quot;,&quot;falseExpr&quot;]&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>$cond 第一个参数如果为 true，则返回 trueExpr，否则返回 falseExpr.</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.aggregate(&#123;$project:&#123;test:&#123;$ifNull:[null,&quot;replacementExpr&quot;]&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>$ifNull 第一个参数如果为 null，则返回 replacementExpr，否则就返回第一个参数。</p>
-<p>好了，MongoDB 中的管道操作符我们就先说到这里，下篇文章继续，小伙伴们有问题欢迎留言讨论。<br>参考资料：</p>
-<ol>
-<li>《MongoDB权威指南第2版》</li>
-<li><a href="http://blog.csdn.net/u013066244/article/details/53842355" target="_blank" rel="noopener">mongodb聚合利用日期分组</a>  </li>
-</ol>
-
+            <p>熟悉 Linux 操作系统的小伙伴们应该知道 Linux 中有管道的说法，可以用来方便的处理数据。</p>
         </div>
         
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/0912/mongodb-pipelines.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
         
         
     </div>
@@ -317,7 +209,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    4 分钟 读完 (大约 666 个字)
+                    4 分钟 读完 (大约 667 个字)
                 </span>
                 
                 
@@ -330,25 +222,17 @@
             
         </h1>
         <div class="content">
-            <p>一般情况下我们创建的集合是没有大小的，可以一直往里边添加文档，这种集合可以动态增长，MongoDB 中还有一种集合叫做固定集合，这种集合的大小是固定的，我可以在创建的时候设置该集合中文档的数目，假设为 100 条，当集合中的文档数目达到 100 条时，如果再向集合中插入文档，则只会保留最新的 100 个文档，之前的文档则会被删除。一般像日志信息我们就可以使用固定集合，其他一些需要定期删除的数据也可以使用固定集合，本文我们就来看看这个固定集合的使用。</p>
-<h2 id="创建"><a href="#创建" class="headerlink" title="创建"></a>创建</h2><p>固定集合的创建方式也比较简单，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.createCollection(&quot;my_collect&quot;,&#123;capped:true,size:10000,max:100&#125;)</span><br></pre></td></tr></table></figure>
-<p>capped:true 参数表示该集合为一个固定大小集合，size 表示集合的大小，单位为 kb，max 则表示集合中文档的最大数量。我们这里相当于给了固定集合两个限制条件，只要有任意一个限制条件满足，集合都会开始将更古老的数据删除。固定集合一旦创建成功就不能再修改，想修改只能删除重来。此时我们可以尝试向集合中添加 120 条简单的数据，然后我们会发现最早的 20 条数据消失了。</p>
-<p>除了直接创建一个固定集合外，我们也可以通过 convertToCapped 操作将一个普通集合转为一个固定集合，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.runCommand(&#123;convertToCapped:&quot;sang_collect&quot;,size:10&#125;)</span><br></pre></td></tr></table></figure>
-<h2 id="自然排序问题"><a href="#自然排序问题" class="headerlink" title="自然排序问题"></a>自然排序问题</h2><p>自然排序就是按照文档在磁盘中的顺序来进行排列，在普通的集合中自然排序并没有多大的意义，因为文档的位置总是在变化，而固定集合中的文档是按照文档被插入的顺序保存的，自然顺序也就是文档的插入顺序，因此我们可以利用自然排序对文档从旧到新排序，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find().sort(&#123;$natural:1&#125;)</span><br></pre></td></tr></table></figure>
-<p>也可以从新到旧排序：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find().sort(&#123;$natural:-1&#125;)</span><br></pre></td></tr></table></figure>
-<p>固定集合中的其他操作和普通集合基本一致，这里就不再赘述。</p>
-<p>好了，MongoDB 中的固定集合我们就说到这里，小伙伴们有问题欢迎留言讨论。</p>
-<p>参考资料：</p>
-<ol>
-<li>《MongoDB权威指南第2版》</li>
-</ol>
-
+            <p>一般情况下我们创建的集合是没有大小的，可以一直往里边添加文档，这种集合可以动态增长，MongoDB 中还有一种集合叫做固定集合，这种集合的大小是固定的，我可以在创建的时候设置该集合中文档的数目，假设为 100 条，当集合中的文档数目达到 100 条时，如果再向集合中插入文档，则只会保留最新的 100 个文档，之前的文档则会被删除。</p>
         </div>
         
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/0911/mongodb-collections.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
         
         
     </div>
@@ -377,7 +261,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    12 分钟 读完 (大约 1753 个字)
+                    12 分钟 读完 (大约 1754 个字)
                 </span>
                 
                 
@@ -391,80 +275,16 @@
         </h1>
         <div class="content">
             <p>上篇文章中我们介绍了 MongoDB 中索引的简单操作，创建、查看、删除等基本操作，不过上文我们只介绍了一种类型的索引，本文我们来看看其他类型的索引。</p>
-<h2 id="id-索引"><a href="#id-索引" class="headerlink" title="_id 索引"></a>_id 索引</h2><p>我们在上文介绍过，我们往集合中添加文档时，默认情况下 MongoDB 都会帮助我们创建一个名为 <code>_id</code> 的字段，这个字段就是一个索引。默认情况下，一般的集合都会帮我们创建这个字段作为索引，但也有一些集合不会将 <code>_id</code> 默认作为索引，比如固定集合，这个我们后面的文章会详细说到这个问题。</p>
-<h2 id="复合索引"><a href="#复合索引" class="headerlink" title="复合索引"></a>复合索引</h2><p>如果我们的查询条件有多个的话，我们可以对这多个查询条件都建立索引，比如我们可以对文档中的 x 和 y 字段都建立索引，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.ensureIndex(&#123;x:1,y:-1&#125;)</span><br></pre></td></tr></table></figure>
-<p>此时执行如下查询语句时就会用到这个复合索引：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;x:1,y:999&#125;)</span><br></pre></td></tr></table></figure>
-<p>小伙伴们也可以通过查看查询计划来确定确实使用到了上文创建好的索引。</p>
-<h2 id="过期索引"><a href="#过期索引" class="headerlink" title="过期索引"></a>过期索引</h2><p>顾名思义，过期索引就是一种会过期的索引，在索引过期之后，索引对应的数据会被删除，创建方式如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.ensureIndex(&#123;time:1&#125;,&#123;expireAfterSeconds:30&#125;)</span><br></pre></td></tr></table></figure>
-<p>expireAfterSeconds 表示索引的过期时间，单位为秒。time 表示索引的字段，time 的数据类型必须是 ISODate 或者 ISODate 数组，否则的话，当索引过期之后，time 的数据就不会被删除。</p>
-<h2 id="全文索引"><a href="#全文索引" class="headerlink" title="全文索引"></a>全文索引</h2><p>全文索引虽然好用，可惜不支持中文，我们这里就先做一个简单的了解。</p>
-<p>比如，我的数据集如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f5a3da1f9e8e181ffc3189"</span>),</span><br><span class="line">    <span class="hljs-attr">"x"</span> : <span class="hljs-string">"Java C# Python PHP"</span></span><br><span class="line">&#125;</span><br><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f5a3da1f9e8e181ffc318a"</span>),</span><br><span class="line">    <span class="hljs-attr">"x"</span> : <span class="hljs-string">"Java C#"</span></span><br><span class="line">&#125;</span><br><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f5a3da1f9e8e181ffc318b"</span>),</span><br><span class="line">    <span class="hljs-attr">"x"</span> : <span class="hljs-string">"Java Python"</span></span><br><span class="line">&#125;</span><br><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f5a3da1f9e8e181ffc318c"</span>),</span><br><span class="line">    <span class="hljs-attr">"x"</span> : <span class="hljs-string">"PHP Python"</span></span><br><span class="line">&#125;</span><br><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f5a4541f9e8e181ffc318d"</span>),</span><br><span class="line">    <span class="hljs-attr">"x"</span> : <span class="hljs-string">"C C++"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>我们可以给 x 字段建立一个全文索引，创建方式如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.ensureIndex(&#123;x:&quot;text&quot;&#125;)</span><br></pre></td></tr></table></figure>
-<p>MongoDB 会自动对 x 字段的数据进行分词，然后我们就可以通过如下语句进行查询：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;$text:&#123;$search:&quot;Java&quot;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>此时 x 中包含 Java 的文档都会被查询出来。如果想查询既包含 Java 又包含 C# 的文档，操作如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;$text:&#123;$search:&quot;\&quot;Java C#\&quot;&quot;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>用一对双引号将查询条件括起来，如果想查询包含 PHP 或者 Python 的文档，操作如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;$text:&#123;$search:&quot;PHP Python&quot;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>如果想查询既有 PHP，又有 Python，但是又不包括 Java 的文档，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;$text:&#123;$search:&quot;PHP Python -Java&quot;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>建立了全文索引之后，我们也可以查看查询结果的相似度，使用 $meta，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;$text:&#123;$search:&quot;PHP Python&quot;&#125;&#125;,&#123;score:&#123;$meta:&quot;textScore&quot;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>此时查询结果中会多出一个 score 字段，该字段的值越大，表示相似度越高，我们可以根据 score 利用 sort 来对其进行排序，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;$text:&#123;$search:&quot;PHP Python&quot;&#125;&#125;,&#123;score:&#123;$meta:&quot;textScore&quot;&#125;&#125;).sort(&#123;score:&#123;$meta:&quot;textScore&quot;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>全文索引目前看起来功能还是很强大，可惜暂时不支持中文，不过网上对此也有很多解决方案，小伙伴们可以自行搜索查看。</p>
-<h2 id="地理空间索引"><a href="#地理空间索引" class="headerlink" title="地理空间索引"></a>地理空间索引</h2><h3 id="地理空间索引类型"><a href="#地理空间索引类型" class="headerlink" title="地理空间索引类型"></a>地理空间索引类型</h3><p>地理空间索引可以分为两类：</p>
-<ol>
-<li>2d 索引，可以用来存储和查找平面上的点。</li>
-<li>2d sphere 索引，可以用来存储和查找球面上的点。</li>
-</ol>
-<h4 id="2d索引"><a href="#2d索引" class="headerlink" title="2d索引"></a>2d索引</h4><p>2d 索引一般我们可以用在游戏地图中。<br>向集合中插入一条记录点的数据：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.insert(&#123;x:[90,0]&#125;)</span><br></pre></td></tr></table></figure>
-<p>插入数据的格式为[经度,纬度]，取值范围，经度 [-180,180]，纬度 [-90,90]。数据插入成功之后，我们先通过如下命令创建索引：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.ensureIndex(&#123;x:&quot;2d&quot;&#125;)</span><br></pre></td></tr></table></figure>
-<p>然后通过 $near 我们可以查询某一个点附近的点，如下:</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;x:&#123;$near:[90,0]&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>默认情况下返回该点附近 100 个点，我们可以通过 $maxDistance 来设置返回的最远距离：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;x:&#123;$near:[90,0],$maxDistance:99&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>我们也可以通过 $geoWithin 查询某个形状内的点，比如查询矩形中的点：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;x:&#123;$geoWithin:&#123;$box:[[0,0],[91,1]]&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>两个坐标点用来确定矩形的位置。</p>
-<p>查询圆中的点：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;x:&#123;$geoWithin:&#123;$center:[[0,0],90]&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>参数分别表示圆的圆心和半径。</p>
-<p>查询多边形中的点：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;x:&#123;$geoWithin:&#123;$polygon:[[0,0],[100,0],[100,1],[0,1]]&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>这里可以填入任意多个点，表示多边形中的各个点。</p>
-<h4 id="2d-sphere索引"><a href="#2d-sphere索引" class="headerlink" title="2d sphere索引"></a>2d sphere索引</h4><p>2dsphere 适用于球面类型的地图，它的数据类型是 GeoJSON 格式的，我们可以在 <a href="http://geojson.org/" target="_blank" rel="noopener">http://geojson.org/</a> 地址上查看 GeoJSON 格式的样式，比如我们描述一个点， GeoJSON 如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f5e0571f9e8e181ffc3196"</span>),</span><br><span class="line">    <span class="hljs-attr">"name"</span> : <span class="hljs-string">"shenzhen"</span>,</span><br><span class="line">    <span class="hljs-attr">"location"</span> : &#123;</span><br><span class="line">        <span class="hljs-attr">"type"</span> : <span class="hljs-string">"Point"</span>,</span><br><span class="line">        <span class="hljs-attr">"coordinates"</span> : [ </span><br><span class="line">            <span class="hljs-number">90.0</span>, </span><br><span class="line">            <span class="hljs-number">0.0</span></span><br><span class="line">        ]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>描述线，GeoJSON 格式如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f5e0d01f9e8e181ffc3199"</span>),</span><br><span class="line">    <span class="hljs-attr">"name"</span> : <span class="hljs-string">"shenzhen"</span>,</span><br><span class="line">    <span class="hljs-attr">"location"</span> : &#123;</span><br><span class="line">        <span class="hljs-attr">"type"</span> : <span class="hljs-string">"LineString"</span>,</span><br><span class="line">        <span class="hljs-attr">"coordinates"</span> : [ </span><br><span class="line">            [ </span><br><span class="line">                <span class="hljs-number">90.0</span>, </span><br><span class="line">                <span class="hljs-number">0.0</span></span><br><span class="line">            ], </span><br><span class="line">            [ </span><br><span class="line">                <span class="hljs-number">90.0</span>, </span><br><span class="line">                <span class="hljs-number">1.0</span></span><br><span class="line">            ], </span><br><span class="line">            [ </span><br><span class="line">                <span class="hljs-number">90.0</span>, </span><br><span class="line">                <span class="hljs-number">2.0</span></span><br><span class="line">            ]</span><br><span class="line">        ]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>描述多边形，GeoJSON 格式如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f5e3f91f9e8e181ffc31d0"</span>),</span><br><span class="line">    <span class="hljs-attr">"name"</span> : <span class="hljs-string">"beijing"</span>,</span><br><span class="line">    <span class="hljs-attr">"location"</span> : &#123;</span><br><span class="line">        <span class="hljs-attr">"type"</span> : <span class="hljs-string">"Polygon"</span>,</span><br><span class="line">        <span class="hljs-attr">"coordinates"</span> : [ </span><br><span class="line">            [ </span><br><span class="line">                [ </span><br><span class="line">                    <span class="hljs-number">0.0</span>, </span><br><span class="line">                    <span class="hljs-number">1.0</span></span><br><span class="line">                ], </span><br><span class="line">                [ </span><br><span class="line">                    <span class="hljs-number">0.0</span>, </span><br><span class="line">                    <span class="hljs-number">2.0</span></span><br><span class="line">                ], </span><br><span class="line">                [ </span><br><span class="line">                    <span class="hljs-number">1.0</span>, </span><br><span class="line">                    <span class="hljs-number">2.0</span></span><br><span class="line">                ], </span><br><span class="line">                [ </span><br><span class="line">                    <span class="hljs-number">0.0</span>, </span><br><span class="line">                    <span class="hljs-number">1.0</span></span><br><span class="line">                ]</span><br><span class="line">            ]</span><br><span class="line">        ]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>还有其他的类型，具体小伙伴们可以参考 <a href="http://geojson.org/" target="_blank" rel="noopener">http://geojson.org/</a> 。有了数据之后，我们可以通过如下操作来创建地理空间索引了：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.ensureIndex(&#123;location:&quot;2dsphere&quot;&#125;)</span><br></pre></td></tr></table></figure>
-<p>比如我想查询和深圳这个区域有交集的文档，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">var shenzhen = db.sang_collect.findOne(&#123;name:&quot;shenzhen&quot;&#125;)</span><br><span class="line">db.sang_collect.find(&#123;location:&#123;$geoIntersects:&#123;$geometry:shenzhen.location&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>这里的查询结果是和深圳这个区域有交集的都会查到(比如经过深圳的高速公路、铁路等)，我们也可以只查询深圳市内的区域(比如深圳市内所有的学校)，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">var shenzhen = db.sang_collect.findOne(&#123;name:&quot;shenzhen&quot;&#125;)</span><br><span class="line">db.sang_collect.find(&#123;location:&#123;$within:&#123;$geometry:shenzhen.location&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>也可以查询腾讯附近的其他位置，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">var QQ = db.sang_collect.findOne(&#123;name:&quot;QQ&quot;&#125;)</span><br><span class="line">db.sang_collect.find(&#123;location:&#123;$near:&#123;$geometry:QQ.location&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<h3 id="复合地理空间索引"><a href="#复合地理空间索引" class="headerlink" title="复合地理空间索引"></a>复合地理空间索引</h3><p>位置往往只是我们查询的一个条件，比如我要查询深圳市内所有的学校，那我得再增加一个查询条件，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">var shenzhen = db.sang_collect.findOne(&#123;name:&quot;shenzhen&quot;&#125;)</span><br><span class="line">db.sang_collect.find(&#123;location:&#123;$within:&#123;$geometry:shenzhen.location&#125;&#125;,name:&quot;QQ&quot;&#125;)</span><br></pre></td></tr></table></figure>
-<p>其他的查询条件跟在后面就行了。</p>
-<p>好了，MongoDB 中的索引问题我们就说到这里，小伙伴们有问题欢迎留言讨论。</p>
-<p>参考资料：</p>
-<ol>
-<li>《MongoDB权威指南第2版》</li>
-</ol>
-
         </div>
         
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/0910/mongodb-index-types.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
         
         
     </div>
@@ -493,7 +313,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    8 分钟 读完 (大约 1159 个字)
+                    8 分钟 读完 (大约 1160 个字)
                 </span>
                 
                 
@@ -507,61 +327,16 @@
         </h1>
         <div class="content">
             <p>索引就像图书的目录一样，可以让我们快速定位到需要的内容，关系型数据库中有索引，NoSQL 中当然也有，本文我们就先来简单介绍下 MongoDB 中的索引。</p>
-<h2 id="索引创建"><a href="#索引创建" class="headerlink" title="索引创建"></a>索引创建</h2><p>默认情况下，集合中的 <code>_id</code> 字段就是索引，我们可以通过 getIndexes() 方法来查看一个集合中的索引：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.getIndexes()</span><br></pre></td></tr></table></figure>
-<p>结果如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="hljs-attr">"v"</span> : <span class="hljs-number">2</span>,</span><br><span class="line">        <span class="hljs-attr">"key"</span> : &#123;</span><br><span class="line">            <span class="hljs-attr">"_id"</span> : <span class="hljs-number">1</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="hljs-attr">"name"</span> : <span class="hljs-string">"_id_"</span>,</span><br><span class="line">        <span class="hljs-attr">"ns"</span> : <span class="hljs-string">"sang.sang_collect"</span></span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
-<p>我们看到这里只有一个索引，就是 <code>_id</code>。</p>
-<p>现在我的集合中有 10000 个文档，我想要查询 x 为 1 的文档，我的查询操作如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;x:1&#125;)</span><br></pre></td></tr></table></figure>
-<p>这种查询默认情况下会做全表扫描，我们可以用上篇文章介绍的 explain() 来查看一下查询计划，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;x:1&#125;).explain(&quot;executionStats&quot;)</span><br></pre></td></tr></table></figure>
-<p>结果如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"queryPlanner"</span> : &#123;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="hljs-attr">"executionStats"</span> : &#123;</span><br><span class="line">        <span class="hljs-attr">"executionSuccess"</span> : <span class="hljs-literal">true</span>,</span><br><span class="line">        <span class="hljs-attr">"nReturned"</span> : <span class="hljs-number">1</span>,</span><br><span class="line">        <span class="hljs-attr">"executionTimeMillis"</span> : <span class="hljs-number">15</span>,</span><br><span class="line">        <span class="hljs-attr">"totalKeysExamined"</span> : <span class="hljs-number">0</span>,</span><br><span class="line">        <span class="hljs-attr">"totalDocsExamined"</span> : <span class="hljs-number">10000</span>,</span><br><span class="line">        <span class="hljs-attr">"executionStages"</span> : &#123;</span><br><span class="line">            <span class="hljs-attr">"stage"</span> : <span class="hljs-string">"COLLSCAN"</span>,</span><br><span class="line">            <span class="hljs-attr">"filter"</span> : &#123;</span><br><span class="line">                <span class="hljs-attr">"x"</span> : &#123;</span><br><span class="line">                    <span class="hljs-attr">"$eq"</span> : <span class="hljs-number">1.0</span></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;,</span><br><span class="line">            <span class="hljs-attr">"nReturned"</span> : <span class="hljs-number">1</span>,</span><br><span class="line">            <span class="hljs-attr">"executionTimeMillisEstimate"</span> : <span class="hljs-number">29</span>,</span><br><span class="line">            <span class="hljs-attr">"works"</span> : <span class="hljs-number">10002</span>,</span><br><span class="line">            <span class="hljs-attr">"advanced"</span> : <span class="hljs-number">1</span>,</span><br><span class="line">            <span class="hljs-attr">"needTime"</span> : <span class="hljs-number">10000</span>,</span><br><span class="line">            <span class="hljs-attr">"needYield"</span> : <span class="hljs-number">0</span>,</span><br><span class="line">            <span class="hljs-attr">"saveState"</span> : <span class="hljs-number">78</span>,</span><br><span class="line">            <span class="hljs-attr">"restoreState"</span> : <span class="hljs-number">78</span>,</span><br><span class="line">            <span class="hljs-attr">"isEOF"</span> : <span class="hljs-number">1</span>,</span><br><span class="line">            <span class="hljs-attr">"invalidates"</span> : <span class="hljs-number">0</span>,</span><br><span class="line">            <span class="hljs-attr">"direction"</span> : <span class="hljs-string">"forward"</span>,</span><br><span class="line">            <span class="hljs-attr">"docsExamined"</span> : <span class="hljs-number">10000</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="hljs-attr">"serverInfo"</span> : &#123;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="hljs-attr">"ok"</span> : <span class="hljs-number">1.0</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>结果比较长，我摘取了关键的一部分。我们可以看到查询方式是全表扫描，一共扫描了 10000 个文档才查出来我要的结果。实际上我要的文档就排第二个，但是系统不知道这个集合中一共有多少个 x 为 1 的文档，所以会把全表扫描完，这种方式当然很低效，但是如果我加上 limit，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;x:1&#125;).limit(1)</span><br></pre></td></tr></table></figure>
-<p>此时再看查询计划发现只扫描了两个文档就有结果了，但是如果我要查询 x 为 9999 的记录，那还是得把全表扫描一遍，此时，我们就可以给该字段建立索引，索引建立方式如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.ensureIndex(&#123;x:1&#125;)</span><br></pre></td></tr></table></figure>
-<p>1 表示升序，-1 表示降序。当我们给 x 字段建立索引之后，再根据 x 字段去查询，速度就非常快了，我们看下面这个查询操作的执行计划：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;x:9999&#125;).explain(&quot;executionStats&quot;)</span><br></pre></td></tr></table></figure>
-<p>这个查询计划过长我就不贴出来了，我们可以重点关注查询要耗费的时间大幅度下降。</p>
-<p>此时调用 getIndexes() 方法可以看到我们刚刚创建的索引，如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">[</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="hljs-attr">"v"</span> : <span class="hljs-number">2</span>,</span><br><span class="line">        <span class="hljs-attr">"key"</span> : &#123;</span><br><span class="line">            <span class="hljs-attr">"_id"</span> : <span class="hljs-number">1</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="hljs-attr">"name"</span> : <span class="hljs-string">"_id_"</span>,</span><br><span class="line">        <span class="hljs-attr">"ns"</span> : <span class="hljs-string">"sang.sang_collect"</span></span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="hljs-attr">"v"</span> : <span class="hljs-number">2</span>,</span><br><span class="line">        <span class="hljs-attr">"key"</span> : &#123;</span><br><span class="line">            <span class="hljs-attr">"x"</span> : <span class="hljs-number">1.0</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="hljs-attr">"name"</span> : <span class="hljs-string">"x_1"</span>,</span><br><span class="line">        <span class="hljs-attr">"ns"</span> : <span class="hljs-string">"sang.sang_collect"</span></span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
-<p>我们看到每个索引都有一个名字，默认的索引名字为 <code>字段名_排序值</code>，当然我们也可以在创建索引时自定义索引名字，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.ensureIndex(&#123;x:1&#125;,&#123;name:&quot;myfirstindex&quot;&#125;)</span><br></pre></td></tr></table></figure>
-<p>此时创建好的索引如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"v"</span> : <span class="hljs-number">2</span>,</span><br><span class="line">    <span class="hljs-attr">"key"</span> : &#123;</span><br><span class="line">        <span class="hljs-attr">"x"</span> : <span class="hljs-number">1.0</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="hljs-attr">"name"</span> : <span class="hljs-string">"myfirstindex"</span>,</span><br><span class="line">    <span class="hljs-attr">"ns"</span> : <span class="hljs-string">"sang.sang_collect"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>当然索引在创建的过程中还有许多其他可选参数，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.ensureIndex(&#123;x:1&#125;,&#123;name:&quot;myfirstindex&quot;,dropDups:true,background:true,unique:true,sparse:true,v:1,weights:99999&#125;)</span><br></pre></td></tr></table></figure>
-<p>关于这里的参数，我说一下：</p>
-<blockquote>
-<ol>
-<li>name 表示索引的名称</li>
-<li>dropDups 表示创建唯一性索引时如果出现重复，则将重复的删除，只保留第一个</li>
-<li>background 是否在后台创建索引，在后台创建索引不影响数据库当前的操作，默认为 false</li>
-<li>unique 是否创建唯一索引，默认 false</li>
-<li>sparse 对文档中不存在的字段是否不起用索引，默认 false</li>
-<li>v 表示索引的版本号，默认为 2</li>
-<li>weights 表示索引的权重</li>
-</ol>
-</blockquote>
-<p>此时创建好的索引如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"v"</span> : <span class="hljs-number">1</span>,</span><br><span class="line">    <span class="hljs-attr">"unique"</span> : <span class="hljs-literal">true</span>,</span><br><span class="line">    <span class="hljs-attr">"key"</span> : &#123;</span><br><span class="line">        <span class="hljs-attr">"x"</span> : <span class="hljs-number">1.0</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="hljs-attr">"name"</span> : <span class="hljs-string">"myfirstindex"</span>,</span><br><span class="line">    <span class="hljs-attr">"ns"</span> : <span class="hljs-string">"sang.sang_collect"</span>,</span><br><span class="line">    <span class="hljs-attr">"background"</span> : <span class="hljs-literal">true</span>,</span><br><span class="line">    <span class="hljs-attr">"sparse"</span> : <span class="hljs-literal">true</span>,</span><br><span class="line">    <span class="hljs-attr">"weights"</span> : <span class="hljs-number">99999.0</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="查看索引"><a href="#查看索引" class="headerlink" title="查看索引"></a>查看索引</h2><p>上文我们介绍了 getIndexes() 可以用来查看索引，我们还可以通过 totalIndexSize() 来查看索引的大小，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.totalIndexSize()</span><br></pre></td></tr></table></figure>
-<h2 id="删除索引"><a href="#删除索引" class="headerlink" title="删除索引"></a>删除索引</h2><p>我们可以按名称删除索引，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.dropIndex(&quot;xIndex&quot;)</span><br></pre></td></tr></table></figure>
-<p>表示删除一个名为xIndex的索引，当然我们也可以删除所有索引，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.dropIndexes()</span><br></pre></td></tr></table></figure>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>索引是个好东西，可以有效的提高查询速度，但是索引会降低插入、更新和删除的速度，因为这些操作不仅要更新文档，还要更新索引，MongoDB 限制每个集合上最多有 64 个索引，我们在创建索引时要仔细斟酌索引的字段。</p>
-<p>好了，MongoDB 中的索引入门我们就说到这里，小伙伴们有问题欢迎留言讨论。</p>
-<p>参考资料：</p>
-<ol>
-<li>《MongoDB权威指南第2版》  </li>
-</ol>
-
         </div>
         
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/0909/mongodb-index-basic.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
         
         
     </div>
@@ -590,7 +365,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    6 分钟 读完 (大约 826 个字)
+                    6 分钟 读完 (大约 827 个字)
                 </span>
                 
                 
@@ -604,117 +379,16 @@
         </h1>
         <div class="content">
             <p>MongoDB 中的 explain() 函数可以帮助我们查看查询相关的信息，这有助于我们快速查找到搜索瓶颈进而解决它，本文我们就来看看 explain() 的一些用法及其查询结果的含义。</p>
-<p>本文是 MongoDB 系列的第八篇文章，了解前面的文章有助于更好的理解本文：</p>
-<p>整体来说，explain() 的用法和 sort()、limit() 用法差不多，不同的是 explain() 必须放在最后面。</p>
-<h2 id="基本用法"><a href="#基本用法" class="headerlink" title="基本用法"></a>基本用法</h2><p>先来看一个基本用法：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;x:1&#125;).explain()</span><br></pre></td></tr></table></figure>
-<p>直接跟在 find() 函数后面，表示查看 find() 函数的执行计划，结果如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"queryPlanner"</span> : &#123;</span><br><span class="line">        <span class="hljs-attr">"plannerVersion"</span> : <span class="hljs-number">1</span>,</span><br><span class="line">        <span class="hljs-attr">"namespace"</span> : <span class="hljs-string">"sang.sang_collect"</span>,</span><br><span class="line">        <span class="hljs-attr">"indexFilterSet"</span> : <span class="hljs-literal">false</span>,</span><br><span class="line">        <span class="hljs-attr">"parsedQuery"</span> : &#123;</span><br><span class="line">            <span class="hljs-attr">"x"</span> : &#123;</span><br><span class="line">                <span class="hljs-attr">"$eq"</span> : <span class="hljs-number">1.0</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="hljs-attr">"winningPlan"</span> : &#123;</span><br><span class="line">            <span class="hljs-attr">"stage"</span> : <span class="hljs-string">"COLLSCAN"</span>,</span><br><span class="line">            <span class="hljs-attr">"filter"</span> : &#123;</span><br><span class="line">                <span class="hljs-attr">"x"</span> : &#123;</span><br><span class="line">                    <span class="hljs-attr">"$eq"</span> : <span class="hljs-number">1.0</span></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;,</span><br><span class="line">            <span class="hljs-attr">"direction"</span> : <span class="hljs-string">"forward"</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="hljs-attr">"rejectedPlans"</span> : []</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="hljs-attr">"serverInfo"</span> : &#123;</span><br><span class="line">        <span class="hljs-attr">"host"</span> : <span class="hljs-string">"localhost.localdomain"</span>,</span><br><span class="line">        <span class="hljs-attr">"port"</span> : <span class="hljs-number">27017</span>,</span><br><span class="line">        <span class="hljs-attr">"version"</span> : <span class="hljs-string">"3.4.9"</span>,</span><br><span class="line">        <span class="hljs-attr">"gitVersion"</span> : <span class="hljs-string">"876ebee8c7dd0e2d992f36a848ff4dc50ee6603e"</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="hljs-attr">"ok"</span> : <span class="hljs-number">1.0</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>返回结果包含两大块信息，一个是 queryPlanner，即查询计划，还有一个是 serverInfo，即 MongoDB 服务的一些信息。那么这里涉及到的参数比较多，我们来一一看一下：</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:left">参数</th>
-<th style="text-align:left">含义</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">plannerVersion</td>
-<td style="text-align:left">查询计划版本</td>
-</tr>
-<tr>
-<td style="text-align:left">namespace</td>
-<td style="text-align:left">要查询的集合</td>
-</tr>
-<tr>
-<td style="text-align:left">indexFilterSet</td>
-<td style="text-align:left">是否使用索引</td>
-</tr>
-<tr>
-<td style="text-align:left">parsedQuery</td>
-<td style="text-align:left">查询条件，此处为x=1</td>
-</tr>
-<tr>
-<td style="text-align:left">winningPlan</td>
-<td style="text-align:left">最佳执行计划</td>
-</tr>
-<tr>
-<td style="text-align:left">stage</td>
-<td style="text-align:left">查询方式，常见的有**COLLSCAN/全表扫描、IXSCAN/索引扫描、FETCH/根据索引去检索文档、SHARD_MERGE/合并分片结果、IDHACK/针对<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line">|filter|过滤条件|</span><br><span class="line">|direction|搜索方向|</span><br><span class="line">|rejectedPlans|拒绝的执行计划|</span><br><span class="line">|serverInfo|MongoDB服务器信息|</span><br><span class="line"></span><br><span class="line">## 添加不同参数</span><br><span class="line"></span><br><span class="line">explain() 也接收不同的参数，通过设置不同参数我们可以查看更详细的查询计划。</span><br><span class="line"></span><br><span class="line">### queryPlanner</span><br><span class="line"></span><br><span class="line">queryPlanner 是默认参数，添加 queryPlanner 参数的查询结果就是我们上文看到的查询结果，so，这里不再赘述。</span><br><span class="line"></span><br><span class="line">### executionStats</span><br><span class="line"></span><br><span class="line">executionStats 会返回最佳执行计划的一些统计信息，如下：</span><br><span class="line"></span><br><span class="line">```json</span><br><span class="line">&#123;</span><br><span class="line">    &quot;queryPlanner&quot; : &#123;</span><br><span class="line">        &quot;plannerVersion&quot; : 1,</span><br><span class="line">        &quot;namespace&quot; : &quot;sang.sang_collect&quot;,</span><br><span class="line">        &quot;indexFilterSet&quot; : false,</span><br><span class="line">        &quot;parsedQuery&quot; : &#123;&#125;,</span><br><span class="line">        &quot;winningPlan&quot; : &#123;</span><br><span class="line">            &quot;stage&quot; : &quot;COLLSCAN&quot;,</span><br><span class="line">            &quot;direction&quot; : &quot;forward&quot;</span><br><span class="line">        &#125;,</span><br><span class="line">        &quot;rejectedPlans&quot; : []</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;executionStats&quot; : &#123;</span><br><span class="line">        &quot;executionSuccess&quot; : true,</span><br><span class="line">        &quot;nReturned&quot; : 10000,</span><br><span class="line">        &quot;executionTimeMillis&quot; : 4,</span><br><span class="line">        &quot;totalKeysExamined&quot; : 0,</span><br><span class="line">        &quot;totalDocsExamined&quot; : 10000,</span><br><span class="line">        &quot;executionStages&quot; : &#123;</span><br><span class="line">            &quot;stage&quot; : &quot;COLLSCAN&quot;,</span><br><span class="line">            &quot;nReturned&quot; : 10000,</span><br><span class="line">            &quot;executionTimeMillisEstimate&quot; : 0,</span><br><span class="line">            &quot;works&quot; : 10002,</span><br><span class="line">            &quot;advanced&quot; : 10000,</span><br><span class="line">            &quot;needTime&quot; : 1,</span><br><span class="line">            &quot;needYield&quot; : 0,</span><br><span class="line">            &quot;saveState&quot; : 78,</span><br><span class="line">            &quot;restoreState&quot; : 78,</span><br><span class="line">            &quot;isEOF&quot; : 1,</span><br><span class="line">            &quot;invalidates&quot; : 0,</span><br><span class="line">            &quot;direction&quot; : &quot;forward&quot;,</span><br><span class="line">            &quot;docsExamined&quot; : 10000</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;serverInfo&quot; : &#123;</span><br><span class="line">        &quot;host&quot; : &quot;localhost.localdomain&quot;,</span><br><span class="line">        &quot;port&quot; : 27017,</span><br><span class="line">        &quot;version&quot; : &quot;3.4.9&quot;,</span><br><span class="line">        &quot;gitVersion&quot; : &quot;876ebee8c7dd0e2d992f36a848ff4dc50ee6603e&quot;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;ok&quot; : 1.0</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></td>
-</tr>
-</tbody>
-</table>
-<p>这里除了我们上文介绍到的一些参数之外，还多了 executionStats 参数，含义如下：</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:left">参数</th>
-<th style="text-align:left">含义</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">executionSuccess</td>
-<td style="text-align:left">是否执行成功</td>
-</tr>
-<tr>
-<td style="text-align:left">nReturned</td>
-<td style="text-align:left">返回的结果数</td>
-</tr>
-<tr>
-<td style="text-align:left">executionTimeMillis</td>
-<td style="text-align:left">执行耗时</td>
-</tr>
-<tr>
-<td style="text-align:left">totalKeysExamined</td>
-<td style="text-align:left">索引扫描次数</td>
-</tr>
-<tr>
-<td style="text-align:left">totalDocsExamined</td>
-<td style="text-align:left">文档扫描次数</td>
-</tr>
-<tr>
-<td style="text-align:left">executionStages</td>
-<td style="text-align:left">这个分类下描述执行的状态</td>
-</tr>
-<tr>
-<td style="text-align:left">stage</td>
-<td style="text-align:left">扫描方式，具体可选值与上文的相同</td>
-</tr>
-<tr>
-<td style="text-align:left">nReturned</td>
-<td style="text-align:left">查询结果数量</td>
-</tr>
-<tr>
-<td style="text-align:left">executionTimeMillisEstimate</td>
-<td style="text-align:left">预估耗时</td>
-</tr>
-<tr>
-<td style="text-align:left">works</td>
-<td style="text-align:left">工作单元数，一个查询会分解成小的工作单元</td>
-</tr>
-<tr>
-<td style="text-align:left">advanced</td>
-<td style="text-align:left">优先返回的结果数</td>
-</tr>
-<tr>
-<td style="text-align:left">docsExamined</td>
-<td style="text-align:left">文档检查数目，与totalDocsExamined一致</td>
-</tr>
-</tbody>
-</table>
-<h3 id="allPlansExecution"><a href="#allPlansExecution" class="headerlink" title="allPlansExecution"></a>allPlansExecution</h3><p>allPlansExecution 用来获取所有执行计划，结果参数基本与上文相同，这里就不再细说了。</p>
-<p>好了，MongoDB 中的 explain() 我们就说到这里，小伙伴们有问题欢迎留言讨论。</p>
-<p>参考资料：</p>
-<ol>
-<li>《MongoDB权威指南第2版》</li>
-<li><a href="http://blog.csdn.net/leshami/article/details/53521990" target="_blank" rel="noopener">MongoDB执行计划获取(db.collection.explain())</a></li>
-<li><a href="http://www.360doc.com/content/17/0110/11/3261457_621487815.shtml" target="_blank" rel="noopener">mongodb .explain(‘executionStats’) 查询性能分析</a>(没找到原文出处)  </li>
-</ol>
-
         </div>
         
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/0908/mongodb-query-planner.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
         
         
     </div>
@@ -743,7 +417,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    4 分钟 读完 (大约 648 个字)
+                    4 分钟 读完 (大约 649 个字)
                 </span>
                 
                 
@@ -757,33 +431,16 @@
         </h1>
         <div class="content">
             <p>关于 MongoDB 中的查询，我们已经连着介绍了两篇文章了，本文我们来介绍另外一个查询概念<strong>游标</strong>。</p>
-<h2 id="基本操作"><a href="#基本操作" class="headerlink" title="基本操作"></a>基本操作</h2><p>游标这个概念在很多地方都有，Java 中 JDBC 里的 ResultSet ，Android 中的 Cursor 等等都是，MongoDB 中也有类似的概念。当我们调用 find 方法时，就可以返回一个游标，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">var cursor = db.sang_collect.find();</span><br></pre></td></tr></table></figure>
-<p>游标中有 hasNext() 方法，也有 next() 方法，这两个方法结合可以用来遍历结果，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">while(cursor.hasNext())&#123;</span><br><span class="line">    print(cursor.next())</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>next() 方法可以获取查询到的每一个文档，如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f299579babb96c21ddc9e8"</span>),</span><br><span class="line">    <span class="hljs-attr">"x"</span> : <span class="hljs-number">0.0</span>,</span><br><span class="line">    <span class="hljs-attr">"y"</span> : <span class="hljs-number">1000.0</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">/* 2 */</span><br><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f299579babb96c21ddc9e9"</span>),</span><br><span class="line">    <span class="hljs-attr">"x"</span> : <span class="hljs-number">1.0</span>,</span><br><span class="line">    <span class="hljs-attr">"y"</span> : <span class="hljs-number">999.0</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>如果我只想获取文档中的某一个字段，可以按如下方式：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">while(cursor.hasNext())&#123;</span><br><span class="line">    print(cursor.next().y)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>cursor 也实现了 JavaScript 中的迭代器接口，所以我们也可以直接调用 forEach 方法来遍历：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cursor.forEach(function(x)&#123;</span><br><span class="line">    print(x)</span><br><span class="line">    &#125;)</span><br></pre></td></tr></table></figure>
-<p>当我们调用 find 方法获取 cursor 时，shell 并不会立即查询数据库，而是在真正使用数据时才会去加载，这有点类似于数据库框架中的懒加载，shell 在每次查询的时候会获取前 100 条结果或者前 4MB 数据(两者之间取最小)，然后我们调用 hasNext 和 next 时 shell 就不用再去连接数据库了，直接一条一条的返回查询到的数据，这 100 条或者 4MB 数据全部被返回之后，shell 才会再次发起请求向 MongoDB 要数据。</p>
-<h2 id="limit"><a href="#limit" class="headerlink" title="limit"></a>limit</h2><p>limit 是 cursor 中的方法，用来限制返回结果的数量，比如我只想获取查询的前三条结果，方式如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">var cursor = db.sang_collect.find().limit(3)</span><br></pre></td></tr></table></figure>
-<h2 id="skip"><a href="#skip" class="headerlink" title="skip"></a>skip</h2><p>skip 也是 cursor 中的方法，用来表示跳过的记录数，比如我想获取第2到第5条记录，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">var cursor = db.sang_collect.find().skip(2).limit(4)</span><br></pre></td></tr></table></figure>
-<p>跳过前两条( 0 和 1 )然后获取后面 4 条数据，skip 和 limit 结合有点类似于 MySQL 中的 limit，可以用来做分页，不过这种分页方式效率过低。</p>
-<h2 id="sort"><a href="#sort" class="headerlink" title="sort"></a>sort</h2><p>sort 用来实现排序功能，比如按 x 排序，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">var cursor = db.sang_collect.find().sort(&#123;x:-1&#125;)</span><br></pre></td></tr></table></figure>
-<p>1 表示升序，-1 表示降序。</p>
-<p>好了，MongoDB 中的查询我们就说到这里，小伙伴们有问题欢迎留言讨论。</p>
-<p>参考资料：</p>
-<ol>
-<li>《MongoDB权威指南第2版》  </li>
-</ol>
-
         </div>
         
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/0907/mongodb-documents-query.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
         
         
     </div>
@@ -812,7 +469,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    6 分钟 读完 (大约 969 个字)
+                    6 分钟 读完 (大约 970 个字)
                 </span>
                 
                 
@@ -826,48 +483,16 @@
         </h1>
         <div class="content">
             <p>上篇文章我们对 MongoDB 中的查询操作做了简单介绍，本文我们继续来看更丰富的查询操作。</p>
-<h2 id="null"><a href="#null" class="headerlink" title="null"></a>null</h2><p>null 的查询稍微有点不同，假如我想查询 z 为 null 的数据，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;z:null&#125;)</span><br></pre></td></tr></table></figure>
-<p>这样不仅会查出 z 为 null 的文档，也会查出所有没有 z 字段的文档，如果只想查询 z 为 null 的字段，那就再多加一个条件，判断一下z这个字段存在不，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;z:&#123;$in:[null],$exists:true&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<h2 id="正则表达式查询"><a href="#正则表达式查询" class="headerlink" title="正则表达式查询"></a>正则表达式查询</h2><p>使用正则表达式查询我们在前面也已经介绍过了，这里的正则表达式语法和 JavaScript 中的正则表达式语法一致，比如查询所有 key 为 x，value 以 hello 开始的文档且不区分大小写：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collec.find(&#123;x:/^(hello)(.[a-zA-Z0-9])+/i&#125;)</span><br></pre></td></tr></table></figure>
-<h2 id="数组查询"><a href="#数组查询" class="headerlink" title="数组查询"></a>数组查询</h2><p>假设我有一个数据集如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f1ad41e26b36b25bc605ae"</span>),</span><br><span class="line">    <span class="hljs-attr">"books"</span> : [ </span><br><span class="line">        <span class="hljs-string">"三国演义"</span>, </span><br><span class="line">        <span class="hljs-string">"红楼梦"</span>, </span><br><span class="line">        <span class="hljs-string">"水浒传"</span></span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>查询 books 中含有三国演义的文档，如下： </p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;books:&quot;三国演义&quot;&#125;)</span><br></pre></td></tr></table></figure>
-<p>如果要查询既有三国演义又有红楼梦的文档，可以使用 $all，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;books:&#123;$all:[&quot;三国演义&quot;,&quot;红楼梦&quot;]&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>当然我们也可以使用精确匹配，比如查询 books 为 <code>&quot;三国演义&quot;,&quot;红楼梦&quot;, &quot;水浒传&quot;</code> 的数据，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;books:[&quot;三国演义&quot;,&quot;红楼梦&quot;, &quot;水浒传&quot;]&#125;)</span><br></pre></td></tr></table></figure>
-<p>不过这种就会一对一的精确匹配。</p>
-<p>也可以按照下标匹配，比如我想查询数组中下标为 2 的项的为 <code>&quot;水浒传&quot;</code> 的文档，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;&quot;books.2&quot;:&quot;水浒传&quot;&#125;)</span><br></pre></td></tr></table></figure>
-<p>也可以按照数组长度来查询，比如我想查询数组长度为 3 的文档：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;books:&#123;$size:3&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>如果想查询数组中的前两条数据，可以使用 $slice，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;&#125;,&#123;books:&#123;$slice:2&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>注意这里要写在 find 的第二个参数的位置。2 表示数组中前两个元素，-2 表示从后往前数两个元素。也可以截取数组中间的元素，比如查询数组的第二个到第四个元素：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;&#125;,&#123;books:&#123;$slice:[1,3]&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>数组中的与的问题也值得说一下，假设我有如下数据：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f208bc7b00f982986c669c"</span>),</span><br><span class="line">    <span class="hljs-attr">"x"</span> : [ </span><br><span class="line">        <span class="hljs-number">5.0</span>, </span><br><span class="line">        <span class="hljs-number">25.0</span></span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>我想将数组中 value 取值在 (10,20) 之间的文档获取到，如下操作：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;x:&#123;$lt:20,$gt:10&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>此时上面这个文档虽然不满足条件却依然被查找出来了，因为 <code>5&lt;20</code> ，而 <code>25&gt;10</code>，要解决这个问题，我们可以使用 $elemMatch，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;x:&#123;$elemMatch:&#123;$lt:20,$gt:10&#125;&#125;&#125;)</span><br><span class="line">```  </span><br><span class="line">$elemMatch 要求 MongoDB 同时使用查询条件中的两个语句与一个数组元素进行比较。</span><br><span class="line"></span><br><span class="line">## 嵌套文档查询</span><br><span class="line"></span><br><span class="line">嵌套文档有两种查询方式，比如我的数据如下：</span><br><span class="line"></span><br><span class="line">```json</span><br><span class="line">&#123;</span><br><span class="line">    &quot;_id&quot; : ObjectId(&quot;59f20c9b7b00f982986c669f&quot;),</span><br><span class="line">    &quot;x&quot; : 1.0,</span><br><span class="line">    &quot;y&quot; : &#123;</span><br><span class="line">        &quot;z&quot; : 2.0,</span><br><span class="line">        &quot;k&quot; : 3.0</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>想要查询上面这个文档，我的查询语句如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;y:&#123;z:2,k:3&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>但是这种写法要求严格匹配，顺序都不能变，假如写成了 <code>db.sang_collect.find({y:{k:3,z:2}})</code>，就匹配不到了，因此这种方法不够灵活，我们一般推荐的是下面这种写法：</p>
-<pre><code>db.sang_collect.find({&quot;y.z&quot;:2,&quot;y.k&quot;:3})
-</code></pre><p>这种写法可以任意颠倒顺序。 </p>
-<p>好了，MongoDB 中的查询操作还是非常丰富的，本文我们先说到这里，下篇文章我们介绍游标，小伙伴们有问题欢迎留言讨论。 </p>
-<p>参考资料：</p>
-<ol>
-<li>《MongoDB权威指南第2版》</li>
-</ol>
-
         </div>
         
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/0906/mongodb-documents-query.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
         
         
     </div>
@@ -896,7 +521,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    7 分钟 读完 (大约 1020 个字)
+                    7 分钟 读完 (大约 1021 个字)
                 </span>
                 
                 
@@ -910,193 +535,16 @@
         </h1>
         <div class="content">
             <p>上篇文章我们主要介绍了 MongoDB 的修改操作，本文我们来看看查询操作。</p>
-<h2 id="find-方法再探"><a href="#find-方法再探" class="headerlink" title="find 方法再探"></a>find 方法再探</h2><p>find 方法是很重要的一个查询方法，我们在前面也已经使用过多次了，一般情况下我们调用的是：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find()</span><br></pre></td></tr></table></figure>
-<p>没有传入任何参数，这个等价于：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find(&#123;&#125;)</span><br></pre></td></tr></table></figure>
-<p>都表示没有查询条件，查询所有的数据。如果有查询条件，我们传入查询条件即可，查询条件也是一个文档，如下表示查询 x 为 1 的文档：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;x:1&#125;)</span><br></pre></td></tr></table></figure>
-<p>如果查询条件文档中有多个字段，多个字段之间的关系是 AND，如下表示查询 x 为 1 并且 y 为 99 的文档：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;x:1,y:99&#125;)</span><br></pre></td></tr></table></figure>
-<p>默认情况下，每次查询都会返回文档中所有的 key/value 对，我们也可以自定义返回的字段，如下表示只返回 x 字段，其他字段都不返回：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;&#125;,&#123;x:1&#125;)</span><br></pre></td></tr></table></figure>
-<p>参数 1 表示返回某一个字段，0 表示不返回某一个字段，当我们设置只返回 x 的时候， <code>_id</code> 默认还是返回的，如果不想返回 <code>_id</code> ，我们可以设置 <code>_id</code> 为 0，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;&#125;,&#123;x:1,_id:0&#125;)</span><br></pre></td></tr></table></figure>
-<p>此时返回的数据中就不包括 <code>_id</code> 字段了。</p>
-<h2 id="各种查询条件"><a href="#各种查询条件" class="headerlink" title="各种查询条件"></a>各种查询条件</h2><h3 id="比较运算符"><a href="#比较运算符" class="headerlink" title="比较运算符"></a>比较运算符</h3><p>这里的比较运算符都比较好理解，如下表：</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:center">符号</th>
-<th style="text-align:center">含义</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">|```$lte```|```&lt;=```|</span><br><span class="line">|```$gt```|```&gt;```|</span><br><span class="line">|```$gte```|```&gt;=```|</span><br><span class="line">|```$ne```|```!=```|</span><br><span class="line"></span><br><span class="line">比如我想查询所有成绩在 [90,100] 之间的学生：</span><br><span class="line"></span><br><span class="line">原始数据如下：</span><br><span class="line"></span><br><span class="line">```json</span><br><span class="line">/* 2 */</span><br><span class="line">&#123;</span><br><span class="line">    &quot;_id&quot; : ObjectId(&quot;59f0b17249fc5c9c2412a666&quot;),</span><br><span class="line">    &quot;name&quot; : &quot;zs&quot;,</span><br><span class="line">    &quot;score&quot; : 100.0</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">/* 3 */</span><br><span class="line">&#123;</span><br><span class="line">    &quot;_id&quot; : ObjectId(&quot;59f0b17249fc5c9c2412a667&quot;),</span><br><span class="line">    &quot;name&quot; : &quot;ls&quot;,</span><br><span class="line">    &quot;score&quot; : 90.0</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">/* 4 */</span><br><span class="line">&#123;</span><br><span class="line">    &quot;_id&quot; : ObjectId(&quot;59f0b17249fc5c9c2412a668&quot;),</span><br><span class="line">    &quot;name&quot; : &quot;ww&quot;,</span><br><span class="line">    &quot;score&quot; : 70.0</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">/* 5 */</span><br><span class="line">&#123;</span><br><span class="line">    &quot;_id&quot; : ObjectId(&quot;59f0b17249fc5c9c2412a669&quot;),</span><br><span class="line">    &quot;name&quot; : &quot;zl&quot;,</span><br><span class="line">    &quot;score&quot; : 80.0</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></td>
-</tr>
-</tbody>
-</table>
-<p>查询操作如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;score:&#123;$lte:100,$gte:90&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>查询结果如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">/* 1 */</span><br><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f0b17249fc5c9c2412a666"</span>),</span><br><span class="line">    <span class="hljs-attr">"name"</span> : <span class="hljs-string">"zs"</span>,</span><br><span class="line">    <span class="hljs-attr">"score"</span> : <span class="hljs-number">100.0</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">/* 2 */</span><br><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f0b17249fc5c9c2412a667"</span>),</span><br><span class="line">    <span class="hljs-attr">"name"</span> : <span class="hljs-string">"ls"</span>,</span><br><span class="line">    <span class="hljs-attr">"score"</span> : <span class="hljs-number">90.0</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>如果要查询分数不为 90 的学生，操作如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;score:&#123;$ne:90&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<h3 id="in和-nin"><a href="#in和-nin" class="headerlink" title="$in和$nin"></a>$in和$nin</h3><p>$in 有点类似于 SQL 中的 in 关键字，表示查询某一个字段在某一个范围中的所有文档，比如我想查询<strong>x为1或者2</strong>的所有文档，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;x:&#123;$in:[1,2]&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>$nin 的作用和 $in 恰好相反，表示查询某一个字段不在某一个范围内的所有文档，比如我想查询<strong>x不为1或者2(不为1且不为2)</strong>的所有文档，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;x:&#123;$nin:[1,2]&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<h3 id="or"><a href="#or" class="headerlink" title="$or"></a>$or</h3><p>$or 有点类似于 SQL 中的 or 关键字，表示多个查询条件之间是<strong>或</strong>的关系，比如我想查询 x 为 1 或者 y 为 99 的文档，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;$or:[&#123;x:1&#125;,&#123;y:99&#125;]&#125;)</span><br></pre></td></tr></table></figure>
-<h3 id="type"><a href="#type" class="headerlink" title="$type"></a>$type</h3><p>$type 可以用来根据数据类型查找数据，比如我想要查找 x 类型为数字的文档，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;x:&#123;$type:1&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>1 表示数字，其他数据类型对应的数字参见下表。</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:left">类型</th>
-<th style="text-align:center">对应数字</th>
-<th style="text-align:left">别名</th>
-<th style="text-align:center">说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">Double1</td>
-<td style="text-align:center">1</td>
-<td style="text-align:left">double</td>
-<td style="text-align:center"></td>
-</tr>
-<tr>
-<td style="text-align:left">String</td>
-<td style="text-align:center">2</td>
-<td style="text-align:left">string</td>
-<td style="text-align:center"></td>
-</tr>
-<tr>
-<td style="text-align:left">Object</td>
-<td style="text-align:center">3</td>
-<td style="text-align:left">object</td>
-<td style="text-align:center"></td>
-</tr>
-<tr>
-<td style="text-align:left">Array</td>
-<td style="text-align:center">4</td>
-<td style="text-align:left">array</td>
-<td style="text-align:center"></td>
-</tr>
-<tr>
-<td style="text-align:left">Binary data</td>
-<td style="text-align:center">5</td>
-<td style="text-align:left">binData</td>
-<td style="text-align:center"></td>
-</tr>
-<tr>
-<td style="text-align:left">Undefined</td>
-<td style="text-align:center">6</td>
-<td style="text-align:left">undefined</td>
-<td style="text-align:center">弃用</td>
-</tr>
-<tr>
-<td style="text-align:left">ObjectId</td>
-<td style="text-align:center">7</td>
-<td style="text-align:left">objectId</td>
-<td style="text-align:center"></td>
-</tr>
-<tr>
-<td style="text-align:left">Boolean</td>
-<td style="text-align:center">8</td>
-<td style="text-align:left">bool</td>
-<td style="text-align:center"></td>
-</tr>
-<tr>
-<td style="text-align:left">Date</td>
-<td style="text-align:center">9</td>
-<td style="text-align:left">date</td>
-<td style="text-align:center"></td>
-</tr>
-<tr>
-<td style="text-align:left">Null</td>
-<td style="text-align:center">10</td>
-<td style="text-align:left">null</td>
-<td style="text-align:center"></td>
-</tr>
-<tr>
-<td style="text-align:left">Regular Expression</td>
-<td style="text-align:center">11</td>
-<td style="text-align:left">regex</td>
-<td style="text-align:center"></td>
-</tr>
-<tr>
-<td style="text-align:left">DBPointer</td>
-<td style="text-align:center">12</td>
-<td style="text-align:left">dbPointer</td>
-<td style="text-align:center"></td>
-</tr>
-<tr>
-<td style="text-align:left">JavaScript</td>
-<td style="text-align:center">13</td>
-<td style="text-align:left">javascript</td>
-<td style="text-align:center"></td>
-</tr>
-<tr>
-<td style="text-align:left">Symbol</td>
-<td style="text-align:center">14</td>
-<td style="text-align:left">symbol</td>
-<td style="text-align:center"></td>
-</tr>
-<tr>
-<td style="text-align:left">JavaScript(with scope)</td>
-<td style="text-align:center">15</td>
-<td style="text-align:left">javascriptWithScope</td>
-<td style="text-align:center"></td>
-</tr>
-<tr>
-<td style="text-align:left">32-bit integer</td>
-<td style="text-align:center">16</td>
-<td style="text-align:left">int</td>
-<td style="text-align:center"></td>
-</tr>
-<tr>
-<td style="text-align:left">Timestamp</td>
-<td style="text-align:center">17</td>
-<td style="text-align:left">timestamp</td>
-<td style="text-align:center"></td>
-</tr>
-<tr>
-<td style="text-align:left">64-bit integer</td>
-<td style="text-align:center">18</td>
-<td style="text-align:left">long</td>
-<td style="text-align:center"></td>
-</tr>
-<tr>
-<td style="text-align:left">Min key</td>
-<td style="text-align:center">-1</td>
-<td style="text-align:left">minKey</td>
-<td style="text-align:center"></td>
-</tr>
-<tr>
-<td style="text-align:left">Max key</td>
-<td style="text-align:center">127</td>
-<td style="text-align:left">maxKey</td>
-</tr>
-</tbody>
-</table>
-<h3 id="not"><a href="#not" class="headerlink" title="$not"></a>$not</h3><p>$not 用来执行取反操作，比如我想要查询所有 x 的类型不为数字的文档，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;x:&#123;$not:&#123;$type:1&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<h3 id="and"><a href="#and" class="headerlink" title="$and"></a>$and</h3><p>$and 类似于 SQL 中的 and，比如我想查询 y 大于 98 并且小于 100 的数据，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;$and:[&#123;y:&#123;$gt:98&#125;&#125;,&#123;y:&#123;$lt:100&#125;&#125;]&#125;)</span><br></pre></td></tr></table></figure>
-<p>上面的操作我们也可以使用下面简化的写法：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.find(&#123;y:&#123;$lt:100,$gt:98&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>好了，MongoDB 中的查询操作还是非常丰富的，本文我们先说到这里，下篇文章我们继续介绍，小伙伴们有问题欢迎留言讨论。</p>
-<p>参考资料：</p>
-<ol>
-<li>《MongoDB权威指南第2版》  </li>
-</ol>
-
         </div>
         
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/0905/mongodb-documents-query.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
         
         
     </div>
@@ -1125,7 +573,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    15 分钟 读完 (大约 2283 个字)
+                    15 分钟 读完 (大约 2284 个字)
                 </span>
                 
                 
@@ -1139,99 +587,16 @@
         </h1>
         <div class="content">
             <p>我们在前面的文章中提到过文档的基本的增删改查操作，MongoDB 中提供的增删改查的语法非常丰富，本文我们主要来看看更新都有哪些好玩的语法。</p>
-<h2 id="文档替换"><a href="#文档替换" class="headerlink" title="文档替换"></a>文档替换</h2><p>假设我的集合中现在存了如下一段数据：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f005402844ff254a1b68f6"</span>),</span><br><span class="line">    <span class="hljs-attr">"name"</span> : <span class="hljs-string">"三国演义"</span>,</span><br><span class="line">    <span class="hljs-attr">"authorName"</span> : <span class="hljs-string">"罗贯中"</span>,</span><br><span class="line">    <span class="hljs-attr">"authorGender"</span> : <span class="hljs-string">"男"</span>,</span><br><span class="line">    <span class="hljs-attr">"authorAge"</span> : <span class="hljs-number">99.0</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这是一本书，有书名和作者信息，但是作者是一个独立的实体，所以我想将之提取出来，变成下面这样：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f005402844ff254a1b68f6"</span>),</span><br><span class="line">    <span class="hljs-attr">"name"</span> : <span class="hljs-string">"三国演义"</span>,</span><br><span class="line">    <span class="hljs-attr">"author"</span> : &#123;</span><br><span class="line">        <span class="hljs-attr">"name"</span> : <span class="hljs-string">"罗贯中"</span>,</span><br><span class="line">        <span class="hljs-attr">"gender"</span> : <span class="hljs-string">"男"</span>,</span><br><span class="line">        <span class="hljs-attr">"age"</span> : <span class="hljs-number">99.0</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>我可以采用如下操作：</p>
-<p><img src="https://www.javaboy.org/images/mongodb/4-1.png" alt="p248"></p>
-<p>另外一个问题是更新时，MongoDB 只会匹配第一个更新的文档，假设我的 MongoDB 中有如下数据：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123; <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f00d4a2844ff254a1b68f7"</span>), <span class="hljs-attr">"x"</span> : <span class="hljs-number">1</span> &#125;</span><br><span class="line">&#123; <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f00d4a2844ff254a1b68f8"</span>), <span class="hljs-attr">"x"</span> : <span class="hljs-number">1</span> &#125;</span><br><span class="line">&#123; <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f00d4a2844ff254a1b68f9"</span>), <span class="hljs-attr">"x"</span> : <span class="hljs-number">1</span> &#125;</span><br><span class="line">&#123; <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f00d4a2844ff254a1b68fa"</span>), <span class="hljs-attr">"x"</span> : <span class="hljs-number">2</span> &#125;</span><br></pre></td></tr></table></figure>
-<p>我想把所有 x 为 1 的数据改为 99，我们很容易想到如下命令：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.update(&#123;x:1&#125;,&#123;x:99&#125;)</span><br></pre></td></tr></table></figure>
-<p>但我们发现执行结果却是这样：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123; <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f00d4a2844ff254a1b68f7"</span>), <span class="hljs-attr">"x"</span> : <span class="hljs-number">99</span> &#125;</span><br><span class="line">&#123; <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f00d4a2844ff254a1b68f8"</span>), <span class="hljs-attr">"x"</span> : <span class="hljs-number">1</span> &#125;</span><br><span class="line">&#123; <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f00d4a2844ff254a1b68f9"</span>), <span class="hljs-attr">"x"</span> : <span class="hljs-number">1</span> &#125;</span><br><span class="line">&#123; <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f00d4a2844ff254a1b68fa"</span>), <span class="hljs-attr">"x"</span> : <span class="hljs-number">2</span> &#125;</span><br></pre></td></tr></table></figure>
-<p>即只有第一条匹配的结果被更新了，其他的都没有变化。这是 MongoDB 的更新规则，即只更新第一条匹配结果。如果我们想将所有 x 为 1 的更新为 x 为 99，可以采用如下命令：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.update(&#123;x:1&#125;,&#123;$set:&#123;x:99&#125;&#125;,false,true)</span><br></pre></td></tr></table></figure>
-<p>首先我们将要修改的数据赋值给 $set，$set 是一个修改器，我们将在下文详细讲解，然后后面多了两个参数，第一个 false 表示如果不存在 update 记录，是否将我们要更新的文档作为一个新文档插入，true 表示插入，false 表示不插入，默认为 false，第二个 true 表示是否更新全部查到的文档，false 表示只更新第一条记录，true 表示更新所有查到的文档。</p>
-<h2 id="使用修改器"><a href="#使用修改器" class="headerlink" title="使用修改器"></a>使用修改器</h2><p>很多时候我们修改文档，只是要修改文章的某一部分，而不是全部，但是现在我面临这样一个问题，假设我有如下一个文档：</p>
-<figure class="highlight hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;x:1,y:2,z:3&#125;</span><br></pre></td></tr></table></figure>
-<p>我现在想把这个文档中 x 的值改为 99，我可能使用如下操作：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.update(&#123;x:1&#125;,&#123;x:99&#125;)</span><br></pre></td></tr></table></figure>
-<p>但是更新结果却变成了这样：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123; &quot;_id&quot; : ObjectId(&quot;59f02dce95769f660c09955b&quot;), &quot;x&quot; : 99 &#125;</span><br></pre></td></tr></table></figure>
-<p>如下图：</p>
-<p><img src="https://www.javaboy.org/images/mongodb/4-2.png" alt="p249"></p>
-<p>MongoDB 帮我把整个文档更新了！要解决这个问题，我们可以使用修改器。</p>
-<h3 id="set-修改器"><a href="#set-修改器" class="headerlink" title="$set 修改器"></a>$set 修改器</h3><p>$set 可以用来修改一个字段的值，如果这个字段不存在，则创建它。如下：</p>
-<p><img src="https://www.javaboy.org/images/mongodb/4-3.png" alt="p250"></p>
-<p>如果该字段不存在，则创建，如下：</p>
-<p><img src="https://www.javaboy.org/images/mongodb/4-4.png" alt="p251"></p>
-<p>也可以利用 $unset 删除一个字段，如下：</p>
-<p><img src="https://www.javaboy.org/images/mongodb/4-5.png" alt="p252"></p>
-<p>$set 也可以用来修改内嵌文档，还以刚才的书为例，如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f042cfcafd355da9486008"</span>),</span><br><span class="line">    <span class="hljs-attr">"name"</span> : <span class="hljs-string">"三国演义"</span>,</span><br><span class="line">    <span class="hljs-attr">"author"</span> : &#123;</span><br><span class="line">        <span class="hljs-attr">"name"</span> : <span class="hljs-string">"罗贯中"</span>,</span><br><span class="line">        <span class="hljs-attr">"gender"</span> : <span class="hljs-string">"男"</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>想要修改作者的名字，操作如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.update(&#123;name:&quot;三国演义&quot;&#125;,&#123;$set:&#123;&quot;author.name&quot;:&quot;明代罗贯中&quot;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>修改结果如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f042cfcafd355da9486008"</span>),</span><br><span class="line">    <span class="hljs-attr">"name"</span> : <span class="hljs-string">"三国演义"</span>,</span><br><span class="line">    <span class="hljs-attr">"author"</span> : &#123;</span><br><span class="line">        <span class="hljs-attr">"name"</span> : <span class="hljs-string">"明代罗贯中"</span>,</span><br><span class="line">        <span class="hljs-attr">"gender"</span> : <span class="hljs-string">"男"</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="inc-修改器"><a href="#inc-修改器" class="headerlink" title="$inc 修改器"></a>$inc 修改器</h3><p>$inc 用来增加已有键的值，如果该键不存在就新创建一个。比如我想给上文的罗贯中增加一个年龄为 99，方式如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.update(&#123;name:&quot;三国演义&quot;&#125;,&#123;$inc:&#123;&quot;author.age&quot;:99&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>执行结果如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f042cfcafd355da9486008"</span>),</span><br><span class="line">    <span class="hljs-attr">"name"</span> : <span class="hljs-string">"三国演义"</span>,</span><br><span class="line">    <span class="hljs-attr">"author"</span> : &#123;</span><br><span class="line">        <span class="hljs-attr">"name"</span> : <span class="hljs-string">"明代罗贯中"</span>,</span><br><span class="line">        <span class="hljs-attr">"gender"</span> : <span class="hljs-string">"男"</span>,</span><br><span class="line">        <span class="hljs-attr">"age"</span> : <span class="hljs-number">99.0</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>加入我想给罗贯中增加 1 岁，执行如下命令：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.update(&#123;name:&quot;三国演义&quot;&#125;,&#123;$inc:&#123;&quot;author.age&quot;:1&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>这是会在现有值上加 1，结果如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f042cfcafd355da9486008"</span>),</span><br><span class="line">    <span class="hljs-attr">"name"</span> : <span class="hljs-string">"三国演义"</span>,</span><br><span class="line">    <span class="hljs-attr">"author"</span> : &#123;</span><br><span class="line">        <span class="hljs-attr">"name"</span> : <span class="hljs-string">"明代罗贯中"</span>,</span><br><span class="line">        <span class="hljs-attr">"gender"</span> : <span class="hljs-string">"男"</span>,</span><br><span class="line">        <span class="hljs-attr">"age"</span> : <span class="hljs-number">100.0</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>注意 $inc 只能用来操作数字，不能用来操作 null、布尔等。</p>
-<h3 id="数组修改器"><a href="#数组修改器" class="headerlink" title="数组修改器"></a>数组修改器</h3><p>数组修改器有好几种，我们分别来看。<br>$push 可以向已有数组末尾追加元素，要是不存在就创建一个数组，还是以我们的上面的 book 为例，假设 book 有一个字段为 comments，是一个数组，表示对这个 book 的评论，我们可以使用如下命令添加一条评论：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.update(&#123;name:&quot;三国演义&quot;&#125;,&#123;$push:&#123;comments:&quot;好书666&quot;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>此时不存在 comments 字段，系统会自动帮我们创建该字段，结果如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f042cfcafd355da9486008"</span>),</span><br><span class="line">    <span class="hljs-attr">"name"</span> : <span class="hljs-string">"三国演义"</span>,</span><br><span class="line">    <span class="hljs-attr">"author"</span> : &#123;</span><br><span class="line">        <span class="hljs-attr">"name"</span> : <span class="hljs-string">"明代罗贯中"</span>,</span><br><span class="line">        <span class="hljs-attr">"gender"</span> : <span class="hljs-string">"男"</span>,</span><br><span class="line">        <span class="hljs-attr">"age"</span> : <span class="hljs-number">100.0</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="hljs-attr">"comments"</span> : [ </span><br><span class="line">        <span class="hljs-string">"好书666"</span></span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>此时我们可以追加评论，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.update(&#123;name:&quot;三国演义&quot;&#125;,&#123;$push:&#123;comments:&quot;好书666啦啦啦啦&quot;&#125;&#125;)</span><br><span class="line">``` </span><br><span class="line"></span><br><span class="line">结果如下：</span><br><span class="line"></span><br><span class="line">```json</span><br><span class="line">&#123;</span><br><span class="line">    &quot;_id&quot; : ObjectId(&quot;59f042cfcafd355da9486008&quot;),</span><br><span class="line">    &quot;name&quot; : &quot;三国演义&quot;,</span><br><span class="line">    &quot;author&quot; : &#123;</span><br><span class="line">        &quot;name&quot; : &quot;明代罗贯中&quot;,</span><br><span class="line">        &quot;gender&quot; : &quot;男&quot;,</span><br><span class="line">        &quot;age&quot; : 100.0</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;comments&quot; : [ </span><br><span class="line">        &quot;好书666&quot;, </span><br><span class="line">        &quot;好书666啦啦啦啦&quot;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>如果想一次添加 3 条评论，可以结合 $each 一起来使用，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.update(&#123;name:&quot;三国演义&quot;&#125;,&#123;$push:&#123;comments:&#123;$each:[&quot;111&quot;,&quot;222&quot;,&quot;333&quot;]&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>结果如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f042cfcafd355da9486008"</span>),</span><br><span class="line">    <span class="hljs-attr">"name"</span> : <span class="hljs-string">"三国演义"</span>,</span><br><span class="line">    <span class="hljs-attr">"author"</span> : &#123;</span><br><span class="line">        <span class="hljs-attr">"name"</span> : <span class="hljs-string">"明代罗贯中"</span>,</span><br><span class="line">        <span class="hljs-attr">"gender"</span> : <span class="hljs-string">"男"</span>,</span><br><span class="line">        <span class="hljs-attr">"age"</span> : <span class="hljs-number">100.0</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="hljs-attr">"comments"</span> : [ </span><br><span class="line">        <span class="hljs-string">"好书666"</span>, </span><br><span class="line">        <span class="hljs-string">"好书666啦啦啦啦"</span>, </span><br><span class="line">        <span class="hljs-string">"111"</span>, </span><br><span class="line">        <span class="hljs-string">"222"</span>, </span><br><span class="line">        <span class="hljs-string">"333"</span></span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>我们可以使用 $slice 来固定数组的长度，假设我固定数组的长度为 5，如果数组中的元素不足 5 个，则全部保留，如果数组中的元素超过 5 个，则只会保留最新的 5 个，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.update(&#123;name:&quot;三国演义&quot;&#125;,&#123;$push:&#123;comments:&#123;$each:[&quot;444&quot;,&quot;555&quot;],$slice:-5&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>注意 $slice 的值为负数，运行结果如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f042cfcafd355da9486008"</span>),</span><br><span class="line">    <span class="hljs-attr">"name"</span> : <span class="hljs-string">"三国演义"</span>,</span><br><span class="line">    <span class="hljs-attr">"author"</span> : &#123;</span><br><span class="line">        <span class="hljs-attr">"name"</span> : <span class="hljs-string">"明代罗贯中"</span>,</span><br><span class="line">        <span class="hljs-attr">"gender"</span> : <span class="hljs-string">"男"</span>,</span><br><span class="line">        <span class="hljs-attr">"age"</span> : <span class="hljs-number">100.0</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="hljs-attr">"comments"</span> : [ </span><br><span class="line">        <span class="hljs-string">"111"</span>, </span><br><span class="line">        <span class="hljs-string">"222"</span>, </span><br><span class="line">        <span class="hljs-string">"333"</span>, </span><br><span class="line">        <span class="hljs-string">"444"</span>, </span><br><span class="line">        <span class="hljs-string">"555"</span></span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>我们还可以在清理之前使用 $sort 对数据先进行排序，然后再清理比如我有一个 class 文档，如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f07f3649fc5c9c2412a662"</span>),</span><br><span class="line">    <span class="hljs-attr">"class"</span> : <span class="hljs-string">"三年级二班"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>现在向这个文档中插入 student，每个 student 有姓名和成绩，然后按照成绩降序排列，只要前 5 条数据，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.update(&#123;class:&quot;三年级二班&quot;&#125;,&#123;$push:&#123;students:&#123;$each:[&#123;name:&quot;张一百&quot;,score:100&#125;,&#123;name:&quot;张九九&quot;,score:99&#125;,&#123;name:&quot;张九八&quot;,score:98&#125;],$slice:5,$sort:&#123;score:-1&#125;&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>$sort 的取值为 -1 和 1，-1 表示降序，1 表示升序。<br>上面的命令执行两次之后（即插入两次），结果如下：</p>
-<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"_id"</span> : ObjectId(<span class="hljs-string">"59f07f3649fc5c9c2412a662"</span>),</span><br><span class="line">    <span class="hljs-attr">"class"</span> : <span class="hljs-string">"三年级二班"</span>,</span><br><span class="line">    <span class="hljs-attr">"students"</span> : [ </span><br><span class="line">        &#123;</span><br><span class="line">            <span class="hljs-attr">"name"</span> : <span class="hljs-string">"张一百"</span>,</span><br><span class="line">            <span class="hljs-attr">"score"</span> : <span class="hljs-number">100.0</span></span><br><span class="line">        &#125;, </span><br><span class="line">        &#123;</span><br><span class="line">            <span class="hljs-attr">"name"</span> : <span class="hljs-string">"张一百"</span>,</span><br><span class="line">            <span class="hljs-attr">"score"</span> : <span class="hljs-number">100.0</span></span><br><span class="line">        &#125;, </span><br><span class="line">        &#123;</span><br><span class="line">            <span class="hljs-attr">"name"</span> : <span class="hljs-string">"张九九"</span>,</span><br><span class="line">            <span class="hljs-attr">"score"</span> : <span class="hljs-number">99.0</span></span><br><span class="line">        &#125;, </span><br><span class="line">        &#123;</span><br><span class="line">            <span class="hljs-attr">"name"</span> : <span class="hljs-string">"张九九"</span>,</span><br><span class="line">            <span class="hljs-attr">"score"</span> : <span class="hljs-number">99.0</span></span><br><span class="line">        &#125;, </span><br><span class="line">        &#123;</span><br><span class="line">            <span class="hljs-attr">"name"</span> : <span class="hljs-string">"张九八"</span>,</span><br><span class="line">            <span class="hljs-attr">"score"</span> : <span class="hljs-number">98.0</span></span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><strong>$slice和$sort不能只和$push一起使用，还要加上$each。</strong></p>
-<h3 id="addToSet"><a href="#addToSet" class="headerlink" title="$addToSet"></a>$addToSet</h3><p>我们可以在插入的时候使用 $addToSet，表示要插入的值如果存在则不插入，否则插入，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.update(&#123;name:&quot;三国演义&quot;&#125;,&#123;$addToSet:&#123;comments:&quot;好书&quot;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>上面的命令执行多次之后，发现只成功插入了一条数据。也可以将 $addToSet 和 $each 结合起来使用，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.update(&#123;name:&quot;三国演义&quot;&#125;,&#123;$addToSet:&#123;comments:&#123;$each:[&quot;111&quot;,&quot;222&quot;,&quot;333&quot;]&#125;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<h3 id="pop"><a href="#pop" class="headerlink" title="$pop"></a>$pop</h3><p>$pop 可以用来删除数组中的数据，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.update(&#123;name:&quot;三国演义&quot;&#125;,&#123;$pop:&#123;comments:1&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>1 表示从 comments 数组的末尾删除一条数据，-1 表示从 comments 数组的开头删除一条数据。</p>
-<h3 id="pull"><a href="#pull" class="headerlink" title="$pull"></a>$pull</h3><p>使用 $pull 我们可以按条件删除数组中的某个元素，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.update(&#123;name:&quot;三国演义&quot;&#125;,&#123;$pull:&#123;comments:&quot;444&quot;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>表示删除数组中值为 444 的数据。</p>
-<h3 id><a href="#" class="headerlink" title="$"></a>$</h3><p>既然是数组，我们当然可以通过下标来访问，如下一行操作表示将下标为 0 的(第一个 comments) comments 修改为 999：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.update(&#123;name:&quot;三国演义&quot;&#125;,&#123;$set:&#123;&quot;comments.0&quot;:&quot;999&quot;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>可是有的时候我并不知道我要修改的数据处于数组中的什么位置，这个时候可以使用 $ 符号来解决：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.update(&#123;comments:&quot;333&quot;&#125;,&#123;$set:&#123;&quot;comments.$&quot;:&quot;333-1&quot;&#125;&#125;)</span><br></pre></td></tr></table></figure>
-<p>查询条件查出来 333 的下标，$ 符号就代码这个下标，然后通过 $ 符号就能将之修改。</p>
-<h2 id="save"><a href="#save" class="headerlink" title="save"></a>save</h2><p>save 是 shell 中的一个函数，接收一个参数，这个参数就是文档，如果文档中有 <code>_id</code> 参数 save 会执行更新操作，否则执行插入操作，使用 save 操作我们可以方便的完成一些更新操作。</p>
-<p><img src="https://www.javaboy.org/images/mongodb/4-6.png" alt="p253"></p>
-<p>类似于如下命令则表示一个插入操作(因为没有 <code>_id</code> )：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.save(&#123;x:111&#125;)</span><br></pre></td></tr></table></figure>
-<p>好了，MongoDB 的更新操作我们就先介绍这么多，有问题欢迎留言讨论。</p>
-<p>参考资料：</p>
-<ol>
-<li>《MongoDB权威指南第2版》</li>
-</ol>
-
         </div>
         
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/0904/mongodb-documents-update.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
         
         
     </div>
@@ -1260,7 +625,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    8 分钟 读完 (大约 1188 个字)
+                    8 分钟 读完 (大约 1189 个字)
                 </span>
                 
                 
@@ -1273,43 +638,17 @@
             
         </h1>
         <div class="content">
-            <p>上篇文章我们介绍了 MongoDB 的最基本的增删改查操作，也介绍了一些基础的概念，MongoDB 中每条记录称作一个文档，这个文档和我们平时用的 JSON 有点像，但也不完全一样。JSON 是一种轻量级的数据交换格式。简洁和清晰的层次结构使得 JSON 成为理想的数据交换语言，JSON 易于阅读和编写，同时也易于机器解析和生成，并有效地提升网络传输效率，但是 JSON 也有它的局限性，比如它只有 null、布尔、数字、字符串、数组和对象这几种数据类型，没有日期类型，只有一种数字类型，无法区分浮点数和整数，也没法表示正则表达式或者函数。由于这些局限性，BSON 闪亮登场啦，BSON 是一种类 JSON 的二进制形式的存储格式，简称 Binary JSON，它和 JSON 一样，支持内嵌的文档对象和数组对象，但是 BSON 有 JSON 没有的一些数据类型，如 Date 和 BinData 类型，MongoDB 使用 BSON 做为文档数据存储和网络传输格式。本文我们就来说说 MongoDB 中都支持哪些数据类型，其实也是来看看 BSON 有哪些好玩的地方。</p>
-<h2 id="数字"><a href="#数字" class="headerlink" title="数字"></a>数字</h2><p>shell 默认使用 64 位浮点型数值，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collec.insert(&#123;x:3.1415926&#125;)</span><br><span class="line">db.sang_collec.insert(&#123;x:3&#125;)</span><br></pre></td></tr></table></figure>
-<p><img src="https://www.javaboy.org/images/mongodb/3-1.png" alt="p238"></p>
-<p>对于整型值，我们可以使用 NumberInt 或者 NumberLong 表示，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collec.insert(&#123;x:NumberInt(10)&#125;)</span><br><span class="line">db.sang_collec.insert(&#123;x:NumberLong(12)&#125;)</span><br></pre></td></tr></table></figure>
-<p><img src="https://www.javaboy.org/images/mongodb/3-2.png" alt="p239"></p>
-<h2 id="字符串"><a href="#字符串" class="headerlink" title="字符串"></a>字符串</h2><p>字符串也可以直接存储，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collec.insert(&#123;x:&quot;hello MongoDB!&quot;&#125;)</span><br></pre></td></tr></table></figure>
-<p><img src="https://www.javaboy.org/images/mongodb/3-3.png" alt="p240"></p>
-<h2 id="正则表达式"><a href="#正则表达式" class="headerlink" title="正则表达式"></a>正则表达式</h2><p>正则表达式主要用在查询里边，查询时我们可以使用正则表达式，语法和 JavaScript 中正则表达式的语法相同，比如查询所有 key 为 x ，value 以 hello 开始的文档且不区分大小写：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collec.find(&#123;x:/^(hello)(.[a-zA-Z0-9])+/i&#125;)</span><br></pre></td></tr></table></figure>
-<p><img src="https://www.javaboy.org/images/mongodb/3-4.png" alt="p241"></p>
-<h2 id="数组"><a href="#数组" class="headerlink" title="数组"></a>数组</h2><p>数组一样也是被支持的，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collec.insert(&#123;x:[1,2,3,4,new Date()]&#125;)</span><br></pre></td></tr></table></figure>
-<p><img src="https://www.javaboy.org/images/mongodb/3-5.png" alt="242"></p>
-<p>数组中的数据类型可以是多种多样的。</p>
-<h2 id="日期"><a href="#日期" class="headerlink" title="日期"></a>日期</h2><p>MongoDB 支持 Date 类型的数据，可以直接 new 一个 Date 对象，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collec.insert(&#123;x:new Date()&#125;)</span><br></pre></td></tr></table></figure>
-<p><img src="https://www.javaboy.org/images/mongodb/3-6.png" alt="p243"></p>
-<h2 id="内嵌文档"><a href="#内嵌文档" class="headerlink" title="内嵌文档"></a>内嵌文档</h2><p>一个文档也可以作为另一个文档的 value，这个其实很好理解，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.insert(&#123;name:&quot;三国演义&quot;,author:&#123;name:&quot;罗贯中&quot;,age:99&#125;&#125;);</span><br></pre></td></tr></table></figure>
-<p><img src="https://www.javaboy.org/images/mongodb/3-7.png" alt="p244"><br>书有一个属性是作者，作者又有 name，年龄等属性。</p>
-<h2 id="ObjectId"><a href="#ObjectId" class="headerlink" title="ObjectId"></a>ObjectId</h2><p>我们在前面提到过，我们每次插入一条数据系统都会自动帮我们插入一个 <code>_id</code> 键，这个键的值不可以重复，它可以是任何类型的，我们也可以手动的插入，默认情况下它的数据类型是 ObjectId，由于 MongoDB 在设计之初就是用作分布式数据库，所以使用 ObjectId 可以避免不同数据库中 <code>_id</code> 的重复（如果使用自增的方式在分布式系统中就会出现重复的 <code>_id</code> 的值），这个特点有点类似于 Git 中的版本号和 Svn 中版本号的区别。</p>
-<p>ObjectId 使用 12 字节的存储空间，每个字节可以存储两个十六进制数字，所以一共可以存储 24 个十六进制数字组成的字符串，在这 24 个字符串中，前 8 位表示时间戳，接下来 6 位是一个机器码，接下来 4 位表示进程 id，最后 6 位表示计数器。</p>
-<h2 id="二进制"><a href="#二进制" class="headerlink" title="二进制"></a>二进制</h2><p>MongoDB 中也可以存储二进制数据，不过这种情况并不多，二进制数据的存储不能在 shell 中操作，我们在后面的代码中会介绍这种存储方式。</p>
-<h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><p>文档中也可以包括 JavaScript 代码，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.insert(&#123;x:function f1(a,b)&#123;return a+b;&#125;&#125;);</span><br></pre></td></tr></table></figure>
-<p><img src="https://www.javaboy.org/images/mongodb/3-8.png" alt="p245"></p>
-<p>好了，MongoDB 的数据类型我们就先介绍这么多，这里只是做一个大致的了解，后文我们还会再详细的说到这些东西的详细使用方式。小伙伴们有问题欢迎留言讨论。</p>
-<p>参考资料：</p>
-<ol>
-<li>《MongoDB权威指南第2版》</li>
-</ol>
-
+            <p>上篇文章我们介绍了 MongoDB 的最基本的增删改查操作，也介绍了一些基础的概念，MongoDB 中每条记录称作一个文档，这个文档和我们平时用的 JSON 有点像，但也不完全一样。</p>
         </div>
         
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/0903/mongodb-data-types.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
         
         
     </div>
