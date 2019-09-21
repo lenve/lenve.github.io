@@ -147,17 +147,17 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-07-23T00:36:00.000Z">2019-07-23</time>
+                <time class="level-item has-text-grey" datetime="2019-09-02T02:17:28.000Z">2019-09-02</time>
                 
                 <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/MyBatis/">MyBatis</a>
+                <a class="has-link-grey -link" href="/categories/MongoDB/">MongoDB</a>
                 </div>
                 
                 
                 <span class="level-item has-text-grey">
                     
                     
-                    5 分钟 读完 (大约 762 个字)
+                    11 分钟 读完 (大约 1675 个字)
                 </span>
                 
                 
@@ -166,18 +166,256 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/0723/mybatis-@param.html">MyBatis 中 @Param 注解的四种使用场景，最后一种经常被人忽略！</a>
+                <a class="has-link-black-ter" href="/2019/0902/mongodb-basic-operations.html">MongoDB 基本操作</a>
             
         </h1>
         <div class="content">
-            <p>有一些小伙伴觉得 MyBatis 只有方法中存在多个参数的时候，才需要添加 @Param 注解，其实这个理解是不准确的。即使 MyBatis 方法只有一个参数，也可能会用到 @Param 注解。</p>
+            <p>上篇文章我们简单介绍了 MongoDB 安装以及启动命令，本文我们来看看基本的增删改查，对 MongoDB 有一个直观的认识。 </p>
+<h2 id="客户端安装配置"><a href="#客户端安装配置" class="headerlink" title="客户端安装配置"></a>客户端安装配置</h2><p>上篇文章我们提到可以在 MongoDB 启动成功之后通过 mongo 命令进入 MongoDB 客户端，然后在客户端输入操作命令执行增删改查等操作。当然，我们也可以通过一些客户端工具来连接 MongoDB，比如 Robo 3T。 </p>
+<p>首先我们下载 Robo 3T(下载地址 <a href="https://robomongo.org/download" target="_blank" rel="noopener">https://robomongo.org/download</a> )，下载成功之后解压，找到 .exe 可执行文件双击启动，启动后新建一个连接，输入 ip 地址(<strong>注意连接之前要确保 Linux 上的 MongoDB 已经启动</strong>)，如下：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/2-1.png" alt="p223"></p>
+<p>连接成功之后，我们就可以看到数据库的信息了，如下：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/2-2.png" alt="p224"></p>
+<h2 id="shell-简介"><a href="#shell-简介" class="headerlink" title="shell 简介"></a>shell 简介</h2><p>暂时我们所有的操作都先放在 test 数据库中进行(默认情况下，test 数据库为空，这里不显示空的数据库，此时执行可以选中 CentOS 菜单，右键单击点击 Open Shell，默认打开 test 数据库)，选中 test ，右键单击，选择 Open Shell，如下：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/2-3.png" alt="p225"></p>
+<p>这里的 shell 是一个功能完整的 JavaScript 解释器，可以运行 JavaScript 程序，这个很好玩，如下我定义一个函数然后调用：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/2-4.png" alt="p226"></p>
+<p>函数定义和调用的代码写好之后，按左上角的三角符号表示运行，也可以按 F5 或者 <code>Ctrl+Enter</code> 组合键。我们也可以调用 JavaScript 的标准函数库，如下：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/2-5.png" alt="p227"></p>
+<p>再比如调用Date函数，如下：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/2-6.png" alt="p228"></p>
+<p>如果我们没有使用 Robo 3T 工具，而是直接在命令行通过 mongo 命令来启动 shell，如下：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/2-7.png" alt="p229"></p>
+<p>此时，shell 会连接到 MongoDB 服务器的 test 数据库，并将数据库连接赋值给全局变量 db，我们将通过 db 这个变量实现很多功能，我们也可以查看 db 当前指向哪个数据库，直接使用 db 命令，如下：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/2-8.png" alt="p230"></p>
+<p>再比如我们可以通过 use 命令来切换数据库（上文中也有用到过），如下：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/2-9.png" alt="p231"></p>
+<h2 id="增"><a href="#增" class="headerlink" title="增"></a>增</h2><p>在添加之前我们先来说说数据库的创建，上文我们提到了 use 命令，表示切换到某一个数据库中去，如果我们想切换到一个并不存在的数据库中去，系统就会自动的帮我们创建这个数据库。但是一个空的数据库系统并不会显示出来，往这个数据库中插入一条记录，我们就可以看到数据库存在了，如下：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/2-10.png" alt="p232"> </p>
+<p>在 MongoDB 中，我们插入的每一条记录都是一个 json 字符串，这个 json 字符串我们称作<strong>文档</strong>，多个文档可以组成一个<strong>集合</strong>，这个文档就类似于我们关系型数据库中的一行数据，而集合就类似于关系型数据库中的一张表，集合也不用专门去创建，直接输入向哪个集合中插入数据即可，此时集合就会被自动的创建出来了。</p>
+<p>当然我们也可以批量的添加文档，如下(<strong>批量添加一样也可以使用insert方法来完成</strong>)：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.insertMany([&#123;x:1&#125;,&#123;x:2&#125;,&#123;x:3&#125;])</span><br></pre></td></tr></table></figure>
+<p>如果在插入某一个文档时出错，则其后面的文档就会插入失败，而在其之前已经插入的文档则不受影响，如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db.sang_collect.insertMany([&#123;_id:99,x:99&#125;,&#123;_id:99,x:98&#125;,&#123;_id:97,x:97&#125;])</span><br></pre></td></tr></table></figure>
+<p>由于第二个文档的 <code>_id</code> 字段与前面的重复，所以第二第三个文档插入失败，第一个文档则插入成功。</p>
+<h2 id="查"><a href="#查" class="headerlink" title="查"></a>查</h2><p>数据添加成功之后我们再来看看查询，利用 <code>db.sang.find()</code> 方法我们可以查看所有文档(所有记录)，如果只查看一个文档(一条记录)，可以通过 <code>db.sang.findOne()</code> 命令，在查看之前我先用一个 for 循环多插入几条数据，如下：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/2-11.png" alt="p233"></p>
+<p>然后分别调用find和findOne方法查看，如下：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/2-12.png" alt="p234"></p>
+<p>查出来的数据除了我们插入的 x 之外，还有一个 <code>_id</code> 字段，这是系统自动为我们添加的字段，我们也可以自己传入 <code>_id</code>,但是 <code>_id</code> 字段不能重复，如下：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/2-13.png" alt="p235"></p>
+<p>find 和 findOne 中也可以传入查询参数，这个我们后面再详细说。</p>
+<h2 id="改"><a href="#改" class="headerlink" title="改"></a>改</h2><p>update 操作可以用来更新数据，它接收两个参数，第一个参数表示更新条件，第二个参数表示要更新的数据，比如我将所有 x:1 的数据改为 x:999,如下：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/2-14.png" alt="p236"></p>
+<h2 id="删"><a href="#删" class="headerlink" title="删"></a>删</h2><p>remove 操作可以用来删除数据，如下：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/2-15.png" alt="p237"> </p>
+<h2 id="shell-其他操作"><a href="#shell-其他操作" class="headerlink" title="shell 其他操作"></a>shell 其他操作</h2><p>我们也可以将要执行的脚本放在一个 js 文件中，在使用 shell 脚本时指定要执行的 js 文件，如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mongo ~/myjs.js</span><br></pre></td></tr></table></figure>
+<p>shell 会依次执行 js 中的脚本，并在执行完成后退出。如下：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/2-16.png" alt="p246"></p>
+<p>我的 js 脚本中是两行插入语句，此时我们重新进入到 shell 中，就可以看到刚刚的数据已经插入成功了。</p>
+<p>如果有每次启动都要加载的 js 文件，我们可以将其内容放在 <code>.mongorc.js</code> 文件中，该文件放在当前用户目录下，如下：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/2-17.png" alt="p247"></p>
+<p>这样，每次启动都会打印一个 <code>&quot;你好，欢迎使用MongoDB&quot;</code>.</p>
+<p>好了，MongoDB 的基本操作我们先说这么多，让各位小伙伴对 MongoDB 有一个基本的认识，后面的文章我们会详细的介绍 MongoDB 中增删改查的各种情况，敬请关注。 </p>
+<p>参考资料：</p>
+<ol>
+<li>《MongoDB权威指南第2版》</li>
+</ol>
+
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-09-01T02:17:28.000Z">2019-09-01</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/MongoDB/">MongoDB</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    10 分钟 读完 (大约 1468 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/0901/linux-install-mongodb.html">Linux 上安装 MongoDB</a>
+            
+        </h1>
+        <div class="content">
+            <p>MongoDB 在 Windows 上的安装过程整体上来说并不难，网上的资料也比较多，这里我就不介绍了，我主要说下如何在Linux环境下安装MongoDB。</p>
+<hr>
+<p>环境：</p>
+<p>CentOS 7<br>MongoDB 3.4.9  </p>
+<hr>
+<h2 id="下载-MongoDB"><a href="#下载-MongoDB" class="headerlink" title="下载 MongoDB"></a>下载 MongoDB</h2><p>首先去 MongoDB 官网下载 MongoDB ，地址 <a href="https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-3.4.9.tgz" target="_blank" rel="noopener">https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-3.4.9.tgz</a> 。将下载的文件放到 /opt 目录下。</p>
+<h2 id="解压"><a href="#解压" class="headerlink" title="解压"></a>解压</h2><p>解压下载到的 tgz 文件,并给文件夹重命名为 mongodb，然后创建 db、logs 目录分别用来存放数据和日志。如下：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/1-1.png" alt>   </p>
+<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><p>进入到 bin 目录下，编辑 mongodb.conf 文件，内容如下：  </p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">dbpath=/opt/mongodb/db</span><br><span class="line">logpath=/opt/mongodb/logs/mongodb.log</span><br><span class="line">port=27017</span><br><span class="line">fork=true</span><br><span class="line">nohttpinterface=true</span><br></pre></td></tr></table></figure>
+<p>执行结果如下：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/1-2.png" alt="p218"></p>
+<h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><p>做完这一切之后，我们就可以启动 MongoDB 了，还是在 bin 目录下，执行 <code>./mongod -f mongodb.conf</code> 命令表示启动 MongoDB ，然后执行 <code>mongo</code> 命令表示表示进入到 MongDB 的控制台，进入到控制台之后，我们输入 <code>db.version()</code> 命令，如果能显示出当前 MongoDB 的版本号，说明安装成功了。如下：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/1-3.png" alt="p219"> </p>
+<p>默认情况下，连接地址是 127.0.0.1:27017 ，连接的数据库是 test 数据库，我们也可以手动指定连接地址和连接的数据库：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mongo 127.0.0.1:27017/admin</span><br></pre></td></tr></table></figure>
+<p>此时连接成功之后，输入 db 命令，我们可以看到当前连接的数据库是 admin。</p>
+<h2 id="配置开机启动"><a href="#配置开机启动" class="headerlink" title="配置开机启动"></a>配置开机启动</h2><p>我们也可以配置开机启动，编辑 <code>/etc/rc.d/rc.local</code> 文件，如下：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/1-4.png" alt="p220"></p>
+<p>配置完成之后自行关机重启测试。</p>
+<h2 id="配置环境变量"><a href="#配置环境变量" class="headerlink" title="配置环境变量"></a>配置环境变量</h2><p>每次都要进入到安装目录中去输入命令，麻烦，我们直接配置环境变量即可，编辑当前用户目录下的 <code>.bash_profile</code> 文件，如下：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/1-5.png" alt="p221"></p>
+<h2 id="关闭-MongoDB-服务"><a href="#关闭-MongoDB-服务" class="headerlink" title="关闭 MongoDB 服务"></a>关闭 MongoDB 服务</h2><p>使用 db.shutdownServer(); 命令可以关闭到 MongoDB 服务，但是这个命令的执行要在 admin 数据库下，所以先切换到 admin，再关闭服务，完整运行过程如下：</p>
+<p><img src="https://www.javaboy.org/images/mongodb/1-6.png" alt="p222"></p>
+<h2 id="安全管理"><a href="#安全管理" class="headerlink" title="安全管理"></a>安全管理</h2><p>上面我们所做的所有的操作都没有涉及到用户，我们在用 Oracle、MySQL 或者 MSSQL 时都有用户名密码需要登录才可以操作，MongoDB 中当然也有，但是需要我们手动添加。在添加之前，我们先来说说 MongoDB 中用户管理的几个特点：</p>
+<blockquote>
+<ol>
+<li>MongoDB 中的账号是在某一个库里边进行设置的，我们在哪一个库里边进行设置，就要在哪一个库里边进行验证。</li>
+<li>创建用户时，我们需要指定用户名、用户密码和用户角色，用户角色表示了该用户的权限。</li>
+</ol>
+</blockquote>
+<p>OK，假设我给 admin 数据库创建一个用户，方式如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">use admin</span><br><span class="line">db.createUser(&#123;user:&quot;root&quot;,pwd:&quot;123&quot;,roles:[&#123;role:&quot;userAdminAnyDatabase&quot;,db:&quot;admin&quot;&#125;]&#125;)</span><br></pre></td></tr></table></figure>
+<p>user 表示用户名，pwd 表示密码，role 表示角色，db 表示这个用户应用在哪个数据库上。用户的角色，有如下几种(<a href="https://www.cnblogs.com/shiyiwen/p/5552750.html" target="_blank" rel="noopener">参考资料</a>)：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">角色名</th>
+<th style="text-align:left">备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">Read</td>
+<td style="text-align:left">允许用户读取指定数据库</td>
+</tr>
+<tr>
+<td style="text-align:left">readWrite</td>
+<td style="text-align:left">允许用户读写指定数据库</td>
+</tr>
+<tr>
+<td style="text-align:left">dbAdmin</td>
+<td style="text-align:left">允许用户在指定数据库中执行管理函数，如索引创建、删除，查看统计或访问system.profile</td>
+</tr>
+<tr>
+<td style="text-align:left">userAdmin</td>
+<td style="text-align:left">允许用户向system.users集合写入，可以找指定数据库里创建、删除和管理用户</td>
+</tr>
+<tr>
+<td style="text-align:left">clusterAdmin</td>
+<td style="text-align:left">只在admin数据库中可用，赋予用户所有分片和复制集相关函数的管理权限。</td>
+</tr>
+<tr>
+<td style="text-align:left">readAnyDatabase</td>
+<td style="text-align:left">只在admin数据库中可用，赋予用户所有数据库的读权限</td>
+</tr>
+<tr>
+<td style="text-align:left">readWriteAnyDatabase</td>
+<td style="text-align:left">只在admin数据库中可用，赋予用户所有数据库的读写权限</td>
+</tr>
+<tr>
+<td style="text-align:left">userAdminAnyDatabase</td>
+<td style="text-align:left">只在admin数据库中可用，赋予用户所有数据库的userAdmin权限</td>
+</tr>
+<tr>
+<td style="text-align:left">dbAdminAnyDatabase</td>
+<td style="text-align:left">只在admin数据库中可用，赋予用户所有数据库的dbAdmin权限。</td>
+</tr>
+<tr>
+<td style="text-align:left">root</td>
+<td style="text-align:left">只在admin数据库中可用。超级账号，超级权限</td>
+</tr>
+</tbody>
+</table>
+<p>用户创建成功之后，我们关闭掉当前MongoDB服务实例，然后重新启动新的实例，启动方式如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mongod -f /opt/mongodb/bin/mongodb.conf --auth</span><br></pre></td></tr></table></figure>
+<p>启动成功之后，如果我们直接执行如下命令，会提示没有权限：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">show dbs</span><br></pre></td></tr></table></figure>
+<p>执行结果如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&quot;errmsg&quot; : &quot;not authorized on admin to execute command &#123; listDatabases: 1.0 &#125;&quot;,</span><br><span class="line">&quot;code&quot; : 13,</span><br><span class="line">&quot;codeName&quot; : &quot;Unauthorized&quot;</span><br></pre></td></tr></table></figure>
+<p>此时我们需要先进入到 admin 数据库中，然后授权，操作如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">use admin</span><br><span class="line">db.auth(&quot;root&quot;,&quot;123&quot;)</span><br></pre></td></tr></table></figure>
+<p>auth 方法执行结果返回 1 表示认证成功。然后再去执行 show dbs 就可以看到预期结果了。此时我再在 sang 库下创建一个只读用户，如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">use sang</span><br><span class="line">db.createUser(&#123;user:&quot;readuser&quot;,pwd:&quot;123&quot;,roles:[&#123;role:&quot;read&quot;,db:&quot;sang&quot;&#125;]&#125;)</span><br></pre></td></tr></table></figure>
+<p>创建成功之后，再按照上面的流程进入到 sang 库中，使用 readuser 用户进行认证，认证成功之后一切我们就可以在 sang 库中执行查询操作了，步骤如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">use sang</span><br><span class="line">db.auth(&quot;readuser&quot;,&quot;123&quot;)</span><br></pre></td></tr></table></figure>
+<p>做完这两步之后再执行查询操作就没有任何问题了，但是此时如果执行插入操作会提示没有权限，那我们可以创建一个有读写功能的用户执行相应的操作，这里就不再赘述。</p>
+<p>好了，MongoDB 的安装我们就说这么多，有问题欢迎留言讨论。</p>
+
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-08-27T05:03:09.000Z">2019-08-27</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/IDEA/">IDEA</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    16 分钟 读完 (大约 2468 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/0827/intellij-idea.html">IDEA 神器入坑指南！17 个常用快捷键奉上！</a>
+            
+        </h1>
+        <div class="content">
+            <p>我前几年写过一个 Android Studio 中的快捷键教程，发表在 CSDN 上，最近有小伙伴看我讲 Spring Boot 视频，IDEA 用的还比较溜，问我有没有整理好的快捷键，我一般就直接把当时写的 Android Studio 的快捷键发给他。因为大家知道 as 其实就是基于 IDEA 来做的。</p>
         </div>
         
         
         <div class="level is-mobile">
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0723/mybatis-@param.html#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2019/0827/intellij-idea.html#more">阅读更多</a>
                 </div>
             </div>
         </div>
@@ -199,7 +437,7 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-07-17T00:30:51.000Z">2019-07-17</time>
+                <time class="level-item has-text-grey" datetime="2019-08-26T05:03:45.000Z">2019-08-26</time>
                 
                 <div class="level-item">
                 <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
@@ -209,7 +447,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    22 分钟 读完 (大约 3307 个字)
+                    9 分钟 读完 (大约 1333 个字)
                 </span>
                 
                 
@@ -218,18 +456,19 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/0717/springboot-mail.html">Spring Boot 邮件发送的 5 种姿势！</a>
+                <a class="has-link-black-ter" href="/2019/0826/springboot-guide.html">40 篇原创干货，带你进入 Spring Boot 殿堂！</a>
             
         </h1>
         <div class="content">
-            <p>邮件发送其实是一个非常常见的需求，用户注册，找回密码等地方，都会用到，使用 JavaSE 代码发送邮件，步骤还是挺繁琐的，Spring Boot 中对于邮件发送，提供了相关的自动化配置类，使得邮件发送变得非常容易，本文我们就来一探究竟！看看使用 Spring Boot 发送邮件的 5 中姿势。</p>
+            <p>两个月前，松哥总结过一次已经完成的 Spring Boot 教程，当时感受到了小伙伴们巨大的热情。</p>
+<p>两个月过去了，松哥的 Spring Boot 教程又更新了不少，为了方便小伙伴们查找，这里再给大家做一个索引参考。</p>
         </div>
         
         
         <div class="level is-mobile">
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0717/springboot-mail.html#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2019/0826/springboot-guide.html#more">阅读更多</a>
                 </div>
             </div>
         </div>
@@ -251,267 +490,7 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-07-15T00:50:47.000Z">2019-07-15</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/Java/">Java</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    10 分钟 读完 (大约 1560 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/0715/java-fullstack.html">2019 Java 全栈工程师进阶路线图，一定要收藏</a>
-            
-        </h1>
-        <div class="content">
-            <p>技术更新日新月异，对于初入职场的同学来说，经常会困惑该往那个方向发展，这一点松哥是深有体会的。</p>
-        </div>
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0715/java-fullstack.html#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-07-12T04:55:28.000Z">2019-07-12</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/MySQL/">MySQL</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    7 分钟 读完 (大约 1067 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/0712/mycat-id-autoincrement.html">分布式数据库如何实现主键全局自增？</a>
-            
-        </h1>
-        <div class="content">
-            <p>前面和大家介绍了 MyCat 中数据库不同的分片规则，从留言中看出大家对分布式数据库中间件还挺感兴趣，因此今天就再来一篇，聊一聊主键全局自增要如何实现。</p>
-        </div>
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0712/mycat-id-autoincrement.html#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-07-12T04:50:12.000Z">2019-07-12</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/MySQL/">MySQL</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    20 分钟 读完 (大约 2978 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/0712/mycat-rule.html">数据库分库分表，都有哪些分片规则？</a>
-            
-        </h1>
-        <div class="content">
-            <p>上次和大伙聊了 MyCat 的安装，今天来说一个新的话题，就是数据库的分片。</p>
-        </div>
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0712/mycat-rule.html#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-07-10T01:43:19.000Z">2019-07-10</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/杂谈/">杂谈</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    19 分钟 读完 (大约 2801 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/0710/vhr.html">公司倒闭 1 年了，而我当年的项目上了 GitHub 热榜</a>
-            
-        </h1>
-        <div class="content">
-            <p>公司倒闭 1 年多了，而我在公司倒闭时候做的开源项目，最近却上了 GitHub Trending，看着这个数据，真是不胜唏嘘。</p>
-        </div>
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0710/vhr.html#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-07-09T08:02:43.000Z">2019-07-09</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/mail/">mail</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    12 分钟 读完 (大约 1873 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/0709/java-mail.html">手把手教你用 Java 发送邮件，不用框架！</a>
-            
-        </h1>
-        <div class="content">
-            <p>邮件发送也是一个老生常谈的问题了，代码虽然简单，但是许多小伙伴对过程不太理解，所以还是打算和各位小伙伴聊聊这个话题。  </p>
-        </div>
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0709/java-mail.html#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-07-09T02:19:18.000Z">2019-07-09</time>
+                <time class="level-item has-text-grey" datetime="2019-08-25T05:04:16.000Z">2019-08-25</time>
                 
                 <div class="level-item">
                 <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
@@ -521,7 +500,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    11 分钟 读完 (大约 1592 个字)
+                    12 分钟 读完 (大约 1848 个字)
                 </span>
                 
                 
@@ -530,19 +509,19 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/0709/springboot-jar.html">Spring Boot 打包成的可执行 jar ，为什么不能被其他项目依赖？</a>
+                <a class="has-link-black-ter" href="/2019/0825/springboot-video.html">完结撒花！129 集 21 个小时，松哥自制的 Spring Boot2 系列视频教程杀青啦！</a>
             
         </h1>
         <div class="content">
-            <p>前两天被人问到这样一个问题:</p>
-<p>“松哥，为什么我的 Spring Boot 项目打包成的 jar ，被其他项目依赖之后，总是报找不到类的错误？”</p>
+            <p>松哥的 Spring Boot 教程分为几个阶段。</p>
+<h2 id="2016"><a href="#2016" class="headerlink" title="2016"></a>2016</h2><p>松哥最早在 2016 年底的时候开始写 Spring Boot 系列的教程，记得当时在广州上班，年底那段时间在深圳出差，在深圳人生地不熟，下班回到酒店，就开始写博客，写 Spring Boot 教程。</p>
         </div>
         
         
         <div class="level is-mobile">
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0709/springboot-jar.html#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2019/0825/springboot-video.html#more">阅读更多</a>
                 </div>
             </div>
         </div>
@@ -564,7 +543,7 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-07-05T04:14:59.000Z">2019-07-05</time>
+                <time class="level-item has-text-grey" datetime="2019-08-19T05:04:47.000Z">2019-08-19</time>
                 
                 <div class="level-item">
                 <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
@@ -574,7 +553,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    9 分钟 读完 (大约 1409 个字)
+                    12 分钟 读完 (大约 1847 个字)
                 </span>
                 
                 
@@ -583,18 +562,18 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/0705/springboot-freemarker.html">Spring Boot 整合 Freemarker，50 多行配置是怎么省略掉的？</a>
+                <a class="has-link-black-ter" href="/2019/0819/springboot-docker.html">一键部署 Spring Boot 到远程 Docker 容器，就是这么秀！</a>
             
         </h1>
         <div class="content">
-            <p>Spring Boot2 系列教程接近完工，最近进入修修补补阶段。Freemarker 整合貌似还没和大家聊过，因此今天把这个补充上。</p>
+            <p>不知道各位小伙伴在生产环境都是怎么部署 Spring Boot 的，打成 jar 直接一键运行？打成 war 扔到 Tomcat 容器中运行？不过据松哥了解，容器化部署应该是目前的主流方案。</p>
         </div>
         
         
         <div class="level is-mobile">
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0705/springboot-freemarker.html#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2019/0819/springboot-docker.html#more">阅读更多</a>
                 </div>
             </div>
         </div>
@@ -616,17 +595,17 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-07-01T02:22:32.000Z">2019-07-01</time>
+                <time class="level-item has-text-grey" datetime="2019-08-18T05:05:17.000Z">2019-08-18</time>
                 
                 <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/前后端分离/">前后端分离</a>
+                <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
                 </div>
                 
                 
                 <span class="level-item has-text-grey">
                     
                     
-                    13 分钟 读完 (大约 2023 个字)
+                    13 分钟 读完 (大约 1894 个字)
                 </span>
                 
                 
@@ -635,18 +614,174 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/0701/fronted-backend.html">前后端分离时代，Java 程序员的变与不变！</a>
+                <a class="has-link-black-ter" href="/2019/0818/springboot-vue-axios.html">学艺不精，总是掉坑！前后端分离历险记</a>
             
         </h1>
         <div class="content">
-            <p>事情的起因是这样的，有个星球的小伙伴向邀请松哥在知乎上回答一个问题，原题是：</p>
+            <p>Spring Boot + Vue 这一对技术栈目前看来可以说是非常的火热，关于 Spring Boot 松哥已经写过多篇教程，如：</p>
         </div>
         
         
         <div class="level is-mobile">
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0701/fronted-backend.html#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2019/0818/springboot-vue-axios.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-08-17T05:05:39.000Z">2019-08-17</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/GitHub/">GitHub</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    9 分钟 读完 (大约 1283 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/0817/github-chrome.html">浏览 GitHub 太卡了？教你两招！</a>
+            
+        </h1>
+        <div class="content">
+            <p>老实说，GitHub 在国内的使用体验并不算太好，这其中最大的原因就是网络了。</p>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/0817/github-chrome.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-08-16T05:06:09.000Z">2019-08-16</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    12 分钟 读完 (大约 1835 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/0816/spring-boot-springmvc.html">Spring Boot 中自定义 SpringMVC 配置，到底继承谁？</a>
+            
+        </h1>
+        <div class="content">
+            <p>用过 Spring Boot 的小伙伴都知道，我们只需要在项目中引入 <code>spring-boot-starter-web</code> 依赖，SpringMVC 的一整套东西就会自动给我们配置好，但是，真实的项目环境比较复杂，系统自带的配置不一定满足我们的需求，往往我们还需要结合实际情况自定义配置。</p>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/0816/spring-boot-springmvc.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-08-15T05:06:25.000Z">2019-08-15</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    10 分钟 读完 (大约 1467 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/0815/springboot-vue.html">七个开源的 Spring Boot 前后端分离项目，一定要收藏！</a>
+            
+        </h1>
+        <div class="content">
+            <p>前后端分离已经在慢慢走进各公司的技术栈，根据松哥了解到的消息，不少公司都已经切换到这个技术栈上面了。即使贵司目前没有切换到这个技术栈上面，松哥也非常建议大家学习一下前后端分离开发，以免在公司干了两三年，SSH 框架用的滚瓜烂熟，出来却发现自己依然没有任何优势！</p>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/0815/springboot-vue.html#more">阅读更多</a>
                 </div>
             </div>
         </div>
@@ -684,7 +819,7 @@
             
             <li><span class="pagination-ellipsis has-text-black-ter">&hellip;</span></li>
             
-            <li><a class="pagination-link has-text-black-ter" href="/page/12/">12</a></li>
+            <li><a class="pagination-link has-text-black-ter" href="/page/14/">14</a></li>
             
         </ul>
     </nav>
@@ -732,7 +867,7 @@
                         文章
                     </p>
                     <p class="title has-text-weight-normal">
-                        115
+                        134
                     </p>
                 </div>
             </div>
@@ -742,7 +877,7 @@
                         分类
                     </p>
                     <p class="title has-text-weight-normal">
-                        23
+                        24
                     </p>
                 </div>
             </div>
@@ -752,7 +887,7 @@
                         标签
                     </p>
                     <p class="title has-text-weight-normal">
-                        49
+                        50
                     </p>
                 </div>
             </div>
@@ -845,6 +980,14 @@
             </span>
             <span class="level-end">
                 <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MongoDB/">
+            <span class="level-start">
+                <span class="level-item">MongoDB</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/MyBatis/">
@@ -994,7 +1137,7 @@
         <h3 class="menu-label">
             标签云
         </h3>
-        <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 11.25px;">Chrome</a> <a href="/tags/Docker/" style="font-size: 10px;">Docker</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/Freemarker/" style="font-size: 10px;">Freemarker</a> <a href="/tags/Git/" style="font-size: 16.25px;">Git</a> <a href="/tags/GitHub/" style="font-size: 10px;">GitHub</a> <a href="/tags/Https/" style="font-size: 10px;">Https</a> <a href="/tags/IDEA/" style="font-size: 10px;">IDEA</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 11.25px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 12.5px;">Jpa</a> <a href="/tags/LiveReload/" style="font-size: 10px;">LiveReload</a> <a href="/tags/Mail/" style="font-size: 10px;">Mail</a> <a href="/tags/MyBatis/" style="font-size: 13.75px;">MyBatis</a> <a href="/tags/MyCat/" style="font-size: 13.75px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 17.5px;">MySQL</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/Redis/" style="font-size: 18.75px;">Redis</a> <a href="/tags/Shiro/" style="font-size: 10px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 12.5px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Data/" style="font-size: 11.25px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 13.75px;">Spring Security</a> <a href="/tags/SpringBoot/" style="font-size: 10px;">SpringBoot</a> <a href="/tags/SpringMVC/" style="font-size: 12.5px;">SpringMVC</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Thymeleaf/" style="font-size: 10px;">Thymeleaf</a> <a href="/tags/Video/" style="font-size: 10px;">Video</a> <a href="/tags/Vue/" style="font-size: 15px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/docker/" style="font-size: 16.25px;">docker</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/java/" style="font-size: 10px;">java</a> <a href="/tags/life/" style="font-size: 10px;">life</a> <a href="/tags/mail/" style="font-size: 10px;">mail</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/中间件/" style="font-size: 10px;">中间件</a> <a href="/tags/前后端分离/" style="font-size: 10px;">前后端分离</a> <a href="/tags/单体应用/" style="font-size: 10px;">单体应用</a> <a href="/tags/学习资源/" style="font-size: 10px;">学习资源</a> <a href="/tags/微服务/" style="font-size: 11.25px;">微服务</a> <a href="/tags/杂谈/" style="font-size: 13.75px;">杂谈</a> <a href="/tags/条件注解/" style="font-size: 10px;">条件注解</a> <a href="/tags/生活/" style="font-size: 10px;">生活</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
+        <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 11.11px;">Chrome</a> <a href="/tags/Docker/" style="font-size: 10px;">Docker</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/Freemarker/" style="font-size: 10px;">Freemarker</a> <a href="/tags/Git/" style="font-size: 15.56px;">Git</a> <a href="/tags/GitHub/" style="font-size: 10px;">GitHub</a> <a href="/tags/Https/" style="font-size: 10px;">Https</a> <a href="/tags/IDEA/" style="font-size: 10px;">IDEA</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 11.11px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 12.22px;">Jpa</a> <a href="/tags/LiveReload/" style="font-size: 10px;">LiveReload</a> <a href="/tags/Mail/" style="font-size: 10px;">Mail</a> <a href="/tags/MongoDB/" style="font-size: 18.89px;">MongoDB</a> <a href="/tags/MyBatis/" style="font-size: 13.33px;">MyBatis</a> <a href="/tags/MyCat/" style="font-size: 13.33px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 16.67px;">MySQL</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/Redis/" style="font-size: 17.78px;">Redis</a> <a href="/tags/Shiro/" style="font-size: 10px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 12.22px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Data/" style="font-size: 11.11px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 13.33px;">Spring Security</a> <a href="/tags/SpringBoot/" style="font-size: 10px;">SpringBoot</a> <a href="/tags/SpringMVC/" style="font-size: 12.22px;">SpringMVC</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Thymeleaf/" style="font-size: 10px;">Thymeleaf</a> <a href="/tags/Video/" style="font-size: 10px;">Video</a> <a href="/tags/Vue/" style="font-size: 14.44px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/docker/" style="font-size: 15.56px;">docker</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/java/" style="font-size: 10px;">java</a> <a href="/tags/life/" style="font-size: 10px;">life</a> <a href="/tags/mail/" style="font-size: 10px;">mail</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/中间件/" style="font-size: 10px;">中间件</a> <a href="/tags/前后端分离/" style="font-size: 10px;">前后端分离</a> <a href="/tags/单体应用/" style="font-size: 10px;">单体应用</a> <a href="/tags/学习资源/" style="font-size: 10px;">学习资源</a> <a href="/tags/微服务/" style="font-size: 11.11px;">微服务</a> <a href="/tags/杂谈/" style="font-size: 13.33px;">杂谈</a> <a href="/tags/条件注解/" style="font-size: 10px;">条件注解</a> <a href="/tags/生活/" style="font-size: 10px;">生活</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
     </div>
 </div>
 
@@ -1039,36 +1182,36 @@
             
             <div class="media-content">
                 <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-19T02:17:28.000Z">2019-09-19</time></div>
+                    <a href="/2019/0919/mongodb-in-java.html" class="has-link-black-ter is-size-6">Java 操作 MongoDB</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/MongoDB/">MongoDB</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-18T02:17:28.000Z">2019-09-18</time></div>
+                    <a href="/2019/0918/mongodb-shard.html" class="has-link-black-ter is-size-6">初识 MongoDB 分片</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/MongoDB/">MongoDB</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
                     <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-17T05:06:41.000Z">2019-09-17</time></div>
                     <a href="/2019/0917/official-accounts-20000.html" class="has-link-black-ter is-size-6">一个小小的里程碑！啥也不说了，签名书奉上！</a>
                     <p class="is-size-7 is-uppercase">
                         <a class="has-link-grey -link" href="/categories/life/">life</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
-        <article class="media">
-            
-            <div class="media-content">
-                <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-08-27T05:03:09.000Z">2019-08-27</time></div>
-                    <a href="/2019/0827/intellij-idea.html" class="has-link-black-ter is-size-6">IDEA 神器入坑指南！17 个常用快捷键奉上！</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/IDEA/">IDEA</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
-        <article class="media">
-            
-            <div class="media-content">
-                <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-08-26T05:03:45.000Z">2019-08-26</time></div>
-                    <a href="/2019/0826/springboot-guide.html" class="has-link-black-ter is-size-6">40 篇原创干货，带你进入 Spring Boot 殿堂！</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
                     </p>
                 </div>
             </div>
@@ -1092,7 +1235,7 @@
                     <span class="level-item">九月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">3</span>
+                    <span class="level-item tag">22</span>
                 </span>
             </a>
         </li>
@@ -1344,36 +1487,36 @@
             
             <div class="media-content">
                 <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-19T02:17:28.000Z">2019-09-19</time></div>
+                    <a href="/2019/0919/mongodb-in-java.html" class="has-link-black-ter is-size-6">Java 操作 MongoDB</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/MongoDB/">MongoDB</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-18T02:17:28.000Z">2019-09-18</time></div>
+                    <a href="/2019/0918/mongodb-shard.html" class="has-link-black-ter is-size-6">初识 MongoDB 分片</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/MongoDB/">MongoDB</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
                     <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-17T05:06:41.000Z">2019-09-17</time></div>
                     <a href="/2019/0917/official-accounts-20000.html" class="has-link-black-ter is-size-6">一个小小的里程碑！啥也不说了，签名书奉上！</a>
                     <p class="is-size-7 is-uppercase">
                         <a class="has-link-grey -link" href="/categories/life/">life</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
-        <article class="media">
-            
-            <div class="media-content">
-                <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-08-27T05:03:09.000Z">2019-08-27</time></div>
-                    <a href="/2019/0827/intellij-idea.html" class="has-link-black-ter is-size-6">IDEA 神器入坑指南！17 个常用快捷键奉上！</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/IDEA/">IDEA</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
-        <article class="media">
-            
-            <div class="media-content">
-                <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-08-26T05:03:45.000Z">2019-08-26</time></div>
-                    <a href="/2019/0826/springboot-guide.html" class="has-link-black-ter is-size-6">40 篇原创干货，带你进入 Spring Boot 殿堂！</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
                     </p>
                 </div>
             </div>
@@ -1397,7 +1540,7 @@
                     <span class="level-item">九月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">3</span>
+                    <span class="level-item tag">22</span>
                 </span>
             </a>
         </li>
