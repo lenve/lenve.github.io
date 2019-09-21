@@ -167,7 +167,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    12 分钟 读完 (大约 1846 个字)
+                    12 分钟 读完 (大约 1847 个字)
                 </span>
                 
                 
@@ -181,80 +181,16 @@
         </h1>
         <div class="content">
             <p>不知道各位小伙伴在生产环境都是怎么部署 Spring Boot 的，打成 jar 直接一键运行？打成 war 扔到 Tomcat 容器中运行？不过据松哥了解，容器化部署应该是目前的主流方案。</p>
-<p>不同于传统的单体应用，微服务由于服务数量众多，在部署的时候出问题的可能性更大，这个时候，结合 Docker 来部署，就可以很好的解决这个问题，这也是目前使用较多的方案之一。</p>
-<p>将 Spring Boot 项目打包到 Docker 容器中部署，有很多不同的方法，今天松哥主要来和大家聊一聊如何将 Spring Boot 项目一键打包到远程 Docker 容器，然后通过运行一个镜像的方式来启动一个 Spring Boot 项目。</p>
-<p>至于其他的 Spring Boot 结合 Docker 的用法，大家不要着急，后续的文章，松哥会和大家慢慢的一一道来。</p>
-<h2 id="1-准备工作"><a href="#1-准备工作" class="headerlink" title="1.准备工作"></a>1.准备工作</h2><h3 id="1-1-准备-Docker"><a href="#1-1-准备-Docker" class="headerlink" title="1.1 准备 Docker"></a>1.1 准备 Docker</h3><p>我这里以 CentOS7 为例来给大家演示。</p>
-<p>首先需要在 CentOS7 上安装好 Docker，这个安装方式网上很多，我就不多说了，我自己去年写过一个 Docker 入门教程，大家可以在公众号后台回复 <code>Docker</code> 获取教程下载地址。</p>
-<p>Docker 安装成功之后，我们首先需要修改 Docker 配置，开启允许远程访问 Docker 的功能，开启方式很简单，修改 <code>/usr/lib/systemd/system/docker.service</code> 文件，加入如下内容：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-H tcp://0.0.0.0:2375  -H unix:///var/run/docker.sock</span><br></pre></td></tr></table></figure>
-<p>如下图：</p>
-<p><img src="http://www.javaboy.org/images/boot/34-1.png" alt></p>
-<p>配置完成后，保存退出，然后重启 Docker：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl daemon-reload    </span><br><span class="line">service docker restart</span><br></pre></td></tr></table></figure>
-<p>Docker 重启成功之后，Docker 的准备工作就算是 OK 了。</p>
-<h3 id="1-2-准备-IDEA"><a href="#1-2-准备-IDEA" class="headerlink" title="1.2 准备 IDEA"></a>1.2 准备 IDEA</h3><p>IDEA 上的准备工作，主要是安装一个 Docker 插件，点击 <code>File-&gt;Settings-&gt;Plugins-&gt;Browse Repositories</code> 如下：</p>
-<p><img src="http://www.javaboy.org/images/boot/34-2.png" alt></p>
-<p>点击右边绿色的 Install 按钮，完成安装，安装完成之后需要重启一下 IDEA。</p>
-<p>IDEA 重启成功之后，我们依次打开 <code>File-&gt;Settings-&gt;Build,Execution,Deployment-&gt;Docker</code> ，然后配置一下 Docker 的远程连接地址：</p>
-<p><img src="http://www.javaboy.org/images/boot/34-3.png" alt></p>
-<p>配置一下 Docker 的地址，配置完成后，可以看到下面有一个 Connection successful 提示，这个表示 Docker 已经连接上了。</p>
-<p>如此之后，我们的准备工作就算是 OK 了。</p>
-<h2 id="2-准备项目"><a href="#2-准备项目" class="headerlink" title="2.准备项目"></a>2.准备项目</h2><p>接下来我们来创建一个简单的 Spring Boot 项目（只需要引入 <code>spring-boot-starter-web</code> 依赖即可），项目创建成功之后，我们再创建一个普通的 <code>HelloDockerController</code>，用来做测试，如下：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@RestController</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HelloDockerController</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@GetMapping</span>(<span class="hljs-string">"/hello"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">hello</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-string">"hello docker!"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这是一个很简单的接口，无需多说。</p>
-<h2 id="3-配置-Dockerfile"><a href="#3-配置-Dockerfile" class="headerlink" title="3.配置 Dockerfile"></a>3.配置 Dockerfile</h2><p>接下来，在项目的根目录下，我创建一个 Dockerfile ，作为我镜像的构建文件，具体位置如下图：</p>
-<p><img src="http://www.javaboy.org/images/boot/34-4.png" alt></p>
-<p>文件内容如下：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">FROM hub.c.163.com/library/java:latest</span><br><span class="line">VOLUME /tmp</span><br><span class="line">ADD target/docker-<span class="hljs-number">0.0</span>.1-SNAPSHOT.jar app.jar</span><br><span class="line">ENTRYPOINT [<span class="hljs-string">"java"</span>,<span class="hljs-string">"-jar"</span>,<span class="hljs-string">"/app.jar"</span>]</span><br></pre></td></tr></table></figure>
-<p>这里只有简单的四行，我说一下：</p>
-<ol>
-<li>Spring Boot 项目的运行依赖 Java 环境，所以我自己的镜像基于 Java 镜像来构建。</li>
-<li>考虑到 Docker 官方镜像下载较慢，我这里使用了网易提供的 Docker 镜像。</li>
-<li>由于 Spring Boot 运行时需要 tmp 目录，这里数据卷配置一个 /tmp 目录出来。</li>
-<li>将本地 target 目录中打包好的 .jar 文件复制一份新的 到 /app.jar。</li>
-<li>最后就是配置一下启动命令，由于我打包的 jar 已经成为 app.jar 了，所以启动命令也是启动 app.jar。</li>
-</ol>
-<p>这是我们配置的一个简单的 Dockerfile。</p>
-<h2 id="4-配置-Maven-插件"><a href="#4-配置-Maven-插件" class="headerlink" title="4.配置 Maven 插件"></a>4.配置 Maven 插件</h2><p>接下来在 pom.xml 文件中，添加如下插件：</p>
-<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">plugin</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>com.spotify<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>docker-maven-plugin<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>1.2.0<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">executions</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">execution</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">id</span>&gt;</span>build-image<span class="hljs-tag">&lt;/<span class="hljs-name">id</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">phase</span>&gt;</span>package<span class="hljs-tag">&lt;/<span class="hljs-name">phase</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">goals</span>&gt;</span></span><br><span class="line">                <span class="hljs-tag">&lt;<span class="hljs-name">goal</span>&gt;</span>build<span class="hljs-tag">&lt;/<span class="hljs-name">goal</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;/<span class="hljs-name">goals</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">execution</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">executions</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">configuration</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">dockerHost</span>&gt;</span>http://192.168.66.131:2375<span class="hljs-tag">&lt;/<span class="hljs-name">dockerHost</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">imageName</span>&gt;</span>javaboy/$&#123;project.artifactId&#125;<span class="hljs-tag">&lt;/<span class="hljs-name">imageName</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">imageTags</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">imageTag</span>&gt;</span>$&#123;project.version&#125;<span class="hljs-tag">&lt;/<span class="hljs-name">imageTag</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">imageTags</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">forceTags</span>&gt;</span>true<span class="hljs-tag">&lt;/<span class="hljs-name">forceTags</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">dockerDirectory</span>&gt;</span>$&#123;project.basedir&#125;<span class="hljs-tag">&lt;/<span class="hljs-name">dockerDirectory</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">resources</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">resource</span>&gt;</span></span><br><span class="line">                <span class="hljs-tag">&lt;<span class="hljs-name">targetPath</span>&gt;</span>/<span class="hljs-tag">&lt;/<span class="hljs-name">targetPath</span>&gt;</span></span><br><span class="line">                <span class="hljs-tag">&lt;<span class="hljs-name">directory</span>&gt;</span>$&#123;project.build.directory&#125;<span class="hljs-tag">&lt;/<span class="hljs-name">directory</span>&gt;</span></span><br><span class="line">                <span class="hljs-tag">&lt;<span class="hljs-name">include</span>&gt;</span>$&#123;project.build.finalName&#125;.jar<span class="hljs-tag">&lt;/<span class="hljs-name">include</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;/<span class="hljs-name">resource</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">resources</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">configuration</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">plugin</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p>这个插件的配置不难理解：</p>
-<ol>
-<li>首先在 execution 节点中配置当执行 mvn package 的时候，顺便也执行一下 docker:build</li>
-<li>然后在 configuration 中分别配置 Docker 的主机地址，镜像的名称，镜像的 tags，其中 dockerDirectory 表示指定 Dockerfile 的位置。</li>
-<li>最后 resource 节点中再配置一下 jar 的位置和名称即可。</li>
-</ol>
-<p>OK，做完这些我们就算大功告成了。</p>
-<h2 id="5-打包运行"><a href="#5-打包运行" class="headerlink" title="5.打包运行"></a>5.打包运行</h2><p>接下来对项目进行打包，打包完成后，项目会自动构建成一个镜像，并且上传到 Docker 容器中，打包方式如下：</p>
-<p><img src="http://www.javaboy.org/images/boot/34-5.png" alt></p>
-<p>打包过程会稍微有一点旧，因为还包含了镜像的构建，特别是第一次打包，需要下载基础镜像，会更慢一些。</p>
-<p>部分打包日志如下（项目构建过程）:</p>
-<p><img src="http://www.javaboy.org/images/boot/34-6.png" alt></p>
-<p>项目打包成功之后，我们就可以在 Docker 容器中看到我们刚刚打包成的镜像了，如下：</p>
-<p><img src="http://www.javaboy.org/images/boot/34-7.png" alt></p>
-<h3 id="5-1-运行方式一"><a href="#5-1-运行方式一" class="headerlink" title="5.1 运行方式一"></a>5.1 运行方式一</h3><p>此时，我们可以直接在 Linux 上像创建普通容器一样创建这个镜像的容器，然后启动，执行如下命令即可：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -d --name javaboy -p 8080:8080 javaboy/docker:0.0.1</span><br></pre></td></tr></table></figure>
-<p>启动成功之后，我们就可以访问容器中的接口了。</p>
-<p>但是这种操作显然还是有点麻烦，结合我们一开始安装的 Docker 插件，这个运行步骤还可以做进一步的简化。</p>
-<h3 id="5-2-运行方式二"><a href="#5-2-运行方式二" class="headerlink" title="5.2 运行方式二"></a>5.2 运行方式二</h3><p>大家注意，此时我们的 IDEA 中多了一个选项，就是 docker，如下：</p>
-<p><img src="http://www.javaboy.org/images/boot/34-8.png" alt></p>
-<p>点击左边的绿色启动按钮，连接上 Docker 容器，连接成功之后，我们就可以看到目前 Docker 中的所有容器和镜像了，当然也包括我们刚刚创建的 Docker 镜像，如下：</p>
-<p><img src="http://www.javaboy.org/images/boot/34-9.png" alt></p>
-<p>此时，我们选中这个镜像，右键单击，即可基于此镜像创建出一个容器，如下图：</p>
-<p><img src="http://www.javaboy.org/images/boot/34-10.png" alt></p>
-<p>我们选择 Create container，然后填入容器的一些必要信息，配置一下容器名称，镜像 ID 会自动填上，暴露的端口使用 Specify 即可，然后写上端口的映射关系：</p>
-<p><img src="http://www.javaboy.org/images/boot/34-11.png" alt></p>
-<p>配置完成后，点击下方的 <code>run</code> 按钮，就可以开始运行了。运行日志如下：</p>
-<p><img src="http://www.javaboy.org/images/boot/34-12.png" alt></p>
-<p>注意，这个日志是在 Docker 的那个窗口里打印出来的。</p>
-<p>项目运行成功之后，在浏览器输入远程服务器的地址，就可以访问了：</p>
-<p><img src="http://www.javaboy.org/images/boot/34-13.png" alt></p>
-<p>如此之后，我们的 Spring Boot 项目就算顺利发布到远程 Docker 容器中了。</p>
-<p>好玩吗？试试！</p>
-<p>本文案例我已经上传到 GitHub，小伙伴们可以参考：<a href="https://github.com/lenve/javaboy-code-samples​" target="_blank" rel="noopener">https://github.com/lenve/javaboy-code-samples​</a></p>
-
         </div>
         
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/0819/springboot-docker.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
         
         
     </div>
