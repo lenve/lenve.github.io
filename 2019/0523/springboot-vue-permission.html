@@ -171,8 +171,9 @@
                 Spring Boot + Vue 前后端分离开发，权限管理的一点思路
             
         </h1>
-        <div class="content">
-            <p>在传统的前后端不分的开发中，权限管理主要通过过滤器或者拦截器来进行（权限管理框架本身也是通过过滤器来实现功能），如果用户不具备某一个角色或者某一个权限，则无法访问某一个页面。</p>
+        
+            <div class="content" id="content">
+                    <p>在传统的前后端不分的开发中，权限管理主要通过过滤器或者拦截器来进行（权限管理框架本身也是通过过滤器来实现功能），如果用户不具备某一个角色或者某一个权限，则无法访问某一个页面。</p>
 <a id="more"></a>
 <p>但是在前后端分离中，页面的跳转统统交给前端去做，后端只提供数据，这种时候，权限管理不能再按照之前的思路来。</p>
 <p>首先要明确一点，前端是展示给用户看的，所有的菜单显示或者隐藏目的不是为了实现权限管理，而是为了给用户一个良好的体验，不能依靠前端隐藏控件来实现权限管理，即数据安全不能依靠前端。</p>
@@ -183,7 +184,23 @@
 <p>但是，如果用户非这样操作，进入到一个空白的页面，用户体验不好，此时，我们可以使用 Vue 中的前置路由导航守卫，来监听页面跳转，如果用户想要去一个未获授权的页面，则直接在前置路由导航守卫中将之拦截下来，重定向到登录页，或者直接就停留在当前页，不让用户跳转，也可以顺手再给用户一点点未获授权的提示信息。</p>
 <p>总而言之一句话，前端的所有操作，都是为了提高用户体验，不是为了数据安全，真正的权限校验要在后端来做，后端如果是 SSM 架构，建议使用 Shiro ，如果是 Spring Boot + 微服务，建议使用 Spring Security 。</p>
 
-        </div>
+                    <div class="asb-post-01">
+                        <div class="mask"></div>
+                        <div class="info" style="display: flex;justify-content:center;flex-direction:column;align-items:center">
+                                <div>微信扫码或搜索：<span style="color: #E9405A; font-weight: bold;">江南一点雨</span></div>
+                                <div>
+                                    <span>发送 </span><span class="token" style="color: #e9415a; font-weight: bold; font-size: 17px; margin-bottom: 45px;">290992</span>
+                                </div>
+                                <div>
+                                    即可<span style="color: #e9415a; font-weight: bold;">立即永久</span>解锁本站全部文章
+                                </div>
+                            <div>
+                                <img class="code-img" style="width: 300px;display:unset" src="https://www.javaboy.org/images/sb/javaboy.jpg">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        
         
         <div class="level is-size-7 is-uppercase">
             <div class="level-start">
@@ -277,6 +294,122 @@
 	
     </div>
 </div>
+<style>
+.lock {
+    position: relative;
+    overflow: hidden;
+    padding-bottom: 30px;
+}
+.asb-post-01 {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    display: block;
+    z-index: 10000;
+    margin-bottom: 0;
+}
+.asb-post-01 .info {
+    background: white;
+    height: 370px;
+}
+.asb-post-01 .mask {
+    height: 240px;
+    width: 100%;
+    background: -webkit-gradient(linear, 0 top, 0 bottom, from(rgba(255, 255, 255, 0)), to(#fff));
+}
+</style>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script>
+function getCookie(name) {
+	var value = "; " + document.cookie;
+	var parts = value.split("; " + name + "=");
+	if (parts.length == 2)
+		return parts.pop().split(";").shift();
+}
+
+function getToken() {
+	let value = getCookie('UM_distinctid');
+	if (!value) {
+		return defaultToken;
+	}
+	return value.substring(value.length - 6).toUpperCase();
+}
+
+
+
+// 文章所在容器的选择器
+// var articleSelector = 'article.article-content';
+
+// DOM 完全就绪时执行
+$(function() {
+    // 找到文章所在的容器
+    var $article = $("#content");
+    console.log($article)
+	if ($article.length > 0) {
+		// 文章的实际高度
+		var article = $article[0], height = article.clientHeight;
+		// 文章隐藏后的高度
+		var halfHeight = height * 0.3;
+		
+		// 篇幅短一点的文章就不需要解锁了
+		if (halfHeight > 800) {
+			
+            // 获取口令
+            var mytoken = window.localStorage.getItem("javaboytoken")
+            var token;
+            if(mytoken){
+                token=mytoken
+            }else{
+                token = getToken();
+                console.log(">>>>>>>>>"+token)
+                window.localStorage.setItem("javaboytoken",token)
+            }
+			$('.asb-post-01').find('.token').text(token);
+			
+var _lock = function() {
+	$article.css('height', halfHeight + 'px');
+	$article.addClass('lock');
+	$('.asb-post-01').css('display', 'block');
+}
+
+var _unlock = function() {
+	$article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+
+// 查询后端的结果
+var _detect = function() {
+	console.log('Detecting Token', token);
+	$.ajax({
+		url : 'http://blog-wx.itboyhub.com/wx/checktoken',
+		method : 'GET',
+		data : {
+			token : token
+		},
+		success : function(data) {
+			if (data.locked === true) {
+				_lock();
+			} else {
+				_unlock();
+			}
+		},
+		error : function(data) {
+			_unlock();
+		}
+	})
+}
+
+_detect();
+setInterval(function() {
+	_detect();
+}, 5000);
+		}
+	}
+});
+</script>
+
 </div>
                 
 

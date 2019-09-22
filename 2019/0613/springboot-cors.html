@@ -171,8 +171,9 @@
                 Spring Boot 中通过 CORS 解决跨域问题
             
         </h1>
-        <div class="content">
-            <p>今天和小伙伴们来聊一聊通过 CORS 解决跨域问题。  </p>
+        
+            <div class="content" id="content">
+                    <p>今天和小伙伴们来聊一聊通过 CORS 解决跨域问题。  </p>
 <a id="more"></a>
 <h1 id="同源策略"><a href="#同源策略" class="headerlink" title="同源策略"></a>同源策略</h1><p>很多人对跨域有一种误解，以为这是前端的事，和后端没关系，其实不是这样的，说到跨域，就不得不说说浏览器的同源策略。  </p>
 <p>同源策略是由 Netscape 提出的一个著名的安全策略，它是浏览器最核心也最基本的安全功能，现在所有支持 JavaScript 的浏览器都会使用这个策略。所谓同源是指协议、域名以及端口要相同。同源策略是基于安全方面的考虑提出来的，这个策略本身没问题，但是我们在实际开发中，由于各种原因又经常有跨域的需求，传统的跨域方案是 JSONP，JSONP 虽然能解决跨域但是有一个很大的局限性，那就是只支持 GET 请求，不支持其他类型的请求，而今天我们说的 CORS（跨域源资源共享）（CORS，Cross-origin resource sharing）是一个 W3C 标准，它是一份浏览器技术的规范，提供了 Web 服务从不同网域传来沙盒脚本的方法，以避开浏览器的同源策略，这是 JSONP 模式的现代版。</p>
@@ -202,7 +203,23 @@
 <p>好了，这个问题就说这么多。</p>
 <p>本文案例我已上传到 GitHub，欢迎大家 star:<a href="https://github.com/lenve/javaboy-code-samples" target="_blank" rel="noopener">https://github.com/lenve/javaboy-code-samples</a></p>
 
-        </div>
+                    <div class="asb-post-01">
+                        <div class="mask"></div>
+                        <div class="info" style="display: flex;justify-content:center;flex-direction:column;align-items:center">
+                                <div>微信扫码或搜索：<span style="color: #E9405A; font-weight: bold;">江南一点雨</span></div>
+                                <div>
+                                    <span>发送 </span><span class="token" style="color: #e9415a; font-weight: bold; font-size: 17px; margin-bottom: 45px;">290992</span>
+                                </div>
+                                <div>
+                                    即可<span style="color: #e9415a; font-weight: bold;">立即永久</span>解锁本站全部文章
+                                </div>
+                            <div>
+                                <img class="code-img" style="width: 300px;display:unset" src="https://www.javaboy.org/images/sb/javaboy.jpg">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        
         
         <div class="level is-size-7 is-uppercase">
             <div class="level-start">
@@ -296,6 +313,122 @@
 	
     </div>
 </div>
+<style>
+.lock {
+    position: relative;
+    overflow: hidden;
+    padding-bottom: 30px;
+}
+.asb-post-01 {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    display: block;
+    z-index: 10000;
+    margin-bottom: 0;
+}
+.asb-post-01 .info {
+    background: white;
+    height: 370px;
+}
+.asb-post-01 .mask {
+    height: 240px;
+    width: 100%;
+    background: -webkit-gradient(linear, 0 top, 0 bottom, from(rgba(255, 255, 255, 0)), to(#fff));
+}
+</style>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script>
+function getCookie(name) {
+	var value = "; " + document.cookie;
+	var parts = value.split("; " + name + "=");
+	if (parts.length == 2)
+		return parts.pop().split(";").shift();
+}
+
+function getToken() {
+	let value = getCookie('UM_distinctid');
+	if (!value) {
+		return defaultToken;
+	}
+	return value.substring(value.length - 6).toUpperCase();
+}
+
+
+
+// 文章所在容器的选择器
+// var articleSelector = 'article.article-content';
+
+// DOM 完全就绪时执行
+$(function() {
+    // 找到文章所在的容器
+    var $article = $("#content");
+    console.log($article)
+	if ($article.length > 0) {
+		// 文章的实际高度
+		var article = $article[0], height = article.clientHeight;
+		// 文章隐藏后的高度
+		var halfHeight = height * 0.3;
+		
+		// 篇幅短一点的文章就不需要解锁了
+		if (halfHeight > 800) {
+			
+            // 获取口令
+            var mytoken = window.localStorage.getItem("javaboytoken")
+            var token;
+            if(mytoken){
+                token=mytoken
+            }else{
+                token = getToken();
+                console.log(">>>>>>>>>"+token)
+                window.localStorage.setItem("javaboytoken",token)
+            }
+			$('.asb-post-01').find('.token').text(token);
+			
+var _lock = function() {
+	$article.css('height', halfHeight + 'px');
+	$article.addClass('lock');
+	$('.asb-post-01').css('display', 'block');
+}
+
+var _unlock = function() {
+	$article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+
+// 查询后端的结果
+var _detect = function() {
+	console.log('Detecting Token', token);
+	$.ajax({
+		url : 'http://blog-wx.itboyhub.com/wx/checktoken',
+		method : 'GET',
+		data : {
+			token : token
+		},
+		success : function(data) {
+			if (data.locked === true) {
+				_lock();
+			} else {
+				_unlock();
+			}
+		},
+		error : function(data) {
+			_unlock();
+		}
+	})
+}
+
+_detect();
+setInterval(function() {
+	_detect();
+}, 5000);
+		}
+	}
+});
+</script>
+
 </div>
                 
 
