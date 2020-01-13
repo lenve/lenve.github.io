@@ -157,6 +157,90 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-10-27T08:17:06.617Z">2019-10-27</time>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    12 分钟 读完 (大约 1836 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/1027/0.html"></a>
+            
+        </h1>
+        
+            <div class="content"> <p>当我们使用 SpringMVC 框架时，静态资源会被拦截，需要添加额外配置，之前老有小伙伴在微信上问松哥 Spring Boot 中的静态资源加载问题：“松哥，我的 HTML 页面好像没有样式？”，今天我就通过一篇文章，来和大伙仔细聊一聊这个问题。</p>
+<h2 id="1-SSM-中的配置"><a href="#1-SSM-中的配置" class="headerlink" title="1. SSM 中的配置"></a>1. SSM 中的配置</h2><p>要讲 Spring Boot 中的问题，我们得先回到 SSM 环境搭建中，一般来说，我们可以通过 <code>&lt;mvc:resources /&gt;</code> 节点来配置不拦截静态资源，如下：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">mvc:resources</span> <span class="hljs-attr">mapping</span>=<span class="hljs-string">"/js/**"</span> <span class="hljs-attr">location</span>=<span class="hljs-string">"/js/"</span>/&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">mvc:resources</span> <span class="hljs-attr">mapping</span>=<span class="hljs-string">"/css/**"</span> <span class="hljs-attr">location</span>=<span class="hljs-string">"/css/"</span>/&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">mvc:resources</span> <span class="hljs-attr">mapping</span>=<span class="hljs-string">"/html/**"</span> <span class="hljs-attr">location</span>=<span class="hljs-string">"/html/"</span>/&gt;</span></span><br></pre></td></tr></table></figure>
+<p>由于这是一种Ant风格的路径匹配符，<code>/**</code> 表示可以匹配任意层级的路径，因此上面的代码也可以像下面这样简写：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">mvc:resources</span> <span class="hljs-attr">mapping</span>=<span class="hljs-string">"/**"</span> <span class="hljs-attr">location</span>=<span class="hljs-string">"/"</span>/&gt;</span></span><br></pre></td></tr></table></figure>
+<p>这种配置是在 XML 中的配置，大家知道，SpringMVC 的配置除了在XML中配置，也可以在 Java 代码中配置，如果在 Java 代码中配置的话，我们只需要自定义一个类，继承自 WebMvcConfigurationSupport 即可：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-meta">@ComponentScan</span>(basePackages = <span class="hljs-string">"org.javaboy.javassm"</span>)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SpringMVCConfig</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">WebMvcConfigurationSupport</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">addResourceHandlers</span><span class="hljs-params">(ResourceHandlerRegistry registry)</span> </span>&#123;</span><br><span class="line">        registry.addResourceHandler(<span class="hljs-string">"/**"</span>).addResourceLocations(<span class="hljs-string">"/"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>重写 WebMvcConfigurationSupport 类中的 addResourceHandlers 方法，在该方法中配置静态资源位置即可，这里的含义和上面 xml 配置的含义一致，因此无需多说。</p>
+<p>这是我们传统的解决方案，在 Spring Boot 中，其实配置方式和这个一脉相承，只是有一些自动化的配置了。</p>
+<h2 id="2-Spring-Boot-中的配置"><a href="#2-Spring-Boot-中的配置" class="headerlink" title="2. Spring Boot 中的配置"></a>2. Spring Boot 中的配置</h2><p>在 Spring Boot 中，如果我们是从 <code>https://start.spring.io</code> 这个网站上创建的项目，或者使用 IntelliJ IDEA 中的 Spring Boot 初始化工具创建的项目，默认都会存在 <code>resources/static</code> 目录，很多小伙伴也知道静态资源只要放到这个目录下，就可以直接访问，除了这里还有没有其他可以放静态资源的位置呢？为什么放在这里就能直接访问了呢？这就是本文要讨论的问题了。</p>
+<h3 id="2-1-整体规划"><a href="#2-1-整体规划" class="headerlink" title="2.1 整体规划"></a>2.1 整体规划</h3><p>首先，在 Spring Boot 中，默认情况下，一共有 5 个位置可以放静态资源，五个路径分别是如下 5 个：</p>
+<ol>
+<li><code>classpath:/META-INF/resources/</code></li>
+<li><code>classpath:/resources/</code></li>
+<li><code>classpath:/static/</code></li>
+<li><code>classpath:/public/</code></li>
+<li><code>/</code></li>
+</ol>
+<p>前四个目录好理解，分别对应了 resources 目录下不同的目录，第 5 个 <code>/</code> 是啥意思呢？我们知道，在 Spring Boot 项目中，默认是没有 <code>webapp</code> 这个目录的，当然我们也可以自己添加（例如在需要使用JSP的时候），这里第 5 个 <code>/</code> 其实就是表示 webapp 目录中的静态资源也不被拦截。如果同一个文件分别出现在五个目录下，那么优先级也是按照上面列出的顺序。 </p>
+<p>不过，虽然有 5 个存储目录，除了第 5 个用的比较少之外，其他四个，系统默认创建了 <code>classpath:/static/</code> ， 正常情况下，我们只需要将我们的静态资源放到这个目录下即可，也不需要额外去创建其他静态资源目录，例如我在 <code>classpath:/static/</code> 目录下放了一张名为 1.png 的图片，那么我的访问路径是：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://localhost:8080/1.png</span><br></pre></td></tr></table></figure>
+<p>这里大家注意，请求地址中并不需要 static，如果加上了 static 反而多此一举会报 404 错误。很多人会觉得奇怪，为什么不需要添加 static 呢？资源明明放在 static 目录下。其实这个效果很好实现，例如在 SSM 配置中，我们的静态资源拦截配置如果是下面这样：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">mvc:resources</span> <span class="hljs-attr">mapping</span>=<span class="hljs-string">"/**"</span> <span class="hljs-attr">location</span>=<span class="hljs-string">"/static/"</span>/&gt;</span></span><br></pre></td></tr></table></figure>
+<p>如果我们是这样配置的话，请求地址如果是 <code>http://localhost:8080/1.png</code> 实际上系统会去 <code>/static/1.png</code> 目录下查找相关的文件。</p>
+<p>所以我们理所当然的猜测，在 Spring Boot 中可能也是类似的配置。</p>
+<h3 id="2-2-源码解读"><a href="#2-2-源码解读" class="headerlink" title="2.2 源码解读"></a>2.2 源码解读</h3><p>胡适之先生说：“大胆猜想，小心求证”，我们这里就通过源码解读来看看 Spring Boot 中的静态资源到底是怎么配置的。</p>
+<p>首先我们在 WebMvcAutoConfiguration 类中看到了 SpringMVC 自动化配置的相关的内容，找到了静态资源拦截的配置，如下：</p>
+<p><img src="./img/11-1.png" alt></p>
+<p>可以看到这里静态资源的定义和我们前面提到的 Java 配置 SSM 中的配置非常相似，其中，this.mvcProperties.getStaticPathPattern() 方法对应的值是 <code>/**</code>，this.resourceProperties.getStaticLocations() 方法返回了四个位置，分别是：</p>
+<ul>
+<li>classpath:/META-INF/resources/</li>
+<li>classpath:/resources/</li>
+<li>classpath:/static/</li>
+<li>classpath:/public/</li>
+</ul>
+<p>然后在 getResourceLocations 方法中，又添加了 <code>/</code> ，因此这里返回值一共有 5 个。其中， <code>/</code> 表示 <code>webapp</code> 目录，即 <code>webapp</code> 中的静态文件也可以直接访问。静态资源的匹配路径按照定义路径优先级依次降低。因此这里的配置和我们前面提到的如出一辙。这样大伙就知道了为什么 <code>Spring Boot</code> 中支持 5 个静态资源位置，同时也明白了为什么静态资源请求路径中不需要 <code>/static</code> ，因为在路径映射中已经自动的添加上了 <code>/static</code> 了。</p>
+<h3 id="2-3-自定义配置"><a href="#2-3-自定义配置" class="headerlink" title="2.3 自定义配置"></a>2.3 自定义配置</h3><p>当然，这个是系统默认配置，如果我们并不想将资源放在系统默认的这五个位置上，也可以自定义静态资源位置和映射，自定义的方式也有两种，可以通过 application.properties 来定义，也可以在 Java 代码中来定义，下面分别来看。</p>
+<h4 id="2-3-1-application-properties"><a href="#2-3-1-application-properties" class="headerlink" title="2.3.1 application.properties"></a>2.3.1 application.properties</h4><p>在配置文件中定义的方式比较简单，如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">spring.resources.static-locations=classpath:/</span><br><span class="line">spring.mvc.static-path-pattern=/**</span><br></pre></td></tr></table></figure>
+<p>第一行配置表示定义资源位置，第二行配置表示定义请求 URL 规则。以上文的配置为例，如果我们这样定义了，表示可以将静态资源放在 resources 目录下的任意地方，我们访问的时候当然也需要写完整的路径，例如在 <code>resources/static</code> 目录下有一张名为 1.png 的图片，那么访问路径就是 <code>http://localhost:8080/static/1.png</code> ,注意此时的 <code>static</code> 不能省略。</p>
+<h4 id="2-3-2-Java-代码定义"><a href="#2-3-2-Java-代码定义" class="headerlink" title="2.3.2 Java 代码定义"></a>2.3.2 Java 代码定义</h4><p>当然，在 Spring Boot 中我们也可以通过 Java 代码来自定义，方式和 Java 配置的 SSM 比较类似，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">WebMVCConfig</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">WebMvcConfigurer</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">addResourceHandlers</span><span class="hljs-params">(ResourceHandlerRegistry registry)</span> </span>&#123;</span><br><span class="line">        registry.addResourceHandler(<span class="hljs-string">"/**"</span>).addResourceLocations(<span class="hljs-string">"classpath:/aaa/"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里代码基本和前面一致，比较简单，不再赘述。</p>
+<h2 id="3-总结"><a href="#3-总结" class="headerlink" title="3. 总结"></a>3. 总结</h2><p>这里需要提醒大家的是，松哥见到有很多人用了 Thymeleaf 之后，会将静态资源也放在 resources/templates 目录下，注意，templates 目录并不是静态资源目录，它是一个放页面模板的位置（你看到的 Thymeleaf 模板虽然后缀为 .html，其实并不是静态资源）。好了，通过上面的讲解，相信大家对 Spring Boot 中静态资源的位置有一个深刻了解了，应该不会再在项目中出错了吧！</p>
+</div>
+        
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
                 <time class="level-item has-text-grey" datetime="2019-10-24T01:50:15.000Z">2019-10-24</time>
                 
                 <div class="level-item">
@@ -658,58 +742,6 @@
 
 
 
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-10-14T11:48:56.000Z">2019-10-14</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/微人事/">微人事</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    14 分钟 读完 (大约 2113 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/1014/vhr-video.html">微人事项目视频教程已经开始更新，国庆节有事情做啦！</a>
-            
-        </h1>
-        
-            <div class="content"> <p>在正式介绍松哥最近在连载的微人事视频之前，我想要和大家先聊聊前后端分离到底难在哪里？</p></div>
-        
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/1014/vhr-video.html#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
 
     
 <div class="card card-transparent">
@@ -974,7 +1006,7 @@
                 <span class="level-item">Spring Boot</span>
             </span>
             <span class="level-end">
-                <span class="level-item tag">55</span>
+                <span class="level-item tag">56</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/SpringMVC/">
@@ -1167,6 +1199,19 @@
             
             <div class="media-content">
                 <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-12T01:22:24.000Z">2020-01-12</time></div>
+                    <a href="/2020/0112/java-ssm.html" class="has-link-black-ter is-size-6">Spring Boot2 系列教程(一)纯 Java 搭建 SSM 项目</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
                     <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-10T01:26:39.000Z">2020-01-10</time></div>
                     <a href="/2020/0110/free-domain.html" class="has-link-black-ter is-size-6">天呐，世界上还有免费的域名，赶紧抢注一个压压惊</a>
                     <p class="is-size-7 is-uppercase">
@@ -1215,19 +1260,6 @@
             </div>
         </article>
         
-        <article class="media">
-            
-            <div class="media-content">
-                <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-03T01:25:37.000Z">2020-01-03</time></div>
-                    <a href="/2020/0103/2019-article.html" class="has-link-black-ter is-size-6">2019 原创技术干货整理</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/2019/">2019</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
     </div>
 </div>
 
@@ -1246,7 +1278,7 @@
                     <span class="level-item">一月 2020</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">6</span>
+                    <span class="level-item tag">7</span>
                 </span>
             </a>
         </li>
@@ -1290,7 +1322,7 @@
                     <span class="level-item">九月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">28</span>
+                    <span class="level-item tag">27</span>
                 </span>
             </a>
         </li>
@@ -1560,6 +1592,19 @@
             
             <div class="media-content">
                 <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-12T01:22:24.000Z">2020-01-12</time></div>
+                    <a href="/2020/0112/java-ssm.html" class="has-link-black-ter is-size-6">Spring Boot2 系列教程(一)纯 Java 搭建 SSM 项目</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
                     <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-10T01:26:39.000Z">2020-01-10</time></div>
                     <a href="/2020/0110/free-domain.html" class="has-link-black-ter is-size-6">天呐，世界上还有免费的域名，赶紧抢注一个压压惊</a>
                     <p class="is-size-7 is-uppercase">
@@ -1608,19 +1653,6 @@
             </div>
         </article>
         
-        <article class="media">
-            
-            <div class="media-content">
-                <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-03T01:25:37.000Z">2020-01-03</time></div>
-                    <a href="/2020/0103/2019-article.html" class="has-link-black-ter is-size-6">2019 原创技术干货整理</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/2019/">2019</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
     </div>
 </div>
 
@@ -1639,7 +1671,7 @@
                     <span class="level-item">一月 2020</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">6</span>
+                    <span class="level-item tag">7</span>
                 </span>
             </a>
         </li>
@@ -1683,7 +1715,7 @@
                     <span class="level-item">九月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">28</span>
+                    <span class="level-item tag">27</span>
                 </span>
             </a>
         </li>
