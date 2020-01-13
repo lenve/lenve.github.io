@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head><meta name="generator" content="Hexo 3.8.0">
+    <meta charset="utf-8">
+<title>Spring Boot2 系列教程(二十七)Nginx 极简扫盲入门.md - 江南一点雨</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+
+
+    <meta name="description" content="上篇文章和大家聊了 Spring Session 实现 Session 共享的问题，有的小伙伴看了后表示对 Nginx 还是很懵，因此有了这篇文章，算是一个 Nginx 扫盲入门吧！">
+<meta name="keywords" content="Spring Boot">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring Boot2 系列教程(二十七)Nginx 极简扫盲入门.md">
+<meta property="og:url" content="http://www.javaboy.org/2019/1216/springboot-nginx.html">
+<meta property="og:site_name" content="江南一点雨">
+<meta property="og:description" content="上篇文章和大家聊了 Spring Session 实现 Session 共享的问题，有的小伙伴看了后表示对 Nginx 还是很懵，因此有了这篇文章，算是一个 Nginx 扫盲入门吧！">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="http://www.javaboy.org/images/og_image.png">
+<meta property="og:updated_time" content="2020-01-13T03:24:05.968Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Spring Boot2 系列教程(二十七)Nginx 极简扫盲入门.md">
+<meta name="twitter:description" content="上篇文章和大家聊了 Spring Session 实现 Session 共享的问题，有的小伙伴看了后表示对 Nginx 还是很懵，因此有了这篇文章，算是一个 Nginx 扫盲入门吧！">
+<meta name="twitter:image" content="http://www.javaboy.org/images/og_image.png">
+
+
+
+
+
+
+
+<link rel="icon" href="https://www.javaboy.org/favicon.ico">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-2-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+                
+                <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="Spring Boot2 系列教程(二十七)Nginx 极简扫盲入门.md" height="28">
+                
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item" href="/">江南一点雨</a>
+                
+                <a class="navbar-item" href="/archives">归档</a>
+                
+                <a class="navbar-item" href="/fronted-backend">前后端分离</a>
+                
+                <a class="navbar-item" href="http://spring.javaboy.org">Spring</a>
+                
+                <a class="navbar-item" href="http://springmvc.javaboy.org">SpringMVC</a>
+                
+                <a class="navbar-item" href="http://mybatis.javaboy.org">MyBatis</a>
+                
+                <a class="navbar-item" href="http://springboot.javaboy.org">Spring Boot</a>
+                
+                <a class="navbar-item" href="http://maven.javaboy.org">Maven</a>
+                
+                <a class="navbar-item" href="/redis">Redis</a>
+                
+                <a class="navbar-item" href="/mongodb">MongoDB</a>
+                
+                <a class="navbar-item" href="/mysql">MySQL</a>
+                
+                <a class="navbar-item" href="/docker">Docker</a>
+                
+                <a class="navbar-item" href="/git">Git</a>
+                
+                <a class="navbar-item" href="/about">About</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                
+                
+                <a class="navbar-item search" style="height: 40px;line-height: 60px;width: 180px;margin: 12px 15px;box-sizing: border-box;border: 1px solid #dedede;border-radius: 20px;display: flex;justify-content: space-between;padding-left: 12px;padding-right: 10px" title="搜索" href="javascript:;">
+                    <!--<div style="border: 1px solid #dedede;border-radius: 10px;">-->
+                    <div>搜索</div>
+                        <i class="fas fa-search"></i>
+                    <!--</div>-->
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-12-16T01:25:25.000Z">2019-12-16</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    9 分钟 读完 (大约 1321 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Spring Boot2 系列教程(二十七)Nginx 极简扫盲入门.md
+            
+        </h1>
+        
+            <div class="content" id="content">
+                    <p>上篇文章和大家聊了 Spring Session 实现 Session 共享的问题，有的小伙伴看了后表示对 Nginx 还是很懵，因此有了这篇文章，算是一个 Nginx 扫盲入门吧！</p>
+<a id="more"></a>
+<h2 id="基本介绍"><a href="#基本介绍" class="headerlink" title="基本介绍"></a>基本介绍</h2><p><code>Nginx</code> 是一个高性能的 <code>HTTP</code> 和反向代理 <code>web</code> 服务器，同时也提供了 <code>IMAP/POP3/SMTP</code> 服务。 </p>
+<p><code>Nginx</code> 是由伊戈尔·赛索耶夫为俄罗斯访问量第二的 <code>Rambler.ru</code> 站点开发的，第一个公开版本 <code>0.1.0</code> 发布于 <code>2004</code> 年 <code>10</code> 月 <code>4</code> 日。 </p>
+<p><code>Nginx</code> 特点是占有内存少，并发能力强。</p>
+<p>事实上 <code>nginx</code> 的并发能力确实在同类型的网页服务器中表现较好，一般来说，如果我们在项目中引入了 <code>Nginx</code> ，我们的项目架构可能是这样：</p>
+<p><img src="http://www.javaboy.org/images/boot2/27-1.png" alt></p>
+<p>在这样的架构中 ， <code>Nginx</code> 所代表的角色叫做负载均衡服务器或者反向代理服务器，所有请求首先到达 <code>Nginx</code> 上，再由 <code>Nginx</code> 根据提前配置好的转发规则，将客户端发来的请求转发到某一个 <code>Tomcat</code> 上去。</p>
+<p>那么这里涉及到两个概念：</p>
+<ul>
+<li>负载均衡服务器</li>
+</ul>
+<p>就是进行请求转发，降低某一个服务器的压力。负载均衡策略很多，也有很多层，对于一些大型网站基本上从 <code>DNS</code> 就开始负载均衡，负载均衡有硬件和软件之分，各自代表分别是 <code>F5</code> 和 <code>Nginx</code> （目前 <code>Nginx</code> 已经被 <code>F5</code> 收购），早些年，也可以使用 <code>Apache</code> 来做负载均衡，但是效率不如 <code>Nginx</code> ，所以现在主流方案是 <code>Nginx</code> 。</p>
+<ul>
+<li>反向代理服务器：</li>
+</ul>
+<p>另一个概念是反向代理服务器，得先说正向代理，看下面一张图：</p>
+<p><img src="http://www.javaboy.org/images/boot2/27-2.png" alt></p>
+<p>在这个过程中，Google 并不知道真正访问它的客户端是谁，它只知道这个中间服务器在访问它。因此，这里的代理，实际上是中间服务器代理了客户端，这种代理叫做正向代理。</p>
+<p>那么什么是反向代理呢？看下面一张图：</p>
+<p><img src="http://www.javaboy.org/images/boot2/27-3.png" alt></p>
+<p>在这个过程中，10086 这个号码相当于是一个代理，真正提供服务的，是话务员，但是对于客户来说，他不关心到底是哪一个话务员提供的服务，他只需要记得 10086 这个号码就行了。</p>
+<p>所有的请求打到 10086 上，再由 10086 将请求转发给某一个话务员去处理。因此，在这里，10086 就相当于是一个代理，只不过它代理的是话务员而不是客户端，这种代理称之为反向代理。</p>
+<h2 id="Nginx-的优势"><a href="#Nginx-的优势" class="headerlink" title="Nginx 的优势"></a>Nginx 的优势</h2><p>在 Java 开发中，Nginx 有着非常广泛的使用，随便举几点：</p>
+<ol>
+<li>使用 Nginx 做静态资源服务器：Java 中的资源可以分为动态和静态，动态需要经过 Tomcat 解析之后，才能返回给浏览器，例如 JSP 页面、Freemarker 页面、控制器返回的 JSON 数据等，都算作动态资源，动态资源经过了 Tomcat 处理，速度必然降低。对于静态资源，例如图片、HTML、JS、CSS 等资源，这种资源可以不必经过 Tomcat 解析，当客户端请求这些资源时，之间将资源返回给客户端就行了。此时，可以使用 Nginx 搭建静态资源服务器，将静态资源直接返回给客户端。</li>
+<li>使用 Nginx 做负载均衡服务器，无论是使用 Dubbo 还是 Spirng Cloud ，除了使用各自自带的负载均衡策略之外，也都可以使用 Nginx 做负载均衡服务器。</li>
+<li>支持高并发、内存消耗少、成本低廉、配置简单、运行稳定等。</li>
+</ol>
+<h2 id="Nginx-安装："><a href="#Nginx-安装：" class="headerlink" title="Nginx 安装："></a>Nginx 安装：</h2><p>由于基本上都是在 Linux 上使用 Nginx，因此松哥这里主要向大家展示 CentOS 7 安装 Nginx：</p>
+<ol>
+<li>首先下载 Nginx</li>
+</ol>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wget http://nginx.org/download/nginx-1.17.0.tar.gz</span><br></pre></td></tr></table></figure>
+<p>然后解压下载的目录，进入解压目录中，在编译安装之前，需要安装两个依赖：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">yum -y install pcre-devel</span><br><span class="line">yum -y install openssl openssl-devel</span><br></pre></td></tr></table></figure>
+<p>然后开始编译安装：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">./configure</span><br><span class="line">make</span><br><span class="line">make install</span><br></pre></td></tr></table></figure>
+<p>装好之后，默认安装位置在 ：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/usr/local/nginx/sbin/nginx</span><br></pre></td></tr></table></figure>
+<p>进入到该目录的 <code>sbin</code> 目录下，执行 <code>nginx</code> 即可启动 <code>Nginx</code> ：</p>
+<p><img src="http://www.javaboy.org/images/boot2/27-4.png" alt></p>
+<p>Nginx 启动成功之后，在浏览器中直接访问 Nginx 地址：</p>
+<p><img src="http://www.javaboy.org/images/boot2/27-5.png" alt></p>
+<p>看到如上页面，表示 Nginx 已经安装成功了。</p>
+<p>如果修改了 Nginx 配置，则可以通过如下命令重新加载 Nginx 配置文件：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./nginx -s reload</span><br></pre></td></tr></table></figure>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本文算是一个简单的 Nginx 扫盲文，希望大家看完后对 Nginx 有一个基本的认知。本文先说到这里，有问题欢迎留言讨论。</p>
+
+                    <div class="asb-post-01">
+                        <div class="mask"></div>
+                        <div class="info" style="display: flex;justify-content:center;flex-direction:column;align-items:center">
+                                <div>扫码关注微信公众号：<span style="color: #E9405A; font-weight: bold;">江南一点雨</span></div>
+                                <div>
+                                    <span>发送 </span><span class="token" style="color: #e9415a; font-weight: bold; font-size: 17px; margin-bottom: 45px;">290992</span>
+                                </div>
+                                <div>
+                                    即可<span style="color: #e9415a; font-weight: bold;">立即永久</span>解锁本站全部文章（注意区分大小写哦）
+                                </div>
+                            <div>
+                                <img class="code-img" style="width: 300px;display:unset" src="https://www.javaboy.org/images/sb/javaboy.jpg">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Spring-Boot/">Spring Boot</a>
+                </div>
+            </div>
+        </div>
+		<div class="level is-size-6">
+						<p>喜欢这篇文章吗？扫码关注公众号<b>【江南一点雨】</b>，<b>【江南一点雨】</b>专注于 SPRING BOOT+微服务以及前后端分离技术，每天推送原创技术干货，关注后回复 JAVA，领取松哥为你精心准备的 JAVA 干货!
+</p>
+		</div>
+		<div class="level is-size-7 is-uppercase">
+<img class="menu-label has-text-centered" src="http://www.javaboy.org/images/sb/javaboy.jpg" alt>
+		</div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">觉得不错，可以给小编加个鸡腿</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="https://www.javaboy.org/images/sb/weixin_pay.png" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/1217/springsecurity-passwordencoder.html">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">聊一聊 Spring Security 密码加密方案</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/1215/springboot-redis.html">
+                <span class="level-item">Spring Boot2 系列教程(二十六)Spring Boot 整合 Redis.md</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+	<section id="comments"></section>
+	<script src="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/gitment.browser.js"></script>
+	<!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/default.css"/>-->
+	<link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+	<script>
+		if (document.getElementById('comments')) {
+			var gitment = new Gitment({
+				id: '2019/1216/springboot-nginx.html'.length>50?'2019/1216/springboot-nginx.html'.substring(0,50):'2019/1216/springboot-nginx.html',
+				owner: 'lenve',
+				repo: 'javaboy_comment',
+				oauth: {
+					client_id: 'ecc1a65d7b7baf6a495c',
+					client_secret: '427ecd90ada169afa77fc164509449905dd37f67',
+				},
+			})
+			gitment.render('comments')
+		}
+	</script>
+	
+    </div>
+</div>
+<style>
+.lock {
+    position: relative;
+    overflow: hidden;
+    padding-bottom: 30px;
+}
+.asb-post-01 {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    display: block;
+    z-index: 10000;
+    margin-bottom: 0;
+}
+.asb-post-01 .info {
+    background: white;
+    height: 370px;
+}
+.asb-post-01 .mask {
+    height: 240px;
+    width: 100%;
+    background: -webkit-gradient(linear, 0 top, 0 bottom, from(rgba(255, 255, 255, 0)), to(#fff));
+}
+</style>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script>
+function getCookie(name) {
+	var value = "; " + document.cookie;
+	var parts = value.split("; " + name + "=");
+	if (parts.length == 2)
+		return parts.pop().split(";").shift();
+}
+
+function getToken() {
+	let value = getCookie('UM_distinctid');
+	if (!value) {
+		return defaultToken;
+	}
+	return value.substring(value.length - 6).toUpperCase();
+}
+
+
+
+// 文章所在容器的选择器
+// var articleSelector = 'article.article-content';
+
+// DOM 完全就绪时执行
+$(function() {
+    // 找到文章所在的容器
+    var $article = $("#content");
+    console.log($article)
+	if ($article.length > 0) {
+		// 文章的实际高度
+		var article = $article[0], height = article.clientHeight;
+		// 文章隐藏后的高度
+		var halfHeight = height * 0.3;
+		
+		// 篇幅短一点的文章就不需要解锁了
+		if (halfHeight > 800) {
+			
+            // 获取口令
+            var mytoken = window.localStorage.getItem("javaboytoken")
+            var token;
+            if(mytoken){
+                token=mytoken
+            }else{
+                token = 'B'+getToken();
+                window.localStorage.setItem("javaboytoken",token)
+            }
+			$('.asb-post-01').find('.token').text(token);
+			
+var _lock = function() {
+	$article.css('height', halfHeight + 'px');
+	$article.addClass('lock');
+	$('.asb-post-01').css('display', 'block');
+}
+
+var _unlock = function() {
+	$article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+
+// 查询后端的结果
+var _detect = function() {
+	$.ajax({
+		url : 'http://blog-wx.itboyhub.com/wx/checktoken',
+		method : 'GET',
+		data : {
+			token : token
+		},
+		success : function(data) {
+			if (data.locked === true) {
+				_lock();
+			} else {
+				_unlock();
+			}
+		},
+		error : function(data) {
+			_unlock();
+		}
+	})
+}
+
+_detect();
+setInterval(function() {
+    _detect();
+}, 5000);
+}else{
+    $article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+    }
+});
+</script>
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="江南一点雨">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>China· ShenZhen</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        214
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        36
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        64
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/lenve" target="_blank">
+                扫码关注微信公众号</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="Github" href="https://github.com/lenve">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="envelope" href="mailto:wangsong0210@gmail.com">
+                
+                <i class="fa fa-envelope"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="RSS" href="/atom.xml">
+                
+                <i class="fas fa-rss"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/2019/">
+            <span class="level-start">
+                <span class="level-item">2019</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Chrome/">
+            <span class="level-start">
+                <span class="level-item">Chrome</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Git/">
+            <span class="level-start">
+                <span class="level-item">Git</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/GitHub/">
+            <span class="level-start">
+                <span class="level-item">GitHub</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IDEA/">
+            <span class="level-start">
+                <span class="level-item">IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Java/">
+            <span class="level-start">
+                <span class="level-item">Java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/JavaWeb/">
+            <span class="level-start">
+                <span class="level-item">JavaWeb</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MacBookPro/">
+            <span class="level-start">
+                <span class="level-item">MacBookPro</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Maven/">
+            <span class="level-start">
+                <span class="level-item">Maven</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MongoDB/">
+            <span class="level-start">
+                <span class="level-item">MongoDB</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MyBatis/">
+            <span class="level-start">
+                <span class="level-item">MyBatis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MySQL/">
+            <span class="level-start">
+                <span class="level-item">MySQL</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">10</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Nginx/">
+            <span class="level-start">
+                <span class="level-item">Nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Redis/">
+            <span class="level-start">
+                <span class="level-item">Redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">14</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring/">
+            <span class="level-start">
+                <span class="level-item">Spring</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Boot/">
+            <span class="level-start">
+                <span class="level-item">Spring Boot</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">103</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringMVC/">
+            <span class="level-start">
+                <span class="level-item">SpringMVC</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringSecurity/">
+            <span class="level-start">
+                <span class="level-item">SpringSecurity</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/blog/">
+            <span class="level-start">
+                <span class="level-item">blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/docker/">
+            <span class="level-start">
+                <span class="level-item">docker</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/domain/">
+            <span class="level-start">
+                <span class="level-item">domain</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/hexo/">
+            <span class="level-start">
+                <span class="level-item">hexo</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/idea/">
+            <span class="level-start">
+                <span class="level-item">idea</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/life/">
+            <span class="level-start">
+                <span class="level-item">life</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/mail/">
+            <span class="level-start">
+                <span class="level-item">mail</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/nginx/">
+            <span class="level-start">
+                <span class="level-item">nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/redis/">
+            <span class="level-start">
+                <span class="level-item">redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vhr/">
+            <span class="level-start">
+                <span class="level-item">vhr</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vue/">
+            <span class="level-start">
+                <span class="level-item">vue</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/前后端分离/">
+            <span class="level-start">
+                <span class="level-item">前后端分离</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/学习资源/">
+            <span class="level-start">
+                <span class="level-item">学习资源</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微人事/">
+            <span class="level-start">
+                <span class="level-item">微人事</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微服务/">
+            <span class="level-start">
+                <span class="level-item">微服务</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/杂谈/">
+            <span class="level-start">
+                <span class="level-item">杂谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/生活/">
+            <span class="level-start">
+                <span class="level-item">生活</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/面试/">
+            <span class="level-start">
+                <span class="level-item">面试</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/2019-article/" style="font-size: 10px;">2019-article</a> <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 11px;">Chrome</a> <a href="/tags/Docker/" style="font-size: 12px;">Docker</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/Freemarker/" style="font-size: 10px;">Freemarker</a> <a href="/tags/Git/" style="font-size: 16px;">Git</a> <a href="/tags/GitHub/" style="font-size: 10px;">GitHub</a> <a href="/tags/Https/" style="font-size: 10px;">Https</a> <a href="/tags/IDEA/" style="font-size: 10px;">IDEA</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 11px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 12px;">Jpa</a> <a href="/tags/LiveReload/" style="font-size: 10px;">LiveReload</a> <a href="/tags/MacBookPro/" style="font-size: 10px;">MacBookPro</a> <a href="/tags/Mail/" style="font-size: 10px;">Mail</a> <a href="/tags/Maven/" style="font-size: 10px;">Maven</a> <a href="/tags/MongoDB/" style="font-size: 19px;">MongoDB</a> <a href="/tags/MyBatis/" style="font-size: 14px;">MyBatis</a> <a href="/tags/MyCat/" style="font-size: 13px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 17px;">MySQL</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/Redis/" style="font-size: 18px;">Redis</a> <a href="/tags/Shiro/" style="font-size: 10px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 13px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Data/" style="font-size: 11px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 14px;">Spring Security</a> <a href="/tags/SpringBoot/" style="font-size: 10px;">SpringBoot</a> <a href="/tags/SpringMVC/" style="font-size: 13px;">SpringMVC</a> <a href="/tags/SpringSecurity/" style="font-size: 10px;">SpringSecurity</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Thymeleaf/" style="font-size: 10px;">Thymeleaf</a> <a href="/tags/Video/" style="font-size: 10px;">Video</a> <a href="/tags/Vue/" style="font-size: 16px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/blog/" style="font-size: 10px;">blog</a> <a href="/tags/docker/" style="font-size: 16px;">docker</a> <a href="/tags/domain/" style="font-size: 10px;">domain</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/idea/" style="font-size: 10px;">idea</a> <a href="/tags/java/" style="font-size: 10px;">java</a> <a href="/tags/life/" style="font-size: 13px;">life</a> <a href="/tags/mail/" style="font-size: 10px;">mail</a> <a href="/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/router/" style="font-size: 10px;">router</a> <a href="/tags/vhr/" style="font-size: 12px;">vhr</a> <a href="/tags/vue/" style="font-size: 10px;">vue</a> <a href="/tags/weixin/" style="font-size: 11px;">weixin</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/中间件/" style="font-size: 10px;">中间件</a> <a href="/tags/前后端分离/" style="font-size: 12px;">前后端分离</a> <a href="/tags/单体应用/" style="font-size: 10px;">单体应用</a> <a href="/tags/学习资源/" style="font-size: 12px;">学习资源</a> <a href="/tags/微人事/" style="font-size: 11px;">微人事</a> <a href="/tags/微服务/" style="font-size: 11px;">微服务</a> <a href="/tags/杂谈/" style="font-size: 15px;">杂谈</a> <a href="/tags/条件注解/" style="font-size: 10px;">条件注解</a> <a href="/tags/生活/" style="font-size: 11px;">生活</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow  ">
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-10T01:26:39.000Z">2020-01-10</time></div>
+                    <a href="/2020/0110/free-domain.html" class="has-link-black-ter is-size-6">天呐，世界上还有免费的域名，赶紧抢注一个压压惊</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/domain/">domain</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-08T01:26:24.000Z">2020-01-08</time></div>
+                    <a href="/2020/0108/mackbookpro.html" class="has-link-black-ter is-size-6">MacBook Pro 入手一年了，到底香不香？</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/MacBookPro/">MacBookPro</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-06T01:26:07.000Z">2020-01-06</time></div>
+                    <a href="/2020/0106/hexo-blog.html" class="has-link-black-ter is-size-6">不用花一分线，松哥手把手教你上线个人博客</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/blog/">blog</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-06T01:25:25.000Z">2020-01-06</time></div>
+                    <a href="/2020/0106/springboot-interview.html" class="has-link-black-ter is-size-6">Spring Boot2 系列教程(四十八)15 道 Spring Boot 高频面试题.md</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-05T01:25:51.000Z">2020-01-05</time></div>
+                    <a href="/2020/0105/idea.html" class="has-link-black-ter is-size-6">听说你的 IDEA 昨天掉链子了？松哥给你准备了大招</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/idea/">idea</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">12</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">40</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">17</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">22</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">12</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">43</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">16</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">26</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+            
+
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            友链
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="http://www.ityouknow.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">纯洁的微笑</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.ityouknow.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itwanger.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">沉默王二</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itwanger.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://bugstack.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">bugstack虫洞栈</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">bugstack.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.cxyxiaowu.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">五分钟学算法</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.cxyxiaowu.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.justdojava.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 极客技术</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.justdojava.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cxytiandi.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">猿天地</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cxytiandi.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://vimjc.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Vim教程网</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">vimjc.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://muggle.javaboy.org/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">muggle</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">muggle.javaboy.org</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://crossoverjie.top/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">crossoverJie&#39;s Blog</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">crossoverjie.top</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cmsblogs.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 技术驿站</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cmsblogs.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://maizitoday.github.io/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">麦子的博客</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">maizitoday.github.io</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.haoservice.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">码农code之路</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.haoservice.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.jitwxs.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Jitwxs</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.jitwxs.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.gameboys.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 烂笔头</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.gameboys.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.a2data.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">A2Data</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.a2data.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="Spring Boot2 系列教程(二十七)Nginx 极简扫盲入门.md" height="28">
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 江南一点雨&nbsp;
+				<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><!--
+PV <span id="busuanzi_value_site_pv"></span>&nbsp;|&nbsp;<i class="fa fa-user-md"></i>  UV <span id="busuanzi_value_site_uv"></span>&nbsp;-->
+				<script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? "https://" : "http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1276890692'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s96.cnzz.com/z_stat.php%3Fid%3D1276890692%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+				
+                <!--Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么...">
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>
