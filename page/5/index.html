@@ -157,17 +157,13 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-09-14T02:17:28.000Z">2019-09-14</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/MongoDB/">MongoDB</a>
-                </div>
+                <time class="level-item has-text-grey" datetime="2019-11-20T01:44:22.412Z">2019-11-20</time>
                 
                 
                 <span class="level-item has-text-grey">
                     
                     
-                    10 分钟 读完 (大约 1514 个字)
+                    6 分钟 读完 (大约 974 个字)
                 </span>
                 
                 
@@ -176,18 +172,222 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/0914/mongodb-in-mapreduce.html">MongoDB 中 MapReduce 使用</a>
+                <a class="has-link-black-ter" href="/2019/1120/0.html"></a>
             
         </h1>
         
-            <div class="content"> <p>玩过 Hadoop 的小伙伴对 MapReduce 应该不陌生，MapReduce 的强大且灵活，它可以将一个大问题拆分为多个小问题，将各个小问题发送到不同的机器上去处理，所有的机器都完成计算后，再将计算结果合并为一个完整的解决方案，这就是所谓的分布式计算。本文我们就来看看 MongoDB 中 MapReduce 的使用。</p></div>
+            <div class="content"> <p>关于多数据源的配置，前面和大伙介绍过 JdbcTemplate 多数据源配置，那个比较简单，本文来和大伙说说 MyBatis 多数据源的配置。</p>
+<p>其实关于多数据源，我的态度还是和之前一样，复杂的就直接上分布式数据库中间件，简单的再考虑多数据源。这是项目中的建议，技术上的话，当然还是各种技术都要掌握的。</p>
+<h2 id="工程创建"><a href="#工程创建" class="headerlink" title="工程创建"></a>工程创建</h2><p>首先需要创建 MyBatis 项目，项目创建和前文的一样，添加 MyBatis、 MySQL 以及 Web 依赖：</p>
+<p><img src="./img/21-1.png" alt></p>
+<p>项目创建完成后，添加 Druid 依赖，和 JdbcTemplate 一样，这里添加 Druid 依赖也必须是专为 Spring Boot 打造的 Druid，不能使用传统的 Druid。完整的依赖如下：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-web<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.mybatis.spring.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>mybatis-spring-boot-starter<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>2.0.0<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>com.alibaba<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>druid-spring-boot-starter<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>1.1.10<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>mysql<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>mysql-connector-java<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>5.1.28<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">scope</span>&gt;</span>runtime<span class="hljs-tag">&lt;/<span class="hljs-name">scope</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h2 id="多数据源配置"><a href="#多数据源配置" class="headerlink" title="多数据源配置"></a>多数据源配置</h2><p>接下来配置多数据源，这里基本上还是和 JdbcTemplate 多数据源的配置方式一致，首先在 application.properties 中配置数据库基本信息，然后提供两个 DataSource 即可，这里我再把代码贴出来，里边的道理条条框框的，大伙可以参考前面的文章，这里不再赘述。</p>
+<p>application.properties 中的配置：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">spring.datasource.one.url=jdbc:mysql:///test01?useUnicode=true&amp;characterEncoding=utf-8</span><br><span class="line">spring.datasource.one.username=root</span><br><span class="line">spring.datasource.one.password=root</span><br><span class="line">spring.datasource.one.type=com.alibaba.druid.pool.DruidDataSource</span><br><span class="line"></span><br><span class="line">spring.datasource.two.url=jdbc:mysql:///test02?useUnicode=true&amp;characterEncoding=utf-8</span><br><span class="line">spring.datasource.two.username=root</span><br><span class="line">spring.datasource.two.password=root</span><br><span class="line">spring.datasource.two.type=com.alibaba.druid.pool.DruidDataSource</span><br></pre></td></tr></table></figure>
+<p>然后再提供两个 DataSource，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">DataSourceConfig</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-meta">@ConfigurationProperties</span>(prefix = <span class="hljs-string">"spring.datasource.one"</span>)</span><br><span class="line">    <span class="hljs-function">DataSource <span class="hljs-title">dsOne</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> DruidDataSourceBuilder.create().build();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-meta">@ConfigurationProperties</span>(prefix = <span class="hljs-string">"spring.datasource.two"</span>)</span><br><span class="line">    <span class="hljs-function">DataSource <span class="hljs-title">dsTwo</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> DruidDataSourceBuilder.create().build();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="MyBatis-配置"><a href="#MyBatis-配置" class="headerlink" title="MyBatis 配置"></a>MyBatis 配置</h2><p>接下来则是 MyBatis 的配置，不同于 JdbcTemplate，MyBatis 的配置要稍微麻烦一些，因为要提供两个 Bean，因此这里两个数据源我将在两个类中分开来配置，首先来看第一个数据源的配置：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-meta">@MapperScan</span>(basePackages = <span class="hljs-string">"org.javaboy.mybatis.mapper1"</span>,sqlSessionFactoryRef = <span class="hljs-string">"sqlSessionFactory1"</span>,sqlSessionTemplateRef = <span class="hljs-string">"sqlSessionTemplate1"</span>)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MyBatisConfigOne</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Resource</span>(name = <span class="hljs-string">"dsOne"</span>)</span><br><span class="line">    DataSource dsOne;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function">SqlSessionFactory <span class="hljs-title">sqlSessionFactory1</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        SqlSessionFactory sessionFactory = <span class="hljs-keyword">null</span>;</span><br><span class="line">        <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">            SqlSessionFactoryBean bean = <span class="hljs-keyword">new</span> SqlSessionFactoryBean();</span><br><span class="line">            bean.setDataSource(dsOne);</span><br><span class="line">            sessionFactory = bean.getObject();</span><br><span class="line">        &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="hljs-keyword">return</span> sessionFactory;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function">SqlSessionTemplate <span class="hljs-title">sqlSessionTemplate1</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> SqlSessionTemplate(sqlSessionFactory1());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>创建 MyBatisConfigOne 类，首先指明该类是一个配置类，配置类中要扫描的包是 org.javaboy.mybatis.mapper1 ，即该包下的 Mapper 接口将操作 dsOne 中的数据，对应的 SqlSessionFactory 和 SqlSessionTemplate 分别是 sqlSessionFactory1 和 sqlSessionTemplate1，在 MyBatisConfigOne 内部，分别提供 SqlSessionFactory 和 SqlSessionTemplate 即可， SqlSessionFactory 根据 dsOne 创建，然后再根据创建好的SqlSessionFactory 创建一个 SqlSessionTemplate。</p>
+<p>这里配置完成后，依据这个配置，再来配置第二个数据源即可：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-meta">@MapperScan</span>(basePackages = <span class="hljs-string">"org.javaboy.mybatis.mapper2"</span>,sqlSessionFactoryRef = <span class="hljs-string">"sqlSessionFactory2"</span>,sqlSessionTemplateRef = <span class="hljs-string">"sqlSessionTemplate2"</span>)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MyBatisConfigTwo</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Resource</span>(name = <span class="hljs-string">"dsTwo"</span>)</span><br><span class="line">    DataSource dsTwo;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function">SqlSessionFactory <span class="hljs-title">sqlSessionFactory2</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        SqlSessionFactory sessionFactory = <span class="hljs-keyword">null</span>;</span><br><span class="line">        <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">            SqlSessionFactoryBean bean = <span class="hljs-keyword">new</span> SqlSessionFactoryBean();</span><br><span class="line">            bean.setDataSource(dsTwo);</span><br><span class="line">            sessionFactory = bean.getObject();</span><br><span class="line">        &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="hljs-keyword">return</span> sessionFactory;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function">SqlSessionTemplate <span class="hljs-title">sqlSessionTemplate2</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> SqlSessionTemplate(sqlSessionFactory2());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>好了，这样 MyBatis 多数据源基本上就配置好了，接下来只需要在 org.javaboy.mybatis.mapper1 和 org.javaboy.mybatis.mapper2 包中提供不同的 Mapper，Service 中注入不同的 Mapper 就可以操作不同的数据源。</p>
+<h2 id="mapper-创建"><a href="#mapper-创建" class="headerlink" title="mapper 创建"></a>mapper 创建</h2><p>org.javaboy.mybatis.mapper1 中的 mapper：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">UserMapperOne</span> </span>&#123;</span><br><span class="line">    <span class="hljs-function">List&lt;User&gt; <span class="hljs-title">getAllUser</span><span class="hljs-params">()</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对应的 XML 文件：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">&lt;?xml version="1.0" encoding="UTF-8" ?&gt;</span></span><br><span class="line"><span class="hljs-meta">&lt;!DOCTYPE mapper</span></span><br><span class="line"><span class="hljs-meta">        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"</span></span><br><span class="line"><span class="hljs-meta">        "http://mybatis.org/dtd/mybatis-3-mapper.dtd"&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">mapper</span> <span class="hljs-attr">namespace</span>=<span class="hljs-string">"org.javaboy.mybatis.mapper1.UserMapperOne"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">select</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"getAllUser"</span> <span class="hljs-attr">resultType</span>=<span class="hljs-string">"org.javaboy.mybatis.model.User"</span>&gt;</span></span><br><span class="line">        select * from t_user;</span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">select</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">mapper</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>org.javaboy.mybatis.mapper2 中的 mapper：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">UserMapper</span> </span>&#123;</span><br><span class="line">    <span class="hljs-function">List&lt;User&gt; <span class="hljs-title">getAllUser</span><span class="hljs-params">()</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对应的 XML 文件：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">&lt;?xml version="1.0" encoding="UTF-8" ?&gt;</span></span><br><span class="line"><span class="hljs-meta">&lt;!DOCTYPE mapper</span></span><br><span class="line"><span class="hljs-meta">        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"</span></span><br><span class="line"><span class="hljs-meta">        "http://mybatis.org/dtd/mybatis-3-mapper.dtd"&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">mapper</span> <span class="hljs-attr">namespace</span>=<span class="hljs-string">"org.javaboy.mybatis.mapper2.UserMapper"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">select</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"getAllUser"</span> <span class="hljs-attr">resultType</span>=<span class="hljs-string">"org.javaboy.mybatis.model.User"</span>&gt;</span></span><br><span class="line">        select * from t_user;</span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">select</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">mapper</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>接下来，在 Service 中注入两个不同的 Mapper，不同的 Mapper 将操作不同的数据源。</p>
+<p>好了，关于 MyBatis 多数据源本文就先说到这里。</p>
+</div>
+        
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-11-20T01:44:22.411Z">2019-11-20</time>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    8 分钟 读完 (大约 1255 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/1120/0.html"></a>
+            
+        </h1>
+        
+            <div class="content"> <p>多数据源配置也算是一个常见的开发需求，Spring 和 SpringBoot 中，对此都有相应的解决方案，不过一般来说，如果有多数据源的需求，我还是建议首选分布式数据库中间件 MyCat 去解决相关问题，之前有小伙伴在我的知识星球上提问，他的数据根据条件的不同，可能保存在四十多个不同的数据库中，怎么办？这种场景下使用多数据源其实就有些费事了，我给的建议是使用 MyCat，然后分表策略使用 sharding-by-intfile 。</p>
+<p>当然如果一些简单的需求，还是可以使用多数据源的，Spring Boot 中，JdbcTemplate、MyBatis 以及 Jpa 都可以配置多数据源，本文就先和大伙聊一聊 JdbcTemplate 中多数据源的配置（关于JdbcTemplate的用法，如果还有小伙伴不了解，可以参考我的 <a href="https://mp.weixin.qq.com/s/kF8ihKc2a0HkAiWQ33KclA" target="_blank" rel="noopener">Spring Boot2 系列教程(十九)Spring Boot 整合 JdbcTemplate</a>）。</p>
+<h2 id="创建工程"><a href="#创建工程" class="headerlink" title="创建工程"></a>创建工程</h2><p>首先是创建工程，和前文一样，创建工程时，也是选择 Web、Jdbc 以及 MySQL 驱动，如下图：</p>
+<p><img src="./img/19-1.png" alt></p>
+<p>创建成功之后，一定接下来手动添加 Druid 依赖，由于这里一会需要开发者自己配置 DataSoruce，所以这里必须要使用 <code>druid-spring-boot-starter</code> 依赖，而不是传统的那个 druid 依赖，因为 <code>druid-spring-boot-starter</code> 依赖提供了 DruidDataSourceBuilder 类，这个可以用来构建一个 DataSource 实例，而传统的 Druid 则没有该类。完整的依赖如下：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-jdbc<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-web<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>mysql<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>mysql-connector-java<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>5.1.28<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">scope</span>&gt;</span>runtime<span class="hljs-tag">&lt;/<span class="hljs-name">scope</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>com.alibaba<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>druid-spring-boot-starter<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>1.1.10<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h2 id="配置数据源"><a href="#配置数据源" class="headerlink" title="配置数据源"></a>配置数据源</h2><p>接下来，在 application.properties 中配置数据源，不同于上文，这里的数据源需要配置两个，如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">spring.datasource.one.url=jdbc:mysql:///test01?useUnicode=true&amp;characterEncoding=utf-8</span><br><span class="line">spring.datasource.one.username=root</span><br><span class="line">spring.datasource.one.password=root</span><br><span class="line">spring.datasource.one.type=com.alibaba.druid.pool.DruidDataSource</span><br><span class="line"></span><br><span class="line">spring.datasource.two.url=jdbc:mysql:///test02?useUnicode=true&amp;characterEncoding=utf-8</span><br><span class="line">spring.datasource.two.username=root</span><br><span class="line">spring.datasource.two.password=root</span><br><span class="line">spring.datasource.two.type=com.alibaba.druid.pool.DruidDataSource</span><br></pre></td></tr></table></figure>
+<p>这里通过 one 和 two 对数据源进行了区分，但是加了 one 和 two 之后，这里的配置就没法被 SpringBoot 自动加载了（因为前面的 key 变了），需要我们自己去加载 DataSource 了，此时，需要自己配置一个 DataSourceConfig，用来提供两个 DataSource Bean，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">DataSourceConfig</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-meta">@ConfigurationProperties</span>(prefix = <span class="hljs-string">"spring.datasource.one"</span>)</span><br><span class="line">    <span class="hljs-function">DataSource <span class="hljs-title">dsOne</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> DruidDataSourceBuilder.create().build();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-meta">@ConfigurationProperties</span>(prefix = <span class="hljs-string">"spring.datasource.two"</span>)</span><br><span class="line">    <span class="hljs-function">DataSource <span class="hljs-title">dsTwo</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> DruidDataSourceBuilder.create().build();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里提供了两个 Bean，其中 @ConfigurationProperties 是 Spring Boot 提供的类型安全的属性绑定，以第一个Bean为例， <code>@ConfigurationProperties(prefix = &quot;spring.datasource.one&quot;)</code> 表示使用 <code>spring.datasource.one</code> 前缀的数据库配置去创建一个 DataSource，这样配置之后，我们就有了两个不同的 DataSource，接下来再用这两个不同的 DataSource 去创建两个不同的 JdbcTemplate。</p>
+<h2 id="配置-JdbcTemplate-实例"><a href="#配置-JdbcTemplate-实例" class="headerlink" title="配置 JdbcTemplate 实例"></a>配置 JdbcTemplate 实例</h2><p>创建 JdbcTemplateConfig 类，用来提供两个不同的 JdbcTemplate 实例，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">JdbcTemplateConfig</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function">JdbcTemplate <span class="hljs-title">jdbcTemplateOne</span><span class="hljs-params">(@Qualifier(<span class="hljs-string">"dsOne"</span>)</span> DataSource dsOne) </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> JdbcTemplate(dsOne);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function">JdbcTemplate <span class="hljs-title">jdbcTemplateTwo</span><span class="hljs-params">(@Qualifier(<span class="hljs-string">"dsTwo"</span>)</span> DataSource dsTwo) </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> JdbcTemplate(dsTwo);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>每一个 JdbcTemplate 的创建都需要一个 DataSource，由于 Spring 容器中现在存在两个 DataSource，默认使用类型查找，会报错，因此加上 @Qualifier 注解，表示按照名称查找。这里创建了两个 JdbcTemplate 实例，分别对应了两个 DataSource。</p>
+<p>接下来直接去使用这个 JdbcTemplate 就可以了。</p>
+<h2 id="测试使用"><a href="#测试使用" class="headerlink" title="测试使用"></a>测试使用</h2><p>关于 JdbcTemplate 的详细用法大伙可以参考我的上篇文章，这里我主要演示数据源的差异，在 Controller 中注入两个不同的 JdbcTemplate ，这两个 JdbcTemplate 分别对应了不同的数据源，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@RestController</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HelloController</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Autowired</span></span><br><span class="line">    <span class="hljs-meta">@Qualifier</span>(<span class="hljs-string">"jdbcTemplateOne"</span>)</span><br><span class="line">    JdbcTemplate jdbcTemplateOne;</span><br><span class="line">    <span class="hljs-meta">@Resource</span>(name = <span class="hljs-string">"jdbcTemplateTwo"</span>)</span><br><span class="line">    JdbcTemplate jdbcTemplateTwo;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@GetMapping</span>(<span class="hljs-string">"/user"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> List&lt;User&gt; <span class="hljs-title">getAllUser</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        List&lt;User&gt; list = jdbcTemplateOne.query(<span class="hljs-string">"select * from t_user"</span>, <span class="hljs-keyword">new</span> BeanPropertyRowMapper&lt;&gt;(User.class));</span><br><span class="line">        <span class="hljs-keyword">return</span> list;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@GetMapping</span>(<span class="hljs-string">"/user2"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> List&lt;User&gt; <span class="hljs-title">getAllUser2</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        List&lt;User&gt; list = jdbcTemplateTwo.query(<span class="hljs-string">"select * from t_user"</span>, <span class="hljs-keyword">new</span> BeanPropertyRowMapper&lt;&gt;(User.class));</span><br><span class="line">        <span class="hljs-keyword">return</span> list;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>和 DataSource 一样，Spring 容器中的 JdbcTemplate 也是有两个，因此不能通过 byType 的方式注入进来，这里给大伙提供了两种注入思路，一种是使用 @Resource 注解，直接通过 byName 的方式注入进来，另外一种就是 <code>@Autowired</code> 注解加上 <code>@Qualifier</code> 注解，两者联合起来，实际上也是 byName。将 JdbcTemplate 注入进来之后，jdbcTemplateOne 和 jdbcTemplateTwo 此时就代表操作不同的数据源，使用不同的 JdbcTemplate 操作不同的数据源，实现了多数据源配置。</p>
+<p>好了，这个问题就先说到这里，感兴趣的小伙伴也可以参考相关案例：<a href="https://github.com/lenve/javaboy-code-samples" target="_blank" rel="noopener">https://github.com/lenve/javaboy-code-samples</a></p>
+</div>
+        
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-11-20T01:44:22.411Z">2019-11-20</time>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    11 分钟 读完 (大约 1589 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/1120/0.html"></a>
+            
+        </h1>
+        
+            <div class="content"> <p>前面两篇文章和读者聊了 Spring Boot 中最简单的数据持久化方案 JdbcTemplate，JdbcTemplate 虽然简单，但是用的并不多，因为它没有 MyBatis 方便，在 Spring+SpringMVC 中整合 MyBatis 步骤还是有点复杂的，要配置多个 Bean，Spring Boot 中对此做了进一步的简化，使 MyBatis 基本上可以做到开箱即用，本文就来看看在 Spring Boot 中 MyBatis 要如何使用。</p>
+<h2 id="工程创建"><a href="#工程创建" class="headerlink" title="工程创建"></a>工程创建</h2><p>首先创建一个基本的 Spring Boot 工程，添加 Web 依赖，MyBatis 依赖以及 MySQL 驱动依赖，如下：</p>
+<p><img src="./img/21-1.png" alt></p>
+<p>创建成功后，添加Druid依赖，并且锁定MySQL驱动版本，完整的依赖如下：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-web<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.mybatis.spring.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>mybatis-spring-boot-starter<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>2.0.0<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>com.alibaba<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>druid-spring-boot-starter<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>1.1.10<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>mysql<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>mysql-connector-java<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>5.1.28<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">scope</span>&gt;</span>runtime<span class="hljs-tag">&lt;/<span class="hljs-name">scope</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>如此，工程就算是创建成功了。小伙伴们注意，MyBatis 和 Druid 依赖的命名和其他库的命名不太一样，是属于 xxx-spring-boot-stater 模式的，这表示该 starter 是由第三方提供的。 </p>
+<h2 id="基本用法"><a href="#基本用法" class="headerlink" title="基本用法"></a>基本用法</h2><p>MyBatis 的使用和 JdbcTemplate 基本一致，首先也是在 application.properties 中配置数据库的基本信息：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">spring.datasource.url=jdbc:mysql:///test01?useUnicode=true&amp;characterEncoding=utf-8</span><br><span class="line">spring.datasource.username=root</span><br><span class="line">spring.datasource.password=root</span><br><span class="line">spring.datasource.type=com.alibaba.druid.pool.DruidDataSource</span><br></pre></td></tr></table></figure>
+<p>配置完成后，MyBatis 就可以创建 Mapper 来使用了，例如我这里直接创建一个 UserMapper2，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">UserMapper2</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Select</span>(<span class="hljs-string">"select * from user"</span>)</span><br><span class="line">    <span class="hljs-function">List&lt;User&gt; <span class="hljs-title">getAllUsers</span><span class="hljs-params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Results</span>(&#123;</span><br><span class="line">            <span class="hljs-meta">@Result</span>(property = <span class="hljs-string">"id"</span>, column = <span class="hljs-string">"id"</span>),</span><br><span class="line">            <span class="hljs-meta">@Result</span>(property = <span class="hljs-string">"username"</span>, column = <span class="hljs-string">"u"</span>),</span><br><span class="line">            <span class="hljs-meta">@Result</span>(property = <span class="hljs-string">"address"</span>, column = <span class="hljs-string">"a"</span>)</span><br><span class="line">    &#125;)</span><br><span class="line">    <span class="hljs-meta">@Select</span>(<span class="hljs-string">"select username as u,address as a,id as id from user where id=#&#123;id&#125;"</span>)</span><br><span class="line">    <span class="hljs-function">User <span class="hljs-title">getUserById</span><span class="hljs-params">(Long id)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Select</span>(<span class="hljs-string">"select * from user where username like concat('%',#&#123;name&#125;,'%')"</span>)</span><br><span class="line">    <span class="hljs-function">List&lt;User&gt; <span class="hljs-title">getUsersByName</span><span class="hljs-params">(String name)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Insert</span>(&#123;<span class="hljs-string">"insert into user(username,address) values(#&#123;username&#125;,#&#123;address&#125;)"</span>&#125;)</span><br><span class="line">    <span class="hljs-meta">@SelectKey</span>(statement = <span class="hljs-string">"select last_insert_id()"</span>, keyProperty = <span class="hljs-string">"id"</span>, before = <span class="hljs-keyword">false</span>, resultType = Integer.class)</span><br><span class="line">    <span class="hljs-function">Integer <span class="hljs-title">addUser</span><span class="hljs-params">(User user)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Update</span>(<span class="hljs-string">"update user set username=#&#123;username&#125;,address=#&#123;address&#125; where id=#&#123;id&#125;"</span>)</span><br><span class="line">    <span class="hljs-function">Integer <span class="hljs-title">updateUserById</span><span class="hljs-params">(User user)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Delete</span>(<span class="hljs-string">"delete from user where id=#&#123;id&#125;"</span>)</span><br><span class="line">    <span class="hljs-function">Integer <span class="hljs-title">deleteUserById</span><span class="hljs-params">(Integer id)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里是通过全注解的方式来写 SQL，不写 XML 文件。</p>
+<p>@Select、@Insert、@Update 以及 @Delete 四个注解分别对应 XML 中的 select、insert、update 以及 delete 标签，@Results 注解类似于 XML 中的 ResultMap 映射文件（getUserById 方法给查询结果的字段取别名主要是向小伙伴们演示下 <code>@Results</code> 注解的用法）。</p>
+<p>另外使用 @SelectKey 注解可以实现主键回填的功能，即当数据插入成功后，插入成功的数据 id 会赋值到 user 对象的id 属性上。</p>
+<p>UserMapper2 创建好之后，还要配置 mapper 扫描，有两种方式，一种是直接在 UserMapper2 上面添加 <code>@Mapper</code> 注解，这种方式有一个弊端就是所有的 Mapper 都要手动添加，要是落下一个就会报错，还有一个一劳永逸的办法就是直接在启动类上添加 Mapper 扫描，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@SpringBootApplication</span></span><br><span class="line"><span class="hljs-meta">@MapperScan</span>(basePackages = <span class="hljs-string">"org.javaboy.mybatis.mapper"</span>)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MybatisApplication</span> </span>&#123;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;</span><br><span class="line">        SpringApplication.run(MybatisApplication.class, args);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>好了，做完这些工作就可以去测试 Mapper 的使用了。</p>
+<h2 id="mapper-映射"><a href="#mapper-映射" class="headerlink" title="mapper 映射"></a>mapper 映射</h2><p>当然，开发者也可以在 XML 中写 SQL，例如创建一个 UserMapper，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">UserMapper</span> </span>&#123;</span><br><span class="line">    <span class="hljs-function">List&lt;User&gt; <span class="hljs-title">getAllUser</span><span class="hljs-params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-function">Integer <span class="hljs-title">addUser</span><span class="hljs-params">(User user)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-function">Integer <span class="hljs-title">updateUserById</span><span class="hljs-params">(User user)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-function">Integer <span class="hljs-title">deleteUserById</span><span class="hljs-params">(Integer id)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后创建 UserMapper.xml 文件，如下：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">&lt;?xml version="1.0" encoding="UTF-8" ?&gt;</span></span><br><span class="line"><span class="hljs-meta">&lt;!DOCTYPE mapper</span></span><br><span class="line"><span class="hljs-meta">        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"</span></span><br><span class="line"><span class="hljs-meta">        "http://mybatis.org/dtd/mybatis-21-mapper.dtd"&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">mapper</span> <span class="hljs-attr">namespace</span>=<span class="hljs-string">"org.javaboy.mybatis.mapper.UserMapper"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">select</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"getAllUser"</span> <span class="hljs-attr">resultType</span>=<span class="hljs-string">"org.javaboy.mybatis.model.User"</span>&gt;</span></span><br><span class="line">        select * from t_user;</span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">select</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">insert</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"addUser"</span> <span class="hljs-attr">parameterType</span>=<span class="hljs-string">"org.javaboy.mybatis.model.User"</span>&gt;</span></span><br><span class="line">        insert into user (username,address) values (#&#123;username&#125;,#&#123;address&#125;);</span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">insert</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">update</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"updateUserById"</span> <span class="hljs-attr">parameterType</span>=<span class="hljs-string">"org.javaboy.mybatis.model.User"</span>&gt;</span></span><br><span class="line">        update user set username=#&#123;username&#125;,address=#&#123;address&#125; where id=#&#123;id&#125;</span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">update</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">delete</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"deleteUserById"</span>&gt;</span></span><br><span class="line">        delete from user where id=#&#123;id&#125;</span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">delete</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">mapper</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>将接口中方法对应的 SQL 直接写在 XML 文件中。</p>
+<p>那么这个 UserMapper.xml 到底放在哪里呢？有两个位置可以放，第一个是直接放在 UserMapper 所在的包下面：</p>
+<p><img src="./img/21-2.png" alt></p>
+<p>放在这里的 UserMapper.xml 会被自动扫描到，但是有另外一个 Maven 带来的问题，就是 java 目录下的 xml 资源在项目打包时会被忽略掉，所以，如果 UserMapper.xml 放在包下，需要在 pom.xml 文件中再添加如下配置，避免打包时 java 目录下的 XML 文件被自动忽略掉：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">build</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">resources</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">resource</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">directory</span>&gt;</span>src/main/java<span class="hljs-tag">&lt;/<span class="hljs-name">directory</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">includes</span>&gt;</span></span><br><span class="line">                <span class="hljs-tag">&lt;<span class="hljs-name">include</span>&gt;</span>**/*.xml<span class="hljs-tag">&lt;/<span class="hljs-name">include</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;/<span class="hljs-name">includes</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">resource</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">resource</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">directory</span>&gt;</span>src/main/resources<span class="hljs-tag">&lt;/<span class="hljs-name">directory</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">resource</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">resources</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">build</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>当然，UserMapper.xml 也可以直接放在 resources 目录下，这样就不用担心打包时被忽略了，但是放在 resources 目录下，必须创建和 Mapper 接口包目录相同的目录层级，这样才能确保打包后 XML 和 Mapper 接口又处于在一起，否则 XML 文件将不能被自动扫描，这个时候就需要添加额外配置。例如我在 resources 目录下创建 mapper 目录用来放 mapper 文件，如下：</p>
+<p><img src="./img/21-3.png" alt></p>
+<p>此时在 application.properties 中告诉 mybatis 去哪里扫描 mapper：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mybatis.mapper-locations=classpath:mapper/*.xml</span><br></pre></td></tr></table></figure>
+<p>如此配置之后，mapper 就可以正常使用了。<strong>注意这种方式不需要在 pom.xml 文件中配置文件过滤。</strong></p>
+<h2 id="原理分析"><a href="#原理分析" class="headerlink" title="原理分析"></a>原理分析</h2><p>在 SSM 整合中，开发者需要自己提供两个 Bean，一个SqlSessionFactoryBean ，还有一个是 MapperScannerConfigurer，在 Spring Boot 中，这两个东西虽然不用开发者自己提供了，但是并不意味着这两个 Bean 不需要了，在 <code>org.mybatis.spring.boot.autoconfigure.MybatisAutoConfiguration</code> 类中，我们可以看到 Spring Boot 提供了这两个 Bean，部分源码如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@org</span>.springframework.context.annotation.Configuration</span><br><span class="line"><span class="hljs-meta">@ConditionalOnClass</span>(&#123; SqlSessionFactory.class, SqlSessionFactoryBean.class &#125;)</span><br><span class="line"><span class="hljs-meta">@ConditionalOnSingleCandidate</span>(DataSource.class)</span><br><span class="line"><span class="hljs-meta">@EnableConfigurationProperties</span>(MybatisProperties.class)</span><br><span class="line"><span class="hljs-meta">@AutoConfigureAfter</span>(DataSourceAutoConfiguration.class)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MybatisAutoConfiguration</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">InitializingBean</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="hljs-meta">@Bean</span></span><br><span class="line">  <span class="hljs-meta">@ConditionalOnMissingBean</span></span><br><span class="line">  <span class="hljs-function"><span class="hljs-keyword">public</span> SqlSessionFactory <span class="hljs-title">sqlSessionFactory</span><span class="hljs-params">(DataSource dataSource)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    SqlSessionFactoryBean factory = <span class="hljs-keyword">new</span> SqlSessionFactoryBean();</span><br><span class="line">    factory.setDataSource(dataSource);</span><br><span class="line">    <span class="hljs-keyword">return</span> factory.getObject();</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="hljs-meta">@Bean</span></span><br><span class="line">  <span class="hljs-meta">@ConditionalOnMissingBean</span></span><br><span class="line">  <span class="hljs-function"><span class="hljs-keyword">public</span> SqlSessionTemplate <span class="hljs-title">sqlSessionTemplate</span><span class="hljs-params">(SqlSessionFactory sqlSessionFactory)</span> </span>&#123;</span><br><span class="line">    ExecutorType executorType = <span class="hljs-keyword">this</span>.properties.getExecutorType();</span><br><span class="line">    <span class="hljs-keyword">if</span> (executorType != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">      <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> SqlSessionTemplate(sqlSessionFactory, executorType);</span><br><span class="line">    &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">      <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> SqlSessionTemplate(sqlSessionFactory);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="hljs-meta">@org</span>.springframework.context.annotation.Configuration</span><br><span class="line">  <span class="hljs-meta">@Import</span>(&#123; AutoConfiguredMapperScannerRegistrar.class &#125;)</span><br><span class="line">  <span class="hljs-meta">@ConditionalOnMissingBean</span>(MapperFactoryBean.class)</span><br><span class="line">  <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MapperScannerRegistrarNotFoundConfiguration</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">InitializingBean</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">afterPropertiesSet</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">      logger.debug(<span class="hljs-string">"No &#123;&#125; found."</span>, MapperFactoryBean.class.getName());</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从类上的注解可以看出，当当前类路径下存在 SqlSessionFactory、 SqlSessionFactoryBean 以及 DataSource 时，这里的配置才会生效，SqlSessionFactory 和 SqlTemplate 都被提供了。为什么要看这段代码呢？下篇文章，松哥和大伙分享 Spring Boot 中 MyBatis 多数据源的配置时，这里将是一个重要的参考。</p>
+<p>好了，本文就先说到这里，本文相关案例，大家可以在 GitHub 上下载：<a href="https://github.com/lenve/javaboy-code-samples" target="_blank" rel="noopener">https://github.com/lenve/javaboy-code-samples</a></p>
+</div>
+        
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-11-19T01:51:53.000Z">2019-11-19</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/生活/">生活</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    17 分钟 读完 (大约 2487 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/1119/springboot-vue-stack.html">前后端分离，我怎么就选择了 Spring Boot + Vue 技术栈？</a>
+            
+        </h1>
+        
+            <div class="content"> <p>前两天又有小伙伴私信松哥，问题还是职业规划，Java 技术栈路线这种，实际上对于这一类问题我经常不太敢回答，每个人的情况都不太一样，而小伙伴也很少详细介绍自己的情况，大都是一两句话就把问题抛出来了，啥情况都不了解，就要指出一个方向，这实在是太难了。</p></div>
         
         
         
         <div class="level is-mobile">
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0914/mongodb-in-mapreduce.html#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2019/1119/springboot-vue-stack.html#more">阅读更多</a>
                 </div>
             </div>
         </div>
@@ -209,17 +409,17 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-09-13T02:17:28.000Z">2019-09-13</time>
+                <time class="level-item has-text-grey" datetime="2019-11-12T01:51:36.000Z">2019-11-12</time>
                 
                 <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/MongoDB/">MongoDB</a>
+                <a class="has-link-grey -link" href="/categories/学习资源/">学习资源</a>
                 </div>
                 
                 
                 <span class="level-item has-text-grey">
                     
                     
-                    7 分钟 读完 (大约 1066 个字)
+                    14 分钟 读完 (大约 2120 个字)
                 </span>
                 
                 
@@ -228,18 +428,18 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/0913/mongodb-pipelines.html">MongoDB 管道操作符(二)</a>
+                <a class="has-link-black-ter" href="/2019/1112/java-video.html">快来，松哥的免费资源库更新啦</a>
             
         </h1>
         
-            <div class="content"> <p>上篇文章中我们已经学习了 MongoDB 中几个基本的管道操作符，本文我们再来看看其他的管道操作符。</p></div>
+            <div class="content"> <p>今年 5 月份的时候，松哥发了一个视频资源库，当时和大家说，这个资源库会定期更新，后来却迟迟未更新，其实不是我没资源了，是因为当时的关键字是我一个一个在微信后台配置的，配置到后面发现，后台配置关键字有数量上限，没法继续配置了，所以这事就搁置下来了。</p></div>
         
         
         
         <div class="level is-mobile">
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0913/mongodb-pipelines.html#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2019/1112/java-video.html#more">阅读更多</a>
                 </div>
             </div>
         </div>
@@ -261,10 +461,220 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-09-12T02:17:28.000Z">2019-09-12</time>
+                <time class="level-item has-text-grey" datetime="2019-11-07T02:33:35.000Z">2019-11-07</time>
                 
                 <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/MongoDB/">MongoDB</a>
+                <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    11 分钟 读完 (大约 1587 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/1107/docker-springboot.html">还在用 Dockerfile 部署 Spring Boot？out 啦！试试谷歌的大杀器 Jib</a>
+            
+        </h1>
+        
+            <div class="content"> <p>之前松哥和大家分享过一篇将 Spring Boot 项目部署到远程 Docker 上的文章：</p></div>
+        
+        
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/1107/docker-springboot.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-11-06T11:12:52.756Z">2019-11-06</time>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    10 分钟 读完 (大约 1486 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/1106/0.html"></a>
+            
+        </h1>
+        
+            <div class="content"> <p>在 Java 领域，数据持久化有几个常见的方案，有 Spring 自带的 JdbcTemplate 、有 MyBatis，还有 JPA，在这些方案中，最简单的就是 Spring 自带的 JdbcTemplate 了，这个东西虽然没有 MyBatis 那么方便，但是比起最开始的 Jdbc 已经强了很多了，它没有 MyBatis 功能那么强大，当然也意味着它的使用比较简单，事实上，JdbcTemplate 算是最简单的数据持久化方案了，本文就和大伙来说说这个东西的使用。</p>
+<h2 id="1-基本配置"><a href="#1-基本配置" class="headerlink" title="1. 基本配置"></a>1. 基本配置</h2><p>JdbcTemplate 基本用法实际上很简单，开发者在创建一个 SpringBoot 项目时，除了选择基本的 Web 依赖，再记得选上 Jdbc 依赖，以及数据库驱动依赖即可，如下：</p>
+<p><img src="./img/19-1.png" alt></p>
+<p>项目创建成功之后，记得添加 Druid 数据库连接池依赖（注意这里可以添加专门为 Spring Boot 打造的 <code>druid-spring-boot-starter</code>，而不是我们一般在 SSM 中添加的 Druid），所有添加的依赖如下：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>com.alibaba<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>druid-spring-boot-starter<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>1.1.10<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-jdbc<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-web<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>mysql<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>mysql-connector-java<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>5.1.27<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">scope</span>&gt;</span>runtime<span class="hljs-tag">&lt;/<span class="hljs-name">scope</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>项目创建完后，接下来只需要在 application.properties 中提供数据的基本配置即可，如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">spring.datasource.type=com.alibaba.druid.pool.DruidDataSource</span><br><span class="line">spring.datasource.username=root</span><br><span class="line">spring.datasource.password=123</span><br><span class="line">spring.datasource.url=jdbc:mysql:///test01?useUnicode=true&amp;characterEncoding=UTF-8</span><br></pre></td></tr></table></figure>
+<p>如此之后，所有的配置就算完成了，接下来就可以直接使用 JdbcTemplate 了？咋这么方便呢？其实这就是 SpringBoot 的自动化配置带来的好处，我们先说用法，一会来说原理。</p>
+<h2 id="2-基本用法"><a href="#2-基本用法" class="headerlink" title="2. 基本用法"></a>2. 基本用法</h2><p>首先我们来创建一个 User Bean，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">User</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">private</span> Long id;</span><br><span class="line">    <span class="hljs-keyword">private</span> String username;</span><br><span class="line">    <span class="hljs-keyword">private</span> String address;</span><br><span class="line">    <span class="hljs-comment">//省略getter/setter</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后来创建一个 UserService 类，在 UserService 类中注入 JdbcTemplate ，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Service</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserService</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Autowired</span></span><br><span class="line">    JdbcTemplate jdbcTemplate;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>好了，如此之后，准备工作就算完成了。</p>
+<h3 id="2-1-增"><a href="#2-1-增" class="headerlink" title="2.1 增"></a>2.1 增</h3><p>JdbcTemplate 中，除了查询有几个 API 之外，增删改统一都使用 update 来操作，自己来传入 SQL 即可。例如添加数据，方法如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">addUser</span><span class="hljs-params">(User user)</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">return</span> jdbcTemplate.update(<span class="hljs-string">"insert into user (username,address) values (?,?);"</span>, user.getUsername(), user.getAddress());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>update 方法的返回值就是 SQL 执行受影响的行数。</p>
+<p>这里只需要传入 SQL 即可，如果你的需求比较复杂，例如在数据插入的过程中希望实现主键回填，那么可以使用 PreparedStatementCreator，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">addUser2</span><span class="hljs-params">(User user)</span> </span>&#123;</span><br><span class="line">    KeyHolder keyHolder = <span class="hljs-keyword">new</span> GeneratedKeyHolder();</span><br><span class="line">    <span class="hljs-keyword">int</span> update = jdbcTemplate.update(<span class="hljs-keyword">new</span> PreparedStatementCreator() &#123;</span><br><span class="line">        <span class="hljs-meta">@Override</span></span><br><span class="line">        <span class="hljs-function"><span class="hljs-keyword">public</span> PreparedStatement <span class="hljs-title">createPreparedStatement</span><span class="hljs-params">(Connection connection)</span> <span class="hljs-keyword">throws</span> SQLException </span>&#123;</span><br><span class="line">            PreparedStatement ps = connection.prepareStatement(<span class="hljs-string">"insert into user (username,address) values (?,?);"</span>, Statement.RETURN_GENERATED_KEYS);</span><br><span class="line">            ps.setString(<span class="hljs-number">1</span>, user.getUsername());</span><br><span class="line">            ps.setString(<span class="hljs-number">2</span>, user.getAddress());</span><br><span class="line">            <span class="hljs-keyword">return</span> ps;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;, keyHolder);</span><br><span class="line">    user.setId(keyHolder.getKey().longValue());</span><br><span class="line">    System.out.println(user);</span><br><span class="line">    <span class="hljs-keyword">return</span> update;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>实际上这里就相当于完全使用了 JDBC 中的解决方案了，首先在构建 PreparedStatement 时传入 Statement.RETURN_GENERATED_KEYS，然后传入 KeyHolder，最终从 KeyHolder 中获取刚刚插入数据的 id 保存到 user 对象的 id 属性中去。</p>
+<p>你能想到的 JDBC 的用法，在这里都能实现，Spring 提供的 JdbcTemplate 虽然不如 MyBatis，但是比起 Jdbc 还是要方便很多的。</p>
+<h3 id="2-2-删"><a href="#2-2-删" class="headerlink" title="2.2 删"></a>2.2 删</h3><p>删除也是使用 update API，传入你的 SQL 即可：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">deleteUserById</span><span class="hljs-params">(Long id)</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">return</span> jdbcTemplate.update(<span class="hljs-string">"delete from user where id=?"</span>, id);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当然你也可以使用 PreparedStatementCreator。</p>
+<h3 id="2-3-改"><a href="#2-3-改" class="headerlink" title="2.3 改"></a>2.3 改</h3><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">updateUserById</span><span class="hljs-params">(User user)</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">return</span> jdbcTemplate.update(<span class="hljs-string">"update user set username=?,address=? where id=?"</span>, user.getUsername(), user.getAddress(),user.getId());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当然你也可以使用 PreparedStatementCreator。</p>
+<h3 id="2-4-查"><a href="#2-4-查" class="headerlink" title="2.4 查"></a>2.4 查</h3><p>查询的话，稍微有点变化，这里主要向大伙介绍 query 方法，例如查询所有用户：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> List&lt;User&gt; <span class="hljs-title">getAllUsers</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">return</span> jdbcTemplate.query(<span class="hljs-string">"select * from user"</span>, <span class="hljs-keyword">new</span> RowMapper&lt;User&gt;() &#123;</span><br><span class="line">        <span class="hljs-meta">@Override</span></span><br><span class="line">        <span class="hljs-function"><span class="hljs-keyword">public</span> User <span class="hljs-title">mapRow</span><span class="hljs-params">(ResultSet resultSet, <span class="hljs-keyword">int</span> i)</span> <span class="hljs-keyword">throws</span> SQLException </span>&#123;</span><br><span class="line">            String username = resultSet.getString(<span class="hljs-string">"username"</span>);</span><br><span class="line">            String address = resultSet.getString(<span class="hljs-string">"address"</span>);</span><br><span class="line">            <span class="hljs-keyword">long</span> id = resultSet.getLong(<span class="hljs-string">"id"</span>);</span><br><span class="line">            User user = <span class="hljs-keyword">new</span> User();</span><br><span class="line">            user.setAddress(address);</span><br><span class="line">            user.setUsername(username);</span><br><span class="line">            user.setId(id);</span><br><span class="line">            <span class="hljs-keyword">return</span> user;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>查询的时候需要提供一个 RowMapper，就是需要自己手动映射，将数据库中的字段和对象的属性一一对应起来，这样。。。。嗯看起来有点麻烦，实际上，如果数据库中的字段和对象属性的名字一模一样的话，有另外一个简单的方案，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> List&lt;User&gt; <span class="hljs-title">getAllUsers2</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">return</span> jdbcTemplate.query(<span class="hljs-string">"select * from user"</span>, <span class="hljs-keyword">new</span> BeanPropertyRowMapper&lt;&gt;(User.class));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>至于查询时候传参也是使用占位符，这个和前文的一致，这里不再赘述。</p>
+<h3 id="2-5-其他"><a href="#2-5-其他" class="headerlink" title="2.5 其他"></a>2.5 其他</h3><p>除了这些基本用法之外，JdbcTemplate 也支持其他用法，例如调用存储过程等，这些都比较容易，而且和 Jdbc 本身都比较相似，这里也就不做介绍了，有兴趣可以留言讨论。</p>
+<h2 id="3-原理分析"><a href="#3-原理分析" class="headerlink" title="3. 原理分析"></a>3. 原理分析</h2><p>那么在 SpringBoot 中，配置完数据库基本信息之后，就有了一个 JdbcTemplate 了，这个东西是从哪里来的呢？源码在 <code>org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration</code> 类中，该类源码如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-meta">@ConditionalOnClass</span>(&#123; DataSource.class, JdbcTemplate.class &#125;)</span><br><span class="line"><span class="hljs-meta">@ConditionalOnSingleCandidate</span>(DataSource.class)</span><br><span class="line"><span class="hljs-meta">@AutoConfigureAfter</span>(DataSourceAutoConfiguration.class)</span><br><span class="line"><span class="hljs-meta">@EnableConfigurationProperties</span>(JdbcProperties.class)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">JdbcTemplateAutoConfiguration</span> </span>&#123;</span><br><span class="line">	<span class="hljs-meta">@Configuration</span></span><br><span class="line">	<span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">JdbcTemplateConfiguration</span> </span>&#123;</span><br><span class="line">		<span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> DataSource dataSource;</span><br><span class="line">		<span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> JdbcProperties properties;</span><br><span class="line">		JdbcTemplateConfiguration(DataSource dataSource, JdbcProperties properties) &#123;</span><br><span class="line">			<span class="hljs-keyword">this</span>.dataSource = dataSource;</span><br><span class="line">			<span class="hljs-keyword">this</span>.properties = properties;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-meta">@Bean</span></span><br><span class="line">		<span class="hljs-meta">@Primary</span></span><br><span class="line">		<span class="hljs-meta">@ConditionalOnMissingBean</span>(JdbcOperations.class)</span><br><span class="line">		<span class="hljs-function"><span class="hljs-keyword">public</span> JdbcTemplate <span class="hljs-title">jdbcTemplate</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">			JdbcTemplate jdbcTemplate = <span class="hljs-keyword">new</span> JdbcTemplate(<span class="hljs-keyword">this</span>.dataSource);</span><br><span class="line">			JdbcProperties.Template template = <span class="hljs-keyword">this</span>.properties.getTemplate();</span><br><span class="line">			jdbcTemplate.setFetchSize(template.getFetchSize());</span><br><span class="line">			jdbcTemplate.setMaxRows(template.getMaxRows());</span><br><span class="line">			<span class="hljs-keyword">if</span> (template.getQueryTimeout() != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">				jdbcTemplate</span><br><span class="line">						.setQueryTimeout((<span class="hljs-keyword">int</span>) template.getQueryTimeout().getSeconds());</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">return</span> jdbcTemplate;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-meta">@Configuration</span></span><br><span class="line">	<span class="hljs-meta">@Import</span>(JdbcTemplateConfiguration.class)</span><br><span class="line">	<span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">NamedParameterJdbcTemplateConfiguration</span> </span>&#123;</span><br><span class="line">		<span class="hljs-meta">@Bean</span></span><br><span class="line">		<span class="hljs-meta">@Primary</span></span><br><span class="line">		<span class="hljs-meta">@ConditionalOnSingleCandidate</span>(JdbcTemplate.class)</span><br><span class="line">		<span class="hljs-meta">@ConditionalOnMissingBean</span>(NamedParameterJdbcOperations.class)</span><br><span class="line">		<span class="hljs-function"><span class="hljs-keyword">public</span> NamedParameterJdbcTemplate <span class="hljs-title">namedParameterJdbcTemplate</span><span class="hljs-params">(</span></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-params">				JdbcTemplate jdbcTemplate)</span> </span>&#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> NamedParameterJdbcTemplate(jdbcTemplate);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从这个类中，大致可以看出，当当前类路径下存在 DataSource 和 JdbcTemplate 时，该类就会被自动配置，jdbcTemplate 方法则表示，如果开发者没有自己提供一个 JdbcOperations 的实例的话，系统就自动配置一个 JdbcTemplate Bean（JdbcTemplate 是 JdbcOperations 接口的一个实现）。好了，不知道大伙有没有收获呢？</p>
+</div>
+        
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-11-06T11:12:52.755Z">2019-11-06</time>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    12 分钟 读完 (大约 1829 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/1106/0.html"></a>
+            
+        </h1>
+        
+            <div class="content"> <p>用过 Spring Boot 的小伙伴都知道，我们只需要在项目中引入 <code>spring-boot-starter-web</code> 依赖，SpringMVC 的一整套东西就会自动给我们配置好，但是，真实的项目环境比较复杂，系统自带的配置不一定满足我们的需求，往往我们还需要结合实际情况自定义配置。</p>
+<p>自定义配置就有讲究了，由于 Spring Boot 的版本变迁，加上这一块本身就有几个不同写法，很多小伙伴在这里容易搞混，今天松哥就来和大家说一说这个问题。</p>
+<h2 id="概览"><a href="#概览" class="headerlink" title="概览"></a>概览</h2><p>首先我们需要明确，跟自定义 SpringMVC 相关的类和注解主要有如下四个：</p>
+<ul>
+<li>WebMvcConfigurerAdapter</li>
+<li>WebMvcConfigurer</li>
+<li>WebMvcConfigurationSupport</li>
+<li>@EnableWebMvc</li>
+</ul>
+<p>这四个中，除了第四个是注解，另外三个两个类一个接口，里边的方法看起来好像都类似，但是实际使用效果却大不相同，因此很多小伙伴容易搞混，今天松哥就来和大家聊一聊这个问题。</p>
+<h2 id="WebMvcConfigurerAdapter"><a href="#WebMvcConfigurerAdapter" class="headerlink" title="WebMvcConfigurerAdapter"></a>WebMvcConfigurerAdapter</h2><p>我们先来看 WebMvcConfigurerAdapter，这个是在 Spring Boot 1.x 中我们自定义 SpringMVC 时继承的一个抽象类，这个抽象类本身是实现了 WebMvcConfigurer 接口，然后抽象类里边都是空方法，我们来看一下这个类的声明：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">abstract</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">WebMvcConfigurerAdapter</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">WebMvcConfigurer</span> </span>&#123;</span><br><span class="line">    <span class="hljs-comment">//各种 SpringMVC 配置的方法</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>再来看看这个类的注释：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * An implementation of &#123;<span class="hljs-doctag">@link</span> WebMvcConfigurer&#125; with empty methods allowing</span></span><br><span class="line"><span class="hljs-comment"> * subclasses to override only the methods they're interested in.</span></span><br><span class="line"><span class="hljs-comment"> * <span class="hljs-doctag">@deprecated</span> as of 5.0 &#123;<span class="hljs-doctag">@link</span> WebMvcConfigurer&#125; has default methods (made</span></span><br><span class="line"><span class="hljs-comment"> * possible by a Java 8 baseline) and can be implemented directly without the</span></span><br><span class="line"><span class="hljs-comment"> * need for this adapter</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br></pre></td></tr></table></figure>
+<p>这段注释关于这个类说的很明白了。同时我们也看到，从 Spring5 开始，由于我们要使用 Java8，而 Java8 中的接口允许存在 default 方法，因此官方建议我们直接实现 WebMvcConfigurer 接口，而不是继承 WebMvcConfigurerAdapter 。</p>
+<p><strong>也就是说，在 Spring Boot 1.x 的时代，如果我们需要自定义 SpringMVC 配置，直接继承 WebMvcConfigurerAdapter 类即可。</strong></p>
+<h2 id="WebMvcConfigurer"><a href="#WebMvcConfigurer" class="headerlink" title="WebMvcConfigurer"></a>WebMvcConfigurer</h2><p>根据上一小节的解释，小伙伴们已经明白了，WebMvcConfigurer 是我们在 Spring Boot 2.x 中实现自定义配置的方案。</p>
+<p>WebMvcConfigurer 是一个接口，接口中的方法和 WebMvcConfigurerAdapter 中定义的空方法其实一样，所以用法上来说，基本上没有差别，从 Spring Boot 1.x 切换到 Spring Boot 2.x ，只需要把继承类改成实现接口即可。</p>
+<p>松哥在之前的案例中(<a href="https://mp.weixin.qq.com/s/tm1IqiEvRZwDAb-F5yJ5Aw" target="_blank" rel="noopener">40 篇原创干货，带你进入 Spring Boot 殿堂！</a>)，凡是涉及到自定义 SpringMVC 配置的地方，也都是通过实现 WebMvcConfigurer 接口来完成的。</p>
+<h2 id="WebMvcConfigurationSupport"><a href="#WebMvcConfigurationSupport" class="headerlink" title="WebMvcConfigurationSupport"></a>WebMvcConfigurationSupport</h2><p>前面两个都好理解，还有一个 WebMvcConfigurationSupport ，这个又是干什么用的呢？</p>
+<p>松哥之前有一篇文章中用过这个类，不知道小伙伴们有没有留意，就是下面这篇：</p>
+<ul>
+<li><a href="https://mp.weixin.qq.com/s/NC_0oaeBzRjCB34U_ZWxIQ" target="_blank" rel="noopener">纯 Java 代码搭建 SSM 环境</a></li>
+</ul>
+<p>这篇文章我放弃了 Spring 和 SpringMVC 的 xml 配置文件，转而用 Java 代替这两个 xml 配置。那么在这里我自定义 SpringMVC 配置的时候，就是通过继承 WebMvcConfigurationSupport 类来实现的。在 WebMvcConfigurationSupport 类中，提供了用 Java 配置 SpringMVC 所需要的所有方法。我们来看一下这个方法的摘要：</p>
+<p><img src="./img/18-1.png" alt></p>
+<p>有一点眼熟，可能有小伙伴发现了，这里的方法其实和前面两个类中的方法基本是一样的。</p>
+<p>在这里首先大家需要明确的是，WebMvcConfigurationSupport 类本身是没有问题的，我们自定义 SpringMVC 的配置是可以通过继承 WebMvcConfigurationSupport 来实现的。但是继承 WebMvcConfigurationSupport 这种操作我们一般只在 Java 配置的 SSM 项目中使用，Spring Boot 中基本上不会这么写，为什么呢？</p>
+<p>小伙伴们知道，Spring Boot 中，SpringMVC 相关的自动化配置是在 WebMvcAutoConfiguration 配置类中实现的，那么我们来看看这个配置类的生效条件：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-meta">@ConditionalOnWebApplication</span>(type = Type.SERVLET)</span><br><span class="line"><span class="hljs-meta">@ConditionalOnClass</span>(&#123; Servlet.class, DispatcherServlet.class, WebMvcConfigurer.class &#125;)</span><br><span class="line"><span class="hljs-meta">@ConditionalOnMissingBean</span>(WebMvcConfigurationSupport.class)</span><br><span class="line"><span class="hljs-meta">@AutoConfigureOrder</span>(Ordered.HIGHEST_PRECEDENCE + <span class="hljs-number">10</span>)</span><br><span class="line"><span class="hljs-meta">@AutoConfigureAfter</span>(&#123; DispatcherServletAutoConfiguration.class, TaskExecutionAutoConfiguration.class,</span><br><span class="line">		ValidationAutoConfiguration.class &#125;)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">WebMvcAutoConfiguration</span> </span>&#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们从这个类的注解中可以看到，它的生效条件有一条，就是当不存在 WebMvcConfigurationSupport 的实例时，这个自动化配置才会生生效。因此，如果我们在 Spring Boot 中自定义 SpringMVC 配置时选择了继承 WebMvcConfigurationSupport，就会导致 Spring Boot 中 SpringMVC 的自动化配置失效。</p>
+<p><strong>Spring Boot 给我们提供了很多自动化配置，很多时候当我们修改这些配置的时候，并不是要全盘否定 Spring Boot 提供的自动化配置，我们可能只是针对某一个配置做出修改，其他的配置还是按照 Spring Boot 默认的自动化配置来，而继承 WebMvcConfigurationSupport 来实现对 SpringMVC 的配置会导致所有的 SpringMVC 自动化配置失效，因此，一般情况下我们不选择这种方案。</strong></p>
+<p>在 Java 搭建的 SSM 项目中(<a href="https://mp.weixin.qq.com/s/NC_0oaeBzRjCB34U_ZWxIQ" target="_blank" rel="noopener">纯 Java 代码搭建 SSM 环境</a>)，因为本身就没什么自动化配置，所以我们使用了继承 WebMvcConfigurationSupport。</p>
+<h2 id="EnableWebMvc"><a href="#EnableWebMvc" class="headerlink" title="@EnableWebMvc"></a>@EnableWebMvc</h2><p>最后还有一个 @EnableWebMvc 注解，这个注解很好理解，它的作用就是启用 WebMvcConfigurationSupport。我们来看看这个注解的定义：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * Adding this annotation to an &#123;<span class="hljs-doctag">@code</span> <span class="hljs-doctag">@Configuration</span>&#125; class imports the Spring MVC</span></span><br><span class="line"><span class="hljs-comment"> * configuration from &#123;<span class="hljs-doctag">@link</span> WebMvcConfigurationSupport&#125;, e.g.:</span></span><br></pre></td></tr></table></figure>
+<p>可以看到，加了这个注解，就会自动导入 WebMvcConfigurationSupport，所以在 Spring Boot 中，我们也不建议使用 @EnableWebMvc 注解，因为它一样会导致 Spring Boot 中的 SpringMVC 自动化配置失效。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>不知道上面的解释小伙伴有没有看懂？我再简单总结一下：</p>
+<ol>
+<li>Spring Boot 1.x 中，自定义 SpringMVC 配置可以通过继承 WebMvcConfigurerAdapter 来实现。</li>
+<li>Spring Boot 2.x 中，自定义 SpringMVC 配置可以通过实现 WebMvcConfigurer 接口来完成。</li>
+<li>如果在 Spring Boot 中使用继承 WebMvcConfigurationSupport 来实现自定义 SpringMVC 配置，或者在 Spring Boot 中使用了 @EnableWebMvc 注解，都会导致 Spring Boot 中默认的 SpringMVC 自动化配置失效。</li>
+<li>在纯 Java 配置的 SSM 环境中，如果我们要自定义 SpringMVC 配置，有两种办法，第一种就是直接继承自 WebMvcConfigurationSupport 来完成 SpringMVC 配置，还有一种方案就是实现 WebMvcConfigurer 接口来完成自定义 SpringMVC 配置，如果使用第二种方式，则需要给 SpringMVC 的配置类上额外添加 @EnableWebMvc 注解，表示启用 WebMvcConfigurationSupport，这样配置才会生效。换句话说，在纯 Java 配置的 SSM 中，如果你需要自定义 SpringMVC 配置，你离不开 WebMvcConfigurationSupport ，所以在这种情况下建议通过继承 WebMvcConfigurationSupport 来实现自动化配置。</li>
+</ol>
+<p>不知道小伙伴们有没有看懂呢？有问题欢迎留言讨论。</p>
+</div>
+        
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-11-01T02:34:22.000Z">2019-11-01</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/MySQL/">MySQL</a>
                 </div>
                 
                 
@@ -280,18 +690,18 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/0912/mongodb-pipelines.html">MongoDB 管道操作符(一)</a>
+                <a class="has-link-black-ter" href="/2019/1101/docker-mysql.html">使用 Docker 搭建 MySQL 主从复制</a>
             
         </h1>
         
-            <div class="content"> <p>熟悉 Linux 操作系统的小伙伴们应该知道 Linux 中有管道的说法，可以用来方便的处理数据。</p></div>
+            <div class="content"> <p>hello 各位小伙伴大家好，今年 5 月份的时候，松哥和大家聊过如何搭建 MySQL 主从复制：</p></div>
         
         
         
         <div class="level is-mobile">
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0912/mongodb-pipelines.html#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2019/1101/docker-mysql.html#more">阅读更多</a>
                 </div>
             </div>
         </div>
@@ -313,17 +723,17 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-09-11T02:17:28.000Z">2019-09-11</time>
+                <time class="level-item has-text-grey" datetime="2019-10-31T02:32:24.000Z">2019-10-31</time>
                 
                 <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/MongoDB/">MongoDB</a>
+                <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
                 </div>
                 
                 
                 <span class="level-item has-text-grey">
                     
                     
-                    4 分钟 读完 (大约 667 个字)
+                    14 分钟 读完 (大约 2162 个字)
                 </span>
                 
                 
@@ -332,330 +742,18 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/0911/mongodb-collections.html">MongoDB 固定集合</a>
+                <a class="has-link-black-ter" href="/2019/1031/springboot-weixin.html">Spring Boot 开发微信公众号后台(二)</a>
             
         </h1>
         
-            <div class="content"> <p>一般情况下我们创建的集合是没有大小的，可以一直往里边添加文档，这种集合可以动态增长，MongoDB 中还有一种集合叫做固定集合，这种集合的大小是固定的，我可以在创建的时候设置该集合中文档的数目，假设为 100 条，当集合中的文档数目达到 100 条时，如果再向集合中插入文档，则只会保留最新的 100 个文档，之前的文档则会被删除。</p></div>
+            <div class="content"> <p>hello 各位小伙伴，今天我们来继续学习如何通过 Spring Boot 开发微信公众号。还没阅读过上篇文章的小伙伴建议先看看上文，有助于理解本文：</p></div>
         
         
         
         <div class="level is-mobile">
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0911/mongodb-collections.html#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-09-10T02:17:28.000Z">2019-09-10</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/MongoDB/">MongoDB</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    12 分钟 读完 (大约 1754 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/0910/mongodb-index-types.html">MongoDB 中各种类型的索引</a>
-            
-        </h1>
-        
-            <div class="content"> <p>上篇文章中我们介绍了 MongoDB 中索引的简单操作，创建、查看、删除等基本操作，不过上文我们只介绍了一种类型的索引，本文我们来看看其他类型的索引。</p></div>
-        
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0910/mongodb-index-types.html#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-09-09T02:17:28.000Z">2019-09-09</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/MongoDB/">MongoDB</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    8 分钟 读完 (大约 1160 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/0909/mongodb-index-basic.html">初识 MongoDB 中的索引</a>
-            
-        </h1>
-        
-            <div class="content"> <p>索引就像图书的目录一样，可以让我们快速定位到需要的内容，关系型数据库中有索引，NoSQL 中当然也有，本文我们就先来简单介绍下 MongoDB 中的索引。</p></div>
-        
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0909/mongodb-index-basic.html#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-09-08T02:17:28.000Z">2019-09-08</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/MongoDB/">MongoDB</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    6 分钟 读完 (大约 827 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/0908/mongodb-query-planner.html">MongoDB 查看执行计划</a>
-            
-        </h1>
-        
-            <div class="content"> <p>MongoDB 中的 explain() 函数可以帮助我们查看查询相关的信息，这有助于我们快速查找到搜索瓶颈进而解决它，本文我们就来看看 explain() 的一些用法及其查询结果的含义。</p></div>
-        
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0908/mongodb-query-planner.html#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-09-07T02:17:28.000Z">2019-09-07</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/MongoDB/">MongoDB</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    4 分钟 读完 (大约 649 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/0907/mongodb-documents-query.html">MongoDB 文档查询操作（三）</a>
-            
-        </h1>
-        
-            <div class="content"> <p>关于 MongoDB 中的查询，我们已经连着介绍了两篇文章了，本文我们来介绍另外一个查询概念<strong>游标</strong>。</p></div>
-        
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0907/mongodb-documents-query.html#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-09-06T02:17:28.000Z">2019-09-06</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/MongoDB/">MongoDB</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    6 分钟 读完 (大约 970 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/0906/mongodb-documents-query.html">MongoDB 文档查询操作(二)</a>
-            
-        </h1>
-        
-            <div class="content"> <p>上篇文章我们对 MongoDB 中的查询操作做了简单介绍，本文我们继续来看更丰富的查询操作。</p></div>
-        
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0906/mongodb-documents-query.html#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-09-05T02:17:28.000Z">2019-09-05</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/MongoDB/">MongoDB</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    7 分钟 读完 (大约 1021 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/0905/mongodb-documents-query.html">MongoDB 文档查询操作(一)</a>
-            
-        </h1>
-        
-            <div class="content"> <p>上篇文章我们主要介绍了 MongoDB 的修改操作，本文我们来看看查询操作。</p></div>
-        
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0905/mongodb-documents-query.html#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2019/1031/springboot-weixin.html#more">阅读更多</a>
                 </div>
             </div>
         </div>
@@ -695,7 +793,7 @@
             
             <li><span class="pagination-ellipsis has-text-black-ter">&hellip;</span></li>
             
-            <li><a class="pagination-link has-text-black-ter" href="/page/17/">17</a></li>
+            <li><a class="pagination-link has-text-black-ter" href="/page/22/">22</a></li>
             
         </ul>
     </nav>
@@ -743,7 +841,7 @@
                         文章
                     </p>
                     <p class="title has-text-weight-normal">
-                        166
+                        214
                     </p>
                 </div>
             </div>
@@ -1218,7 +1316,7 @@
                     <span class="level-item">十二月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">9</span>
+                    <span class="level-item tag">22</span>
                 </span>
             </a>
         </li>
@@ -1229,7 +1327,7 @@
                     <span class="level-item">十一月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">6</span>
+                    <span class="level-item tag">21</span>
                 </span>
             </a>
         </li>
@@ -1240,7 +1338,7 @@
                     <span class="level-item">十月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">11</span>
+                    <span class="level-item tag">24</span>
                 </span>
             </a>
         </li>
@@ -1251,7 +1349,7 @@
                     <span class="level-item">九月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">22</span>
+                    <span class="level-item tag">28</span>
                 </span>
             </a>
         </li>
@@ -1284,7 +1382,7 @@
                     <span class="level-item">六月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">43</span>
+                    <span class="level-item tag">44</span>
                 </span>
             </a>
         </li>
@@ -1611,7 +1709,7 @@
                     <span class="level-item">十二月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">9</span>
+                    <span class="level-item tag">22</span>
                 </span>
             </a>
         </li>
@@ -1622,7 +1720,7 @@
                     <span class="level-item">十一月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">6</span>
+                    <span class="level-item tag">21</span>
                 </span>
             </a>
         </li>
@@ -1633,7 +1731,7 @@
                     <span class="level-item">十月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">11</span>
+                    <span class="level-item tag">24</span>
                 </span>
             </a>
         </li>
@@ -1644,7 +1742,7 @@
                     <span class="level-item">九月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">22</span>
+                    <span class="level-item tag">28</span>
                 </span>
             </a>
         </li>
@@ -1677,7 +1775,7 @@
                     <span class="level-item">六月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">43</span>
+                    <span class="level-item tag">44</span>
                 </span>
             </a>
         </li>

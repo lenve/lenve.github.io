@@ -157,17 +157,13 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-09-04T02:17:28.000Z">2019-09-04</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/MongoDB/">MongoDB</a>
-                </div>
+                <time class="level-item has-text-grey" datetime="2019-10-30T07:12:01.387Z">2019-10-30</time>
                 
                 
                 <span class="level-item has-text-grey">
                     
                     
-                    15 分钟 读完 (大约 2284 个字)
+                    14 分钟 读完 (大约 2161 个字)
                 </span>
                 
                 
@@ -176,21 +172,103 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/0904/mongodb-documents-update.html">MongoDB 文档更新操作</a>
+                <a class="has-link-black-ter" href="/2019/1030/0.html"></a>
             
         </h1>
         
-            <div class="content"> <p>我们在前面的文章中提到过文档的基本的增删改查操作，MongoDB 中提供的增删改查的语法非常丰富，本文我们主要来看看更新都有哪些好玩的语法。</p></div>
+            <div class="content"> <p>hello 各位小伙伴，今天我们来继续学习如何通过 Spring Boot 开发微信公众号。还没阅读过上篇文章的小伙伴建议先看看上文，有助于理解本文：</p>
+<ul>
+<li><a href="https://mp.weixin.qq.com/s/f3QexxLp9vT6aE1Pl3jHGw" target="_blank" rel="noopener">Spring Boot 开发微信公众号后台</a></li>
+</ul>
+<p>上篇文章中我们将微信服务器和我们自己的服务器对接起来了，并且在自己的服务器上也能收到微信服务器发来的消息，本文我们要看的就是如何给微信服务器回复消息。</p>
+<h2 id="消息分类"><a href="#消息分类" class="headerlink" title="消息分类"></a>消息分类</h2><p>在讨论如何给微信服务器回复消息之前，我们需要先来了解下微信服务器发来的消息主要有哪些类型以及我们回复给微信的消息都有哪些类型。</p>
+<p>在上文中大家了解到，微信发送来的 xml 消息中有一个 MsgType 字段，这个字段就是用来标记消息的类型。这个类型可以标记出这条消息是普通消息还是事件消息还是图文消息等。</p>
+<p>普通消息主要是指：</p>
+<ul>
+<li>文本消息</li>
+<li>图片消息</li>
+<li>语音消息</li>
+<li>视频消息</li>
+<li>小视频消息</li>
+<li>地址位置消息</li>
+<li>链接消息</li>
+</ul>
+<p>不同的消息类型，对应不同的 MsgType，这里我还是以普通消息为例，如下：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">消息类型</th>
+<th style="text-align:left">MsgType</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">文本消息</td>
+<td style="text-align:left">text</td>
+</tr>
+<tr>
+<td style="text-align:left">图片消息</td>
+<td style="text-align:left">image</td>
+</tr>
+<tr>
+<td style="text-align:left">语音消息</td>
+<td style="text-align:left">voice</td>
+</tr>
+<tr>
+<td style="text-align:left">视频消息</td>
+<td style="text-align:left">video</td>
+</tr>
+<tr>
+<td style="text-align:left">小视频消息</td>
+<td style="text-align:left">shortvideo</td>
+</tr>
+<tr>
+<td style="text-align:left">地址位置消息</td>
+<td style="text-align:left">location</td>
+</tr>
+<tr>
+<td style="text-align:left">链接消息</td>
+<td style="text-align:left">link</td>
+</tr>
+</tbody>
+</table>
+<p>大家千万不要以为不同类型消息的格式是一样的，其实是不一样的，也就是说，MsgType 为 text 的消息和 MsgType 为 image 的消息，微信服务器发给我们的消息内容是不一样的，这样带来一个问题就是我无法使用一个 Bean 去接收不同类型的数据，因此这里我们一般使用 Map 接收即可。</p>
+<p>这是消息的接收，除了消息的接收之外，还有一个消息的回复，我们回复的消息也有很多类型，可以回复普通消息，也可以回复图片消息，回复语音消息等，不同的回复消息我们可以进行相应的封装。因为不同的返回消息实例也是有一些共同的属性的，例如消息是谁发来的，发给谁，消息类型，消息 id 等，所以我们可以将这些共同的属性定义成一个父类，然后不同的消息再去继承这个父类。</p>
+<h2 id="返回消息类型定义"><a href="#返回消息类型定义" class="headerlink" title="返回消息类型定义"></a>返回消息类型定义</h2><p>首先我们来定义一个公共的消息类型：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">BaseMessage</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">private</span> String ToUserName;</span><br><span class="line">    <span class="hljs-keyword">private</span> String FromUserName;</span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> CreateTime;</span><br><span class="line">    <span class="hljs-keyword">private</span> String MsgType;</span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> MsgId;</span><br><span class="line">    <span class="hljs-comment">//省略 getter/setter</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在这里：</p>
+<ul>
+<li>ToUserName 表示开发者的微信号</li>
+<li>FromUserName 表示发送方账号（用户的 OpenID）</li>
+<li>CreateTime 消息的创建时间</li>
+<li>MsgType 表示消息的类型</li>
+<li>MsgId 表示消息 id</li>
+</ul>
+<p>这是我们的基本消息类型，就是说，我们返回给用户的消息，无论是什么类型的消息，都有这几个基本属性。然后在此基础上，我们再去扩展出文本消息、图片消息 等。</p>
+<p>我们来看下文本消息的定义：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">TextMessage</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">BaseMessage</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">private</span> String Content;</span><br><span class="line">    <span class="hljs-comment">//省略 getter/setter</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>文本消息在前面消息的基础上多了一个 Content 属性，因此文本消息继承自 BaseMessage ，再额外添加一个 Content 属性即可。</p>
+<p>其他的消息类型也是类似的定义，我就不一一列举了，至于其他消息的格式，大家可以参考微信开放文档（<a href="http://1t.click/aPXK）。" target="_blank" rel="noopener">http://1t.click/aPXK）。</a></p>
+<h2 id="返回消息生成"><a href="#返回消息生成" class="headerlink" title="返回消息生成"></a>返回消息生成</h2><p>消息类型的 Bean 定义完成之后，接下来就是将实体类生成 XML。</p>
+<p>首先我们定义一个消息工具类，将常见的消息类型枚举出来：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 返回消息类型：文本</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String RESP_MESSAGE_TYPE_TEXT = <span class="hljs-string">"text"</span>;</span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 返回消息类型：音乐</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String RESP_MESSAGE_TYPE_MUSIC = <span class="hljs-string">"music"</span>;</span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 返回消息类型：图文</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String RESP_MESSAGE_TYPE_NEWS = <span class="hljs-string">"news"</span>;</span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 返回消息类型：图片</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String RESP_MESSAGE_TYPE_Image = <span class="hljs-string">"image"</span>;</span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 返回消息类型：语音</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String RESP_MESSAGE_TYPE_Voice = <span class="hljs-string">"voice"</span>;</span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 返回消息类型：视频</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String RESP_MESSAGE_TYPE_Video = <span class="hljs-string">"video"</span>;</span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 请求消息类型：文本</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String REQ_MESSAGE_TYPE_TEXT = <span class="hljs-string">"text"</span>;</span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 请求消息类型：图片</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String REQ_MESSAGE_TYPE_IMAGE = <span class="hljs-string">"image"</span>;</span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 请求消息类型：链接</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String REQ_MESSAGE_TYPE_LINK = <span class="hljs-string">"link"</span>;</span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 请求消息类型：地理位置</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String REQ_MESSAGE_TYPE_LOCATION = <span class="hljs-string">"location"</span>;</span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 请求消息类型：音频</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String REQ_MESSAGE_TYPE_VOICE = <span class="hljs-string">"voice"</span>;</span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 请求消息类型：视频</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String REQ_MESSAGE_TYPE_VIDEO = <span class="hljs-string">"video"</span>;</span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 请求消息类型：推送</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String REQ_MESSAGE_TYPE_EVENT = <span class="hljs-string">"event"</span>;</span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 事件类型：subscribe(订阅)</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String EVENT_TYPE_SUBSCRIBE = <span class="hljs-string">"subscribe"</span>;</span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 事件类型：unsubscribe(取消订阅)</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String EVENT_TYPE_UNSUBSCRIBE = <span class="hljs-string">"unsubscribe"</span>;</span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 事件类型：CLICK(自定义菜单点击事件)</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String EVENT_TYPE_CLICK = <span class="hljs-string">"CLICK"</span>;</span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 事件类型：VIEW(自定义菜单 URl 视图)</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String EVENT_TYPE_VIEW = <span class="hljs-string">"VIEW"</span>;</span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 事件类型：LOCATION(上报地理位置事件)</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String EVENT_TYPE_LOCATION = <span class="hljs-string">"LOCATION"</span>;</span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 事件类型：LOCATION(上报地理位置事件)</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String EVENT_TYPE_SCAN = <span class="hljs-string">"SCAN"</span>;</span><br></pre></td></tr></table></figure>
+<p>大家注意这里消息类型的定义，以 RESP 开头的表示返回的消息类型，以 REQ 表示微信服务器发来的消息类型。然后在这个工具类中再定义两个方法，用来将返回的对象转换成 XML：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> String <span class="hljs-title">textMessageToXml</span><span class="hljs-params">(TextMessage textMessage)</span> </span>&#123;</span><br><span class="line">    xstream.alias(<span class="hljs-string">"xml"</span>, textMessage.getClass());</span><br><span class="line">    <span class="hljs-keyword">return</span> xstream.toXML(textMessage);</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> XStream xstream = <span class="hljs-keyword">new</span> XStream(<span class="hljs-keyword">new</span> XppDriver() &#123;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> HierarchicalStreamWriter <span class="hljs-title">createWriter</span><span class="hljs-params">(Writer out)</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> PrettyPrintWriter(out) &#123;</span><br><span class="line">            <span class="hljs-keyword">boolean</span> cdata = <span class="hljs-keyword">true</span>;</span><br><span class="line">            <span class="hljs-meta">@SuppressWarnings</span>(<span class="hljs-string">"rawtypes"</span>)</span><br><span class="line">            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">startNode</span><span class="hljs-params">(String name, Class clazz)</span> </span>&#123;</span><br><span class="line">                <span class="hljs-keyword">super</span>.startNode(name, clazz);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">writeText</span><span class="hljs-params">(QuickWriter writer, String text)</span> </span>&#123;</span><br><span class="line">                <span class="hljs-keyword">if</span> (cdata) &#123;</span><br><span class="line">                    writer.write(<span class="hljs-string">"&lt;![CDATA["</span>);</span><br><span class="line">                    writer.write(text);</span><br><span class="line">                    writer.write(<span class="hljs-string">"]]&gt;"</span>);</span><br><span class="line">                &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">                    writer.write(text);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+<p>textMessageToXML 方法用来将 TextMessage 对象转成 XML 返回给微信服务器，类似的方法我们还需要定义 imageMessageToXml、voiceMessageToXml 等，不过定义的方式都基本类似，我就不一一列出来了。</p>
+<h2 id="返回消息分发"><a href="#返回消息分发" class="headerlink" title="返回消息分发"></a>返回消息分发</h2><p>由于用户发来的消息可能存在多种情况，我们需要分类进行处理，这个就涉及到返回消息的分发问题。因此我在这里再定义一个返回消息分发的工具类，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MessageDispatcher</span> </span>&#123;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> String <span class="hljs-title">processMessage</span><span class="hljs-params">(Map&lt;String, String&gt; map)</span> </span>&#123;</span><br><span class="line">        String openid = map.get(<span class="hljs-string">"FromUserName"</span>); <span class="hljs-comment">//用户 openid</span></span><br><span class="line">        String mpid = map.get(<span class="hljs-string">"ToUserName"</span>);   <span class="hljs-comment">//公众号原始 ID</span></span><br><span class="line">        <span class="hljs-keyword">if</span> (map.get(<span class="hljs-string">"MsgType"</span>).equals(MessageUtil.REQ_MESSAGE_TYPE_TEXT)) &#123; </span><br><span class="line">            <span class="hljs-comment">//普通文本消息</span></span><br><span class="line">            TextMessage txtmsg = <span class="hljs-keyword">new</span> TextMessage();</span><br><span class="line">            txtmsg.setToUserName(openid);</span><br><span class="line">            txtmsg.setFromUserName(mpid);</span><br><span class="line">            txtmsg.setCreateTime(<span class="hljs-keyword">new</span> Date().getTime());</span><br><span class="line">            txtmsg.setMsgType(MessageUtil.RESP_MESSAGE_TYPE_TEXT);</span><br><span class="line">            txtmsg.setContent(<span class="hljs-string">"这是返回消息"</span>);</span><br><span class="line">            <span class="hljs-keyword">return</span> MessageUtil.textMessageToXml(txtmsg);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">processEvent</span><span class="hljs-params">(Map&lt;String, String&gt; map)</span> </span>&#123;</span><br><span class="line">        <span class="hljs-comment">//在这里处理事件</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里我们还可以多加几个 elseif 去判断不同的消息类型，我这里因为只有普通文本消息，所以一个 if 就够用了。</p>
+<p>在这里返回值我写死了，实际上这里需要根据微信服务端传来的 Content 去数据中查询，将查询结果返回，数据库查询这一套相信大家都能搞定，我这里就不重复介绍了。</p>
+<p>最后在消息接收 Controller 中调用该方法，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@PostMapping</span>(value = <span class="hljs-string">"/verify_wx_token"</span>,produces = <span class="hljs-string">"application/xml;charset=utf-8"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">handler</span><span class="hljs-params">(HttpServletRequest request, HttpServletResponse response)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    request.setCharacterEncoding(<span class="hljs-string">"UTF-8"</span>);</span><br><span class="line">    Map&lt;String, String&gt; map = MessageUtil.parseXml(request);</span><br><span class="line">    String msgType = map.get(<span class="hljs-string">"MsgType"</span>);</span><br><span class="line">    <span class="hljs-keyword">if</span> (MessageUtil.REQ_MESSAGE_TYPE_EVENT.equals(msgType)) &#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> messageDispatcher.processEvent(map);</span><br><span class="line">    &#125;<span class="hljs-keyword">else</span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> messageDispatcher.processMessage(map);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在 Controller 中，我们首先判断消息是否是事件，如果是事件，进入到事件处理通道，如果不是事件，则进入到消息处理通道。</p>
+<p><strong>注意，这里需要配置一下返回消息的编码，否则可能会出现中文乱码。</strong></p>
+<p>如此之后，我们的服务器就可以给公众号返回消息了。</p>
+<p>上篇文章发出后，有小伙伴问松哥这个会不会开源，我可以负责任的告诉大家，肯定会开源，这个系列截稿后，我把代码处理下就上传到 GitHub。</p>
+<p>好了，本文我们就先说到这里。</p>
+</div>
         
         
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0904/mongodb-documents-update.html#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
         
         
     </div>
@@ -209,215 +287,7 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-09-03T02:17:28.000Z">2019-09-03</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/MongoDB/">MongoDB</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    8 分钟 读完 (大约 1189 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/0903/mongodb-data-types.html">MongoDB 数据类型</a>
-            
-        </h1>
-        
-            <div class="content"> <p>上篇文章我们介绍了 MongoDB 的最基本的增删改查操作，也介绍了一些基础的概念，MongoDB 中每条记录称作一个文档，这个文档和我们平时用的 JSON 有点像，但也不完全一样。</p></div>
-        
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0903/mongodb-data-types.html#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-09-02T02:17:28.000Z">2019-09-02</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/MongoDB/">MongoDB</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    11 分钟 读完 (大约 1676 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/0902/mongodb-basic-operations.html">MongoDB 基本操作</a>
-            
-        </h1>
-        
-            <div class="content"> <p>上篇文章我们简单介绍了 MongoDB 安装以及启动命令，本文我们来看看基本的增删改查，对 MongoDB 有一个直观的认识。</p></div>
-        
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0902/mongodb-basic-operations.html#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-09-01T02:17:28.000Z">2019-09-01</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/MongoDB/">MongoDB</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    10 分钟 读完 (大约 1469 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/0901/linux-install-mongodb.html">Linux 上安装 MongoDB</a>
-            
-        </h1>
-        
-            <div class="content"> <p>MongoDB 在 Windows 上的安装过程整体上来说并不难，网上的资料也比较多，这里我就不介绍了，我主要说下如何在Linux环境下安装 MongoDB。</p></div>
-        
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0901/linux-install-mongodb.html#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-08-27T05:03:09.000Z">2019-08-27</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/IDEA/">IDEA</a>
-                </div>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    16 分钟 读完 (大约 2468 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/0827/intellij-idea.html">IDEA 神器入坑指南！17 个常用快捷键奉上！</a>
-            
-        </h1>
-        
-            <div class="content"> <p>我前几年写过一个 Android Studio 中的快捷键教程，发表在 CSDN 上，最近有小伙伴看我讲 Spring Boot 视频，IDEA 用的还比较溜，问我有没有整理好的快捷键，我一般就直接把当时写的 Android Studio 的快捷键发给他。因为大家知道 as 其实就是基于 IDEA 来做的。</p></div>
-        
-        
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0827/intellij-idea.html#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-08-26T05:03:45.000Z">2019-08-26</time>
+                <time class="level-item has-text-grey" datetime="2019-10-29T02:32:07.000Z">2019-10-29</time>
                 
                 <div class="level-item">
                 <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
@@ -427,7 +297,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    9 分钟 读完 (大约 1333 个字)
+                    17 分钟 读完 (大约 2494 个字)
                 </span>
                 
                 
@@ -436,19 +306,18 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/0826/springboot-guide.html">40 篇原创干货，带你进入 Spring Boot 殿堂！</a>
+                <a class="has-link-black-ter" href="/2019/1029/springboot-weixin.html">Spring Boot 开发微信公众号后台</a>
             
         </h1>
         
-            <div class="content"> <p>两个月前，松哥总结过一次已经完成的 Spring Boot 教程，当时感受到了小伙伴们巨大的热情。</p>
-<p>两个月过去了，松哥的 Spring Boot 教程又更新了不少，为了方便小伙伴们查找，这里再给大家做一个索引参考。</p></div>
+            <div class="content"> <p>Hello 各位小伙伴，松哥今天要和大家聊一个有意思的话题，就是使用 Spring Boot 开发微信公众号后台。</p></div>
         
         
         
         <div class="level is-mobile">
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0826/springboot-guide.html#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2019/1029/springboot-weixin.html#more">阅读更多</a>
                 </div>
             </div>
         </div>
@@ -470,17 +339,13 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-08-25T05:04:16.000Z">2019-08-25</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
-                </div>
+                <time class="level-item has-text-grey" datetime="2019-10-28T12:40:38.043Z">2019-10-28</time>
                 
                 
                 <span class="level-item has-text-grey">
                     
                     
-                    12 分钟 读完 (大约 1848 个字)
+                    17 分钟 读完 (大约 2478 个字)
                 </span>
                 
                 
@@ -489,22 +354,102 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/0825/springboot-video.html">完结撒花！129 集 21 个小时，松哥自制的 Spring Boot2 系列视频教程杀青啦！</a>
+                <a class="has-link-black-ter" href="/2019/1028/0.html"></a>
             
         </h1>
         
-            <div class="content"> <p>松哥的 Spring Boot 教程分为几个阶段。</p>
-<h2 id="2016"><a href="#2016" class="headerlink" title="2016"></a>2016</h2><p>松哥最早在 2016 年底的时候开始写 Spring Boot 系列的教程，记得当时在广州上班，年底那段时间在深圳出差，在深圳人生地不熟，下班回到酒店，就开始写博客，写 Spring Boot 教程。</p></div>
+            <div class="content"> <p>Hello 各位小伙伴，松哥今天要和大家聊一个有意思的话题，就是使用 Spring Boot 开发微信公众号后台。</p>
+<p>很多小伙伴可能注意到松哥的个人网站（<a href="http://www.javaboy.org）前一阵子上线了一个公众号内回复口令解锁网站文章的功能，还有之前就有的公众号内回复口令获取超" target="_blank" rel="noopener">http://www.javaboy.org）前一阵子上线了一个公众号内回复口令解锁网站文章的功能，还有之前就有的公众号内回复口令获取超</a> 2TB 免费视频教程的功能（<a href="https://mp.weixin.qq.com/s/yOVbTBVk4CJy6a0lrKjLXA" target="_blank" rel="noopener">免费视频教程</a>），这两个都是松哥基于 Spring Boot 来做的，最近松哥打算通过一个系列的文章，来向小伙伴们介绍下如何通过 Spring Boot 来开发公众号后台。</p>
+<h2 id="1-缘起"><a href="#1-缘起" class="headerlink" title="1. 缘起"></a>1. 缘起</h2><p>今年 5 月份的时候，我想把我自己之前收集到的一些视频教程分享给公众号上的小伙伴，可是这些视频教程大太了，无法一次分享，单次分享分享链接立马就失效了，为了把这些视频分享给大家，我把视频拆分成了很多份，然后设置了不同的口令，小伙伴们在公众号后台通过回复口令就可以获取到这些视频，口令前前后后有 100 多个，我一个一个手动的在微信后台进行配置。这么搞工作量很大，前前后后大概花了三个晚上才把这些东西搞定。</p>
+<p>于是我就在想，该写点代码了。</p>
+<p>上个月买了服务器，也备案了，该有的都有了，于是就打算把这些资源用代码实现下，因为大学时候搞过公众号开发，倒也没什么难度，于是说干就干。</p>
+<h2 id="2-实现思路"><a href="#2-实现思路" class="headerlink" title="2. 实现思路"></a>2. 实现思路</h2><p>其实松哥这个回复口令获取视频链接的实现原理很简单，说白了，就是一个数据查询操作而已，回复的口令是查询关键字，回复的内容则是查询结果。这个原理很简单。</p>
+<p>另一方面大家需要明白微信公众号后台开发消息发送的一个流程，大家看下面这张图：</p>
+<p><img src="./img/46-2.jpeg" alt></p>
+<p>这是大家在公众号后台回复关键字的情况。那么这个消息是怎么样一个传递流程呢？我们来看看下面这张图：</p>
+<p><img src="./img/46-1.png" alt></p>
+<p>这张图，我给大家稍微解释下：</p>
+<ol>
+<li>首先 <code>javaboy4096</code> 这个字符从公众号上发送到了微信服务器</li>
+<li>接下来微信服务器会把 <code>javaboy4096</code> 转发到我自己的服务器上</li>
+<li>我收到 <code>javaboy4096</code> 这个字符之后，就去数据库中查询，将查询的结果，按照腾讯要求的 XML 格式进行返回</li>
+<li>微信服务器把从我的服务器收到的信息，再发回到微信上，于是小伙伴们就看到了返回结果了</li>
+</ol>
+<p>大致的流程就是这个样子。</p>
+<p>接下来我们就来看一下实现细节。</p>
+<h2 id="3-公众号后台配置"><a href="#3-公众号后台配置" class="headerlink" title="3. 公众号后台配置"></a>3. 公众号后台配置</h2><p>开发的第一步，是微信服务器要验证我们自己的服务器是否有效。</p>
+<p>首先我们登录微信公众平台官网后，在公众平台官网的 <strong>开发-基本设置</strong> 页面，勾选协议成为开发者，然后点击“修改配置”按钮，填写：</p>
+<ul>
+<li>服务器地址（URL）</li>
+<li>Token</li>
+<li>EncodingAESKey</li>
+</ul>
+<p><img src="./img/46-3.jpeg" alt></p>
+<p>这里的 URL 配置好之后，我们需要针对这个 URL 开发两个接口，一个是 GET 请求的接口，这个接口用来做服务器有效性验证，另一个则是 POST 请求的接口，这个用来接收微信服务器发送来的消息。也就是说，微信服务器的消息都是通过 POST 请求发给我的。</p>
+<p>Token 可由开发者可以任意填写，用作生成签名（该 Token 会和接口 URL 中包含的 Token 进行比对，从而验证安全性）。</p>
+<p>EncodingAESKey 由开发者手动填写或随机生成，将用作消息体加解密密钥。</p>
+<p>同时，开发者可选择消息加解密方式：明文模式、兼容模式和安全模式。明文模式就是我们自己的服务器收到微信服务器发来的消息是明文字符串，直接就可以读取并且解析，安全模式则是我们收到微信服务器发来的消息是加密的消息，需要我们手动解析后才能使用。</p>
+<h2 id="4-开发"><a href="#4-开发" class="headerlink" title="4. 开发"></a>4. 开发</h2><p>公众号后台配置完成后，接下来我们就可以写代码了。</p>
+<h3 id="4-1-服务器有效性校验"><a href="#4-1-服务器有效性校验" class="headerlink" title="4.1 服务器有效性校验"></a>4.1 服务器有效性校验</h3><p>我们首先来创建一个普通的 Spring Boot 项目，创建时引入 <code>spring-boot-starter-web</code> 依赖，项目创建成功后，我们创建一个 Controller ，添加如下接口：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@GetMapping</span>(<span class="hljs-string">"/verify_wx_token"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">login</span><span class="hljs-params">(HttpServletRequest request, HttpServletResponse response)</span> <span class="hljs-keyword">throws</span> UnsupportedEncodingException </span>&#123;</span><br><span class="line">    request.setCharacterEncoding(<span class="hljs-string">"UTF-8"</span>);</span><br><span class="line">    String signature = request.getParameter(<span class="hljs-string">"signature"</span>);</span><br><span class="line">    String timestamp = request.getParameter(<span class="hljs-string">"timestamp"</span>);</span><br><span class="line">    String nonce = request.getParameter(<span class="hljs-string">"nonce"</span>);</span><br><span class="line">    String echostr = request.getParameter(<span class="hljs-string">"echostr"</span>);</span><br><span class="line">    PrintWriter out = <span class="hljs-keyword">null</span>;</span><br><span class="line">    <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">        out = response.getWriter();</span><br><span class="line">        <span class="hljs-keyword">if</span> (CheckUtil.checkSignature(signature, timestamp, nonce)) &#123;</span><br><span class="line">            out.write(echostr);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">    &#125; <span class="hljs-keyword">finally</span> &#123;</span><br><span class="line">        out.close();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>关于这段代码，我做如下解释：</p>
+<ol>
+<li>首先通过 request.getParameter 方法获取到微信服务器发来的 signature、timestamp、nonce 以及 echostr 四个参数，这四个参数中：signature 表示微信加密签名，signature 结合了开发者填写的 token 参数和请求中的timestamp参数、nonce参数；timestamp 表示时间戳；nonce    表示随机数；echostr    则表示一个随机字符串。</li>
+<li>开发者通过检验 signature 对请求进行校验，如果确认此次 GET 请求来自微信服务器，则原样返回 echostr 参数内容，则接入生效，成为开发者成功，否则接入失败。</li>
+<li>具体的校验就是松哥这里的 CheckUtil.checkSignature 方法，在这个方法中，首先将token、timestamp、nonce 三个参数进行字典序排序，然后将三个参数字符串拼接成一个字符串进行 sha1 加密，最后开发者获得加密后的字符串可与 signature 对比，标识该请求来源于微信。</li>
+</ol>
+<p>校验代码如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CheckUtil</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String token = <span class="hljs-string">"123456"</span>;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">checkSignature</span><span class="hljs-params">(String signature, String timestamp, String nonce)</span> </span>&#123;</span><br><span class="line">        String[] str = <span class="hljs-keyword">new</span> String[]&#123;token, timestamp, nonce&#125;;</span><br><span class="line">        <span class="hljs-comment">//排序</span></span><br><span class="line">        Arrays.sort(str);</span><br><span class="line">        <span class="hljs-comment">//拼接字符串</span></span><br><span class="line">        StringBuffer buffer = <span class="hljs-keyword">new</span> StringBuffer();</span><br><span class="line">        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; str.length; i++) &#123;</span><br><span class="line">            buffer.append(str[i]);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="hljs-comment">//进行sha1加密</span></span><br><span class="line">        String temp = SHA1.encode(buffer.toString());</span><br><span class="line">        <span class="hljs-comment">//与微信提供的signature进行匹对</span></span><br><span class="line">        <span class="hljs-keyword">return</span> signature.equals(temp);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SHA1</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">char</span>[] HEX_DIGITS = &#123;<span class="hljs-string">'0'</span>, <span class="hljs-string">'1'</span>, <span class="hljs-string">'2'</span>, <span class="hljs-string">'3'</span>, <span class="hljs-string">'4'</span>, <span class="hljs-string">'5'</span>,</span><br><span class="line">            <span class="hljs-string">'6'</span>, <span class="hljs-string">'7'</span>, <span class="hljs-string">'8'</span>, <span class="hljs-string">'9'</span>, <span class="hljs-string">'a'</span>, <span class="hljs-string">'b'</span>, <span class="hljs-string">'c'</span>, <span class="hljs-string">'d'</span>, <span class="hljs-string">'e'</span>, <span class="hljs-string">'f'</span>&#125;;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> String <span class="hljs-title">getFormattedText</span><span class="hljs-params">(<span class="hljs-keyword">byte</span>[] bytes)</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">int</span> len = bytes.length;</span><br><span class="line">        StringBuilder buf = <span class="hljs-keyword">new</span> StringBuilder(len * <span class="hljs-number">2</span>);</span><br><span class="line">        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> j = <span class="hljs-number">0</span>; j &lt; len; j++) &#123;</span><br><span class="line">            buf.append(HEX_DIGITS[(bytes[j] &gt;&gt; <span class="hljs-number">4</span>) &amp; <span class="hljs-number">0x0f</span>]);</span><br><span class="line">            buf.append(HEX_DIGITS[bytes[j] &amp; <span class="hljs-number">0x0f</span>]);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="hljs-keyword">return</span> buf.toString();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> String <span class="hljs-title">encode</span><span class="hljs-params">(String str)</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">if</span> (str == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">            <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">            MessageDigest messageDigest = MessageDigest.getInstance(<span class="hljs-string">"SHA1"</span>);</span><br><span class="line">            messageDigest.update(str.getBytes());</span><br><span class="line">            <span class="hljs-keyword">return</span> getFormattedText(messageDigest.digest());</span><br><span class="line">        &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RuntimeException(e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>OK，完成之后，我们的校验接口就算是开发完成了。接下来就可以开发消息接收接口了。</p>
+<h3 id="4-2-消息接收接口"><a href="#4-2-消息接收接口" class="headerlink" title="4.2 消息接收接口"></a>4.2 消息接收接口</h3><p>接下来我们来开发消息接收接口，消息接收接口和上面的服务器校验接口地址是一样的，都是我们一开始在公众号后台配置的地址。只不过消息接收接口是一个 POST 请求。</p>
+<p>我在公众号后台配置的时候，消息加解密方式选择了明文模式，这样我在后台收到的消息直接就可以处理了。微信服务器给我发来的普通文本消息格式如下：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">xml</span>&gt;</span></span><br><span class="line">  <span class="hljs-tag">&lt;<span class="hljs-name">ToUserName</span>&gt;</span>&lt;![CDATA[toUser]]&gt;<span class="hljs-tag">&lt;/<span class="hljs-name">ToUserName</span>&gt;</span></span><br><span class="line">  <span class="hljs-tag">&lt;<span class="hljs-name">FromUserName</span>&gt;</span>&lt;![CDATA[fromUser]]&gt;<span class="hljs-tag">&lt;/<span class="hljs-name">FromUserName</span>&gt;</span></span><br><span class="line">  <span class="hljs-tag">&lt;<span class="hljs-name">CreateTime</span>&gt;</span>1348831860<span class="hljs-tag">&lt;/<span class="hljs-name">CreateTime</span>&gt;</span></span><br><span class="line">  <span class="hljs-tag">&lt;<span class="hljs-name">MsgType</span>&gt;</span>&lt;![CDATA[text]]&gt;<span class="hljs-tag">&lt;/<span class="hljs-name">MsgType</span>&gt;</span></span><br><span class="line">  <span class="hljs-tag">&lt;<span class="hljs-name">Content</span>&gt;</span>&lt;![CDATA[this is a test]]&gt;<span class="hljs-tag">&lt;/<span class="hljs-name">Content</span>&gt;</span></span><br><span class="line">  <span class="hljs-tag">&lt;<span class="hljs-name">MsgId</span>&gt;</span>1234567890123456<span class="hljs-tag">&lt;/<span class="hljs-name">MsgId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">xml</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>这些参数含义如下：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">参数</th>
+<th style="text-align:left">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">ToUserName</td>
+<td style="text-align:left">开发者微信号</td>
+</tr>
+<tr>
+<td style="text-align:left">FromUserName</td>
+<td style="text-align:left">发送方帐号（一个OpenID）</td>
+</tr>
+<tr>
+<td style="text-align:left">CreateTime</td>
+<td style="text-align:left">消息创建时间 （整型）</td>
+</tr>
+<tr>
+<td style="text-align:left">MsgType</td>
+<td style="text-align:left">消息类型，文本为text</td>
+</tr>
+<tr>
+<td style="text-align:left">Content</td>
+<td style="text-align:left">文本消息内容</td>
+</tr>
+<tr>
+<td style="text-align:left">MsgId</td>
+<td style="text-align:left">消息id，64位整型</td>
+</tr>
+</tbody>
+</table>
+<p>看到这里，大家心里大概就有数了，当我们收到微信服务器发来的消息之后，我们就进行 XML 解析，提取出来我们需要的信息，去做相关的查询操作，再将查到的结果返回给微信服务器。</p>
+<p>这里我们先来个简单的，我们将收到的消息解析并打印出来：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@PostMapping</span>(<span class="hljs-string">"/verify_wx_token"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handler</span><span class="hljs-params">(HttpServletRequest request, HttpServletResponse response)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    request.setCharacterEncoding(<span class="hljs-string">"UTF-8"</span>);</span><br><span class="line">    response.setCharacterEncoding(<span class="hljs-string">"UTF-8"</span>);</span><br><span class="line">    PrintWriter out = response.getWriter();</span><br><span class="line">    Map&lt;String, String&gt; parseXml = MessageUtil.parseXml(request);</span><br><span class="line">    String msgType = parseXml.get(<span class="hljs-string">"MsgType"</span>);</span><br><span class="line">    String content = parseXml.get(<span class="hljs-string">"Content"</span>);</span><br><span class="line">    String fromusername = parseXml.get(<span class="hljs-string">"FromUserName"</span>);</span><br><span class="line">    String tousername = parseXml.get(<span class="hljs-string">"ToUserName"</span>);</span><br><span class="line">    System.out.println(msgType);</span><br><span class="line">    System.out.println(content);</span><br><span class="line">    System.out.println(fromusername);</span><br><span class="line">    System.out.println(tousername);</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> Map&lt;String, String&gt; <span class="hljs-title">parseXml</span><span class="hljs-params">(HttpServletRequest request)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    Map&lt;String, String&gt; map = <span class="hljs-keyword">new</span> HashMap&lt;String, String&gt;();</span><br><span class="line">    InputStream inputStream = request.getInputStream();</span><br><span class="line">    SAXReader reader = <span class="hljs-keyword">new</span> SAXReader();</span><br><span class="line">    Document document = reader.read(inputStream);</span><br><span class="line">    Element root = document.getRootElement();</span><br><span class="line">    List&lt;Element&gt; elementList = root.elements();</span><br><span class="line">    <span class="hljs-keyword">for</span> (Element e : elementList)</span><br><span class="line">        map.put(e.getName(), e.getText());</span><br><span class="line">    inputStream.close();</span><br><span class="line">    inputStream = <span class="hljs-keyword">null</span>;</span><br><span class="line">    <span class="hljs-keyword">return</span> map;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>大家看到其实都是一些常规代码，没有什么难度。</p>
+<p>做完这些之后，我们将项目打成 jar 包在服务器上部署启动。启动成功之后，确认微信的后台配置也没问题，我们就可以在公众号上发一条消息了，这样我们自己的服务端就会打印出来刚刚消息的信息。</p>
+<p>好了，篇幅限制，今天就和大家先聊这么多，后面再聊不同消息类型的解析和消息的返回问题。</p>
+<p>不知道小伙伴们看懂没？有问题欢迎留言讨论。</p>
+<p>参考资料：微信开放文档</p>
+</div>
         
         
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0825/springboot-video.html#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
         
         
     </div>
@@ -523,17 +468,13 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-08-19T05:04:47.000Z">2019-08-19</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
-                </div>
+                <time class="level-item has-text-grey" datetime="2019-10-28T12:26:28.973Z">2019-10-28</time>
                 
                 
                 <span class="level-item has-text-grey">
                     
                     
-                    12 分钟 读完 (大约 1847 个字)
+                    10 分钟 读完 (大约 1533 个字)
                 </span>
                 
                 
@@ -542,21 +483,50 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/0819/springboot-docker.html">一键部署 Spring Boot 到远程 Docker 容器，就是这么秀！</a>
+                <a class="has-link-black-ter" href="/2019/1028/0.html"></a>
             
         </h1>
         
-            <div class="content"> <p>不知道各位小伙伴在生产环境都是怎么部署 Spring Boot 的，打成 jar 直接一键运行？打成 war 扔到 Tomcat 容器中运行？不过据松哥了解，容器化部署应该是目前的主流方案。</p></div>
+            <div class="content"> <p>前后端分离后，维护接口文档基本上是必不可少的工作。</p>
+<p>一个理想的状态是设计好后，接口文档发给前端和后端，大伙按照既定的规则各自开发，开发好了对接上了就可以上线了。当然这是一种非常理想的状态，实际开发中却很少遇到这样的情况，接口总是在不断的变化之中，有变化就要去维护，做过的小伙伴都知道这件事有多么头大！还好，有一些工具可以减轻我们的工作量，Swagger2 就是其中之一，至于其他类似功能但是却收费的软件，这里就不做过多介绍了。本文主要和大伙来聊下 在Spring Boot 中如何整合 Swagger2。</p>
+<h2 id="工程创建"><a href="#工程创建" class="headerlink" title="工程创建"></a>工程创建</h2><p>当然，首先是创建一个 Spring Boot 项目，加入 web 依赖，创建成功后，加入两个 Swagger2 相关的依赖，完整的依赖如下：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>io.springfox<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>springfox-swagger2<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>2.9.2<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>io.springfox<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>springfox-swagger-ui<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>2.9.2<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-web<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h2 id="Swagger2-配置"><a href="#Swagger2-配置" class="headerlink" title="Swagger2 配置"></a>Swagger2 配置</h2><p>Swagger2 的配置也是比较容易的，在项目创建成功之后，只需要开发者自己提供一个 Docket 的 Bean 即可，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-meta">@EnableSwagger</span>2</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SwaggerConfig</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> Docket <span class="hljs-title">createRestApi</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Docket(DocumentationType.SWAGGER_2)</span><br><span class="line">                .pathMapping(<span class="hljs-string">"/"</span>)</span><br><span class="line">                .select()</span><br><span class="line">                .apis(RequestHandlerSelectors.basePackage(<span class="hljs-string">"org.javaboy.controller"</span>))</span><br><span class="line">                .paths(PathSelectors.any())</span><br><span class="line">                .build().apiInfo(<span class="hljs-keyword">new</span> ApiInfoBuilder()</span><br><span class="line">                        .title(<span class="hljs-string">"SpringBoot整合Swagger"</span>)</span><br><span class="line">                        .description(<span class="hljs-string">"SpringBoot整合Swagger，详细信息......"</span>)</span><br><span class="line">                        .version(<span class="hljs-string">"9.0"</span>)</span><br><span class="line">                        .contact(<span class="hljs-keyword">new</span> Contact(<span class="hljs-string">"啊啊啊啊"</span>,<span class="hljs-string">"blog.csdn.net"</span>,<span class="hljs-string">"aaa@gmail.com"</span>))</span><br><span class="line">                        .license(<span class="hljs-string">"The Apache License"</span>)</span><br><span class="line">                        .licenseUrl(<span class="hljs-string">"http://www.javaboy.org"</span>)</span><br><span class="line">                        .build());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里提供一个配置类，首先通过 @EnableSwagger2 注解启用 Swagger2 ，然后配置一个 Docket Bean，这个 Bean 中，配置映射路径和要扫描的接口的位置，在 apiInfo 中，主要配置一下 Swagger2 文档网站的信息，例如网站的 title，网站的描述，联系人的信息，使用的协议等等。</p>
+<p>如此，Swagger2 就算配置成功了，非常方便。</p>
+<p>此时启动项目，输入 <code>http://localhost:8080/swagger-ui.html</code>，能够看到如下页面，说明已经配置成功了：</p>
+<p><img src="./img/17-1.png" alt></p>
+<h2 id="创建接口"><a href="#创建接口" class="headerlink" title="创建接口"></a>创建接口</h2><p>接下来就是创建接口了，Swagger2 相关的注解其实并不多，而且很容易懂，下面我来分别向小伙伴们举例说明：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@RestController</span></span><br><span class="line"><span class="hljs-meta">@Api</span>(tags = <span class="hljs-string">"用户管理相关接口"</span>)</span><br><span class="line"><span class="hljs-meta">@RequestMapping</span>(<span class="hljs-string">"/user"</span>)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserController</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@PostMapping</span>(<span class="hljs-string">"/"</span>)</span><br><span class="line">    <span class="hljs-meta">@ApiOperation</span>(<span class="hljs-string">"添加用户的接口"</span>)</span><br><span class="line">    <span class="hljs-meta">@ApiImplicitParams</span>(&#123;</span><br><span class="line">            <span class="hljs-meta">@ApiImplicitParam</span>(name = <span class="hljs-string">"username"</span>, value = <span class="hljs-string">"用户名"</span>, defaultValue = <span class="hljs-string">"李四"</span>),</span><br><span class="line">            <span class="hljs-meta">@ApiImplicitParam</span>(name = <span class="hljs-string">"address"</span>, value = <span class="hljs-string">"用户地址"</span>, defaultValue = <span class="hljs-string">"深圳"</span>, required = <span class="hljs-keyword">true</span>)</span><br><span class="line">    &#125;)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> RespBean <span class="hljs-title">addUser</span><span class="hljs-params">(String username, @RequestParam(required = <span class="hljs-keyword">true</span>)</span> String address) </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> RespBean();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@GetMapping</span>(<span class="hljs-string">"/"</span>)</span><br><span class="line">    <span class="hljs-meta">@ApiOperation</span>(<span class="hljs-string">"根据id查询用户的接口"</span>)</span><br><span class="line">    <span class="hljs-meta">@ApiImplicitParam</span>(name = <span class="hljs-string">"id"</span>, value = <span class="hljs-string">"用户id"</span>, defaultValue = <span class="hljs-string">"99"</span>, required = <span class="hljs-keyword">true</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> User <span class="hljs-title">getUserById</span><span class="hljs-params">(@PathVariable Integer id)</span> </span>&#123;</span><br><span class="line">        User user = <span class="hljs-keyword">new</span> User();</span><br><span class="line">        user.setId(id);</span><br><span class="line">        <span class="hljs-keyword">return</span> user;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@PutMapping</span>(<span class="hljs-string">"/&#123;id&#125;"</span>)</span><br><span class="line">    <span class="hljs-meta">@ApiOperation</span>(<span class="hljs-string">"根据id更新用户的接口"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> User <span class="hljs-title">updateUserById</span><span class="hljs-params">(@RequestBody User user)</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> user;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里边涉及到多个 API，我来向小伙伴们分别说明：</p>
+<ol>
+<li>@Api 注解可以用来标记当前 Controller 的功能。</li>
+<li>@ApiOperation 注解用来标记一个方法的作用。</li>
+<li>@ApiImplicitParam 注解用来描述一个参数，可以配置参数的中文含义，也可以给参数设置默认值，这样在接口测试的时候可以避免手动输入。</li>
+<li>如果有多个参数，则需要使用多个 @ApiImplicitParam 注解来描述，多个 @ApiImplicitParam 注解需要放在一个 @ApiImplicitParams 注解中。</li>
+<li>需要注意的是，@ApiImplicitParam 注解中虽然可以指定参数是必填的，但是却不能代替 @RequestParam(required = true) ，前者的必填只是在 Swagger2 框架内必填，抛弃了 Swagger2 ，这个限制就没用了，所以假如开发者需要指定一个参数必填， @RequestParam(required = true) 注解还是不能省略。</li>
+<li>如果参数是一个对象（例如上文的更新接口），对于参数的描述也可以放在实体类中。例如下面一段代码：</li>
+</ol>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@ApiModel</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">User</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@ApiModelProperty</span>(value = <span class="hljs-string">"用户id"</span>)</span><br><span class="line">    <span class="hljs-keyword">private</span> Integer id;</span><br><span class="line">    <span class="hljs-meta">@ApiModelProperty</span>(value = <span class="hljs-string">"用户名"</span>)</span><br><span class="line">    <span class="hljs-keyword">private</span> String username;</span><br><span class="line">    <span class="hljs-meta">@ApiModelProperty</span>(value = <span class="hljs-string">"用户地址"</span>)</span><br><span class="line">    <span class="hljs-keyword">private</span> String address;</span><br><span class="line">    <span class="hljs-comment">//getter/setter</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>好了，经过如上配置之后，接下来，刷新刚刚打开的页面，可以看到如下效果：</p>
+<p><img src="./img/17-2.png" alt></p>
+<p>可以看到，所有的接口这里都列出来了，包括接口请求方式，接口地址以及接口的名字等，点开一个接口，可以看到如下信息：</p>
+<p><img src="./img/17-3.png" alt></p>
+<p>可以看到，接口的参数，参数要求，参数默认值等等统统都展示出来了，参数类型下的 query 表示参数以 <code>key/value</code> 的形式传递，点击右上角的 Try it out，就可以进行接口测试：</p>
+<p><img src="./img/17-4.png" alt></p>
+<p>点击 Execute 按钮，表示发送请求进行测试。测试结果会展示在下面的 Response 中。</p>
+<p>小伙伴们注意，参数类型下面的 query 表示参数以 key/value 的形式传递，这里的值也可能是 body，body 表示参数以请求体的方式传递，例如上文的更新接口，如下：</p>
+<p><img src="./img/17-5.png" alt> </p>
+<p>当然还有一种可能就是这里的参数为 path，表示参数放在路径中传递，例如根据 id 查询用户的接口：</p>
+<p><img src="./img/17-6.png" alt></p>
+<p>当然，除了这些之外，还有一些响应值的注解，都比较简单，小伙伴可以自己摸索下。</p>
+<h2 id="在-Security-中的配置"><a href="#在-Security-中的配置" class="headerlink" title="在 Security 中的配置"></a>在 Security 中的配置</h2><p>如果我们的 Spring Boot 项目中集成了 Spring Security，那么如果不做额外配置，Swagger2 文档可能会被拦截，此时只需要在 Spring Security 的配置类中重写 configure 方法，添加如下过滤即可：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">@Override</span><br><span class="line">public void configure(WebSecurity web) throws Exception &#123;</span><br><span class="line">    web.ignoring()</span><br><span class="line">            .antMatchers(&quot;/swagger-ui.html&quot;)</span><br><span class="line">            .antMatchers(&quot;/v2/**&quot;)</span><br><span class="line">            .antMatchers(&quot;/swagger-resources/**&quot;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如此之后，Swagger2 文件就不需要认证就能访问了。不知道小伙伴们有没有看懂呢？有问题欢迎留言讨论。</p>
+</div>
         
         
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0819/springboot-docker.html#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
         
         
     </div>
@@ -575,17 +545,13 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-08-18T05:05:17.000Z">2019-08-18</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
-                </div>
+                <time class="level-item has-text-grey" datetime="2019-10-27T08:17:06.620Z">2019-10-27</time>
                 
                 
                 <span class="level-item has-text-grey">
                     
                     
-                    13 分钟 读完 (大约 1894 个字)
+                    13 分钟 读完 (大约 1986 个字)
                 </span>
                 
                 
@@ -594,21 +560,138 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/0818/springboot-vue-axios.html">学艺不精，总是掉坑！前后端分离历险记</a>
+                <a class="has-link-black-ter" href="/2019/1027/0.html"></a>
             
         </h1>
         
-            <div class="content"> <p>Spring Boot + Vue 这一对技术栈目前看来可以说是非常的火热，关于 Spring Boot 松哥已经写过多篇教程，如：</p></div>
+            <div class="content"> <p>在 Spring + SpringMVC 环境中，一般来说，要实现定时任务，我们有两中方案，一种是使用 Spring 自带的定时任务处理器 @Scheduled 注解，另一种就是使用第三方框架 Quartz ，Spring Boot 源自 Spring+SpringMVC ，因此天然具备这两个 Spring 中的定时任务实现策略，当然也支持 Quartz，本文我们就来看下 Spring Boot 中两种定时任务的实现方式。</p>
+<h2 id="Scheduled"><a href="#Scheduled" class="headerlink" title="@Scheduled"></a>@Scheduled</h2><p>使用 @Scheduled 非常容易，直接创建一个 Spring Boot 项目，并且添加 web 依赖 <code>spring-boot-starter-web</code>，项目创建成功后，添加 <code>@EnableScheduling</code> 注解，开启定时任务：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@SpringBootApplication</span></span><br><span class="line"><span class="hljs-meta">@EnableScheduling</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ScheduledApplication</span> </span>&#123;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;</span><br><span class="line">        SpringApplication.run(ScheduledApplication.class, args);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>接下来配置定时任务：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Scheduled</span>(fixedRate = <span class="hljs-number">2000</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">fixedRate</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    System.out.println(<span class="hljs-string">"fixedRate&gt;&gt;&gt;"</span>+<span class="hljs-keyword">new</span> Date());    </span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-meta">@Scheduled</span>(fixedDelay = <span class="hljs-number">2000</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">fixedDelay</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    System.out.println(<span class="hljs-string">"fixedDelay&gt;&gt;&gt;"</span>+<span class="hljs-keyword">new</span> Date());</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-meta">@Scheduled</span>(initialDelay = <span class="hljs-number">2000</span>,fixedDelay = <span class="hljs-number">2000</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">initialDelay</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    System.out.println(<span class="hljs-string">"initialDelay&gt;&gt;&gt;"</span>+<span class="hljs-keyword">new</span> Date());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>首先使用 @Scheduled 注解开启一个定时任务。</li>
+<li>fixedRate 表示任务执行之间的时间间隔，具体是指两次任务的开始时间间隔，即第二次任务开始时，第一次任务可能还没结束。</li>
+<li>fixedDelay 表示任务执行之间的时间间隔，具体是指本次任务结束到下次任务开始之间的时间间隔。</li>
+<li>initialDelay 表示首次任务启动的延迟时间。</li>
+<li>所有时间的单位都是毫秒。</li>
+</ol>
+<p>上面这是一个基本用法，除了这几个基本属性之外，@Scheduled 注解也支持 cron 表达式，使用 cron 表达式，可以非常丰富的描述定时任务的时间。cron 表达式格式如下：</p>
+<blockquote>
+<p> [秒] [分] [小时] [日] [月] [周] [年]</p>
+</blockquote>
+<p>具体取值如下：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">序号</th>
+<th style="text-align:left">说明</th>
+<th style="text-align:left">是否必填</th>
+<th style="text-align:left">允许填写的值</th>
+<th style="text-align:left">允许的通配符</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">1</td>
+<td style="text-align:left">秒</td>
+<td style="text-align:left">是</td>
+<td style="text-align:left">0-59</td>
+<td style="text-align:left">- * /</td>
+</tr>
+<tr>
+<td style="text-align:left">2</td>
+<td style="text-align:left">分</td>
+<td style="text-align:left">是</td>
+<td style="text-align:left">0-59</td>
+<td style="text-align:left">- * /</td>
+</tr>
+<tr>
+<td style="text-align:left">3</td>
+<td style="text-align:left">时</td>
+<td style="text-align:left">是</td>
+<td style="text-align:left">0-23</td>
+<td style="text-align:left">- * /</td>
+</tr>
+<tr>
+<td style="text-align:left">4</td>
+<td style="text-align:left">日</td>
+<td style="text-align:left">是</td>
+<td style="text-align:left">1-31</td>
+<td style="text-align:left">- * ? / L W</td>
+</tr>
+<tr>
+<td style="text-align:left">5</td>
+<td style="text-align:left">月</td>
+<td style="text-align:left">是</td>
+<td style="text-align:left">1-12 or JAN-DEC</td>
+<td style="text-align:left">- * /</td>
+</tr>
+<tr>
+<td style="text-align:left">6</td>
+<td style="text-align:left">周</td>
+<td style="text-align:left">是</td>
+<td style="text-align:left">1-7 or SUN-SAT</td>
+<td style="text-align:left">- * ? / L ##</td>
+</tr>
+<tr>
+<td style="text-align:left">7</td>
+<td style="text-align:left">年</td>
+<td style="text-align:left">否</td>
+<td style="text-align:left">1970-2099</td>
+<td style="text-align:left">- * /</td>
+</tr>
+</tbody>
+</table>
+<p><strong>这一块需要大家注意的是，月份中的日期和星期可能会起冲突，因此在配置时这两个得有一个是 <code>?</code></strong></p>
+<p><strong>通配符含义：</strong></p>
+<ul>
+<li><code>?</code> 表示不指定值，即不关心某个字段的取值时使用。需要注意的是，月份中的日期和星期可能会起冲突，因此在配置时这两个得有一个是 <code>?</code></li>
+<li><code>*</code> 表示所有值，例如:在秒的字段上设置 <code>*</code>,表示每一秒都会触发</li>
+<li><code>,</code> 用来分开多个值，例如在周字段上设置 “MON,WED,FRI” 表示周一，周三和周五触发</li>
+<li><code>-</code> 表示区间，例如在秒上设置 “10-12”,表示 10,11,12秒都会触发</li>
+<li><code>/</code> 用于递增触发，如在秒上面设置”5/15” 表示从5秒开始，每增15秒触发(5,20,35,50)</li>
+<li><code>##</code> 序号(表示每月的第几个周几)，例如在周字段上设置”6##3”表示在每月的第三个周六，(用 在母亲节和父亲节再合适不过了)</li>
+<li>周字段的设置，若使用英文字母是不区分大小写的 ，即 MON 与mon相同</li>
+<li><code>L</code> 表示最后的意思。在日字段设置上，表示当月的最后一天(依据当前月份，如果是二月还会自动判断是否是润年), 在周字段上表示星期六，相当于”7”或”SAT”（注意周日算是第一天）。如果在”L”前加上数字，则表示该数据的最后一个。例如在周字段上设置”6L”这样的格式,则表示”本月最后一个星期五”</li>
+<li><code>W</code> 表示离指定日期的最近工作日(周一至周五)，例如在日字段上设置”15W”，表示离每月15号最近的那个工作日触发。如果15号正好是周六，则找最近的周五(14号)触发, 如果15号是周未，则找最近的下周一(16号)触发，如果15号正好在工作日(周一至周五)，则就在该天触发。如果指定格式为 “1W”,它则表示每月1号往后最近的工作日触发。如果1号正是周六，则将在3号下周一触发。(注，”W”前只能设置具体的数字,不允许区间”-“)</li>
+<li><code>L</code> 和 <code>W</code> 可以一组合使用。如果在日字段上设置”LW”,则表示在本月的最后一个工作日触发(一般指发工资 )</li>
+</ul>
+<p>例如，在 @Scheduled 注解中来一个简单的 cron 表达式，每隔5秒触发一次，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Scheduled</span>(cron = <span class="hljs-string">"0/5 * * * * *"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">cron</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    System.out.println(<span class="hljs-keyword">new</span> Date());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面介绍的是使用 @Scheduled 注解的方式来实现定时任务，接下来我们再来看看如何使用 Quartz 实现定时任务。</p>
+<h2 id="Quartz"><a href="#Quartz" class="headerlink" title="Quartz"></a>Quartz</h2><p>一般在项目中，除非定时任务涉及到的业务实在是太简单，使用 @Scheduled 注解来解决定时任务，否则大部分情况可能都是使用 Quartz 来做定时任务。在 Spring Boot 中使用 Quartz ，只需要在创建项目时，添加 Quartz 依赖即可：</p>
+<p><img src="./img/16-1.png" alt></p>
+<p>项目创建完成后，也需要添加开启定时任务的注解：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@SpringBootApplication</span></span><br><span class="line"><span class="hljs-meta">@EnableScheduling</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">QuartzApplication</span> </span>&#123;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;</span><br><span class="line">        SpringApplication.run(QuartzApplication.class, args);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Quartz 在使用过程中，有两个关键概念，一个是JobDetail（要做的事情），另一个是触发器（什么时候做），要定义 JobDetail，需要先定义 Job，Job 的定义有两种方式：</p>
+<p>第一种方式，直接定义一个Bean：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Component</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MyJob1</span> </span>&#123;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">sayHello</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="hljs-string">"MyJob1&gt;&gt;&gt;"</span>+<span class="hljs-keyword">new</span> Date());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>关于这种定义方式说两点：</p>
+<ol>
+<li>首先将这个 Job 注册到 Spring 容器中。</li>
+<li>这种定义方式有一个缺陷，就是无法传参。</li>
+</ol>
+<p>第二种定义方式，则是继承 QuartzJobBean 并实现默认的方法：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MyJob2</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">QuartzJobBean</span> </span>&#123;</span><br><span class="line">    HelloService helloService;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> HelloService <span class="hljs-title">getHelloService</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> helloService;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setHelloService</span><span class="hljs-params">(HelloService helloService)</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">this</span>.helloService = helloService;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">executeInternal</span><span class="hljs-params">(JobExecutionContext jobExecutionContext)</span> <span class="hljs-keyword">throws</span> JobExecutionException </span>&#123;</span><br><span class="line">        helloService.sayHello();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HelloService</span> </span>&#123;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">sayHello</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="hljs-string">"hello service &gt;&gt;&gt;"</span>+<span class="hljs-keyword">new</span> Date());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>和第1种方式相比，这种方式支持传参，任务启动时，executeInternal 方法将会被执行。</p>
+<p>Job 有了之后，接下来创建类，配置 JobDetail 和 Trigger 触发器，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">QuartzConfig</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function">MethodInvokingJobDetailFactoryBean <span class="hljs-title">methodInvokingJobDetailFactoryBean</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        MethodInvokingJobDetailFactoryBean bean = <span class="hljs-keyword">new</span> MethodInvokingJobDetailFactoryBean();</span><br><span class="line">        bean.setTargetBeanName(<span class="hljs-string">"myJob1"</span>);</span><br><span class="line">        bean.setTargetMethod(<span class="hljs-string">"sayHello"</span>);</span><br><span class="line">        <span class="hljs-keyword">return</span> bean;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function">JobDetailFactoryBean <span class="hljs-title">jobDetailFactoryBean</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        JobDetailFactoryBean bean = <span class="hljs-keyword">new</span> JobDetailFactoryBean();</span><br><span class="line">        bean.setJobClass(MyJob2.class);</span><br><span class="line">        JobDataMap map = <span class="hljs-keyword">new</span> JobDataMap();</span><br><span class="line">        map.put(<span class="hljs-string">"helloService"</span>, helloService());</span><br><span class="line">        bean.setJobDataMap(map);</span><br><span class="line">        <span class="hljs-keyword">return</span> bean;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function">SimpleTriggerFactoryBean <span class="hljs-title">simpleTriggerFactoryBean</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        SimpleTriggerFactoryBean bean = <span class="hljs-keyword">new</span> SimpleTriggerFactoryBean();</span><br><span class="line">        bean.setStartTime(<span class="hljs-keyword">new</span> Date());</span><br><span class="line">        bean.setRepeatCount(<span class="hljs-number">5</span>);</span><br><span class="line">        bean.setJobDetail(methodInvokingJobDetailFactoryBean().getObject());</span><br><span class="line">        bean.setRepeatInterval(<span class="hljs-number">3000</span>);</span><br><span class="line">        <span class="hljs-keyword">return</span> bean;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function">CronTriggerFactoryBean <span class="hljs-title">cronTrigger</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        CronTriggerFactoryBean bean = <span class="hljs-keyword">new</span> CronTriggerFactoryBean();</span><br><span class="line">        bean.setCronExpression(<span class="hljs-string">"0/10 * * * * ?"</span>);</span><br><span class="line">        bean.setJobDetail(jobDetailFactoryBean().getObject());</span><br><span class="line">        <span class="hljs-keyword">return</span> bean;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function">SchedulerFactoryBean <span class="hljs-title">schedulerFactoryBean</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        SchedulerFactoryBean bean = <span class="hljs-keyword">new</span> SchedulerFactoryBean();</span><br><span class="line">        bean.setTriggers(cronTrigger().getObject(), simpleTriggerFactoryBean().getObject());</span><br><span class="line">        <span class="hljs-keyword">return</span> bean;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function">HelloService <span class="hljs-title">helloService</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> HelloService();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>关于这个配置说如下几点：</p>
+<ol>
+<li>JobDetail 的配置有两种方式：MethodInvokingJobDetailFactoryBean 和 JobDetailFactoryBean 。</li>
+<li>使用 MethodInvokingJobDetailFactoryBean 可以配置目标 Bean 的名字和目标方法的名字，这种方式不支持传参。</li>
+<li>使用 JobDetailFactoryBean 可以配置 JobDetail ，任务类继承自 QuartzJobBean ，这种方式支持传参，将参数封装在 JobDataMap 中进行传递。</li>
+<li>Trigger 是指触发器，Quartz 中定义了多个触发器，这里向大家展示其中两种的用法，SimpleTrigger 和 CronTrigger 。</li>
+<li>SimpleTrigger 有点类似于前面说的 @Scheduled 的基本用法。</li>
+<li>CronTrigger 则有点类似于 @Scheduled 中 cron 表达式的用法。 </li>
+</ol>
+<p><img src="./img/16-2.png" alt></p>
+<p>全部定义完成后，启动 Spring Boot 项目就可以看到定时任务的执行了。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这里主要向大家展示了 Spring Boot 中整合两种定时任务的方法，整合成功之后，剩下的用法基本上就和在 SSM 中使用一致了，不再赘述。本文案例我已经上传到 GitHub ，欢迎大家 star：<a href="https://github.com/lenve/javaboy-code-samples" target="_blank" rel="noopener">https://github.com/lenve/javaboy-code-samples</a></p>
+</div>
         
         
-        
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0818/springboot-vue-axios.html#more">阅读更多</a>
-                </div>
-            </div>
-        </div>
         
         
     </div>
@@ -627,17 +710,13 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-08-17T05:05:39.000Z">2019-08-17</time>
-                
-                <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/GitHub/">GitHub</a>
-                </div>
+                <time class="level-item has-text-grey" datetime="2019-10-27T08:17:06.620Z">2019-10-27</time>
                 
                 
                 <span class="level-item has-text-grey">
                     
                     
-                    9 分钟 读完 (大约 1283 个字)
+                    7 分钟 读完 (大约 1106 个字)
                 </span>
                 
                 
@@ -646,21 +725,357 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/0817/github-chrome.html">浏览 GitHub 太卡了？教你两招！</a>
+                <a class="has-link-black-ter" href="/2019/1027/0.html"></a>
             
         </h1>
         
-            <div class="content"> <p>老实说，GitHub 在国内的使用体验并不算太好，这其中最大的原因就是网络了。</p></div>
+            <div class="content"> <p>在 Servlet/Jsp 项目中，如果涉及到系统任务，例如在项目启动阶段要做一些数据初始化操作，这些操作有一个共同的特点，只在项目启动时进行，以后都不再执行，这里，容易想到web基础中的三大组件（ Servlet、Filter、Listener ）之一 Listener ，这种情况下，一般定义一个 ServletContextListener，然后就可以监听到项目启动和销毁，进而做出相应的数据初始化和销毁操作，例如下面这样： </p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MyListener</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">ServletContextListener</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">contextInitialized</span><span class="hljs-params">(ServletContextEvent sce)</span> </span>&#123;</span><br><span class="line">        <span class="hljs-comment">//在这里做数据初始化操作</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">contextDestroyed</span><span class="hljs-params">(ServletContextEvent sce)</span> </span>&#123;</span><br><span class="line">        <span class="hljs-comment">//在这里做数据备份操作</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当然，这是基础 web 项目的解决方案，如果使用了 Spring Boot，那么我们可以使用更为简便的方式。Spring Boot 中针对系统启动任务提供了两种解决方案，分别是 CommandLineRunner 和 ApplicationRunner，分别来看。</p>
+<h2 id="CommandLineRunner"><a href="#CommandLineRunner" class="headerlink" title="CommandLineRunner"></a>CommandLineRunner</h2><p>使用 CommandLineRunner 时，首先自定义 MyCommandLineRunner1 并且实现 CommandLineRunner 接口：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Component</span></span><br><span class="line"><span class="hljs-meta">@Order</span>(<span class="hljs-number">100</span>)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MyCommandLineRunner1</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">CommandLineRunner</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">run</span><span class="hljs-params">(String... args)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>关于这段代码，我做如下解释：</p>
+<ol>
+<li>首先通过 @Compoent 注解将 MyCommandLineRunner1 注册为Spring容器中的一个 Bean。</li>
+<li>添加 @Order注解，表示这个启动任务的执行优先级，因为在一个项目中，启动任务可能有多个，所以需要有一个排序。@Order 注解中，数字越小，优先级越大，默认情况下，优先级的值为 Integer.MAX_VALUE，表示优先级最低。</li>
+<li>在 run 方法中，写启动任务的核心逻辑，当项目启动时，run方法会被自动执行。</li>
+<li>run 方法的参数，来自于项目的启动参数，即项目入口类中，main方法的参数会被传到这里。</li>
+</ol>
+<p>此时启动项目，run方法就会被执行，至于参数，可以通过两种方式来传递，如果是在 IDEA 中，可以通过如下方式来配置参数：</p>
+<p><img src="./img/15-1.png" alt></p>
+<p>另一种方式，则是将项目打包，在命令行中启动项目，然后启动时在命令行传入参数，如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -jar devtools-0.0.1-SNAPSHOT.jar 三国演义 西游记</span><br></pre></td></tr></table></figure>
+<p>注意，这里参数传递时没有 key，直接写 value 即可，执行结果如下：</p>
+<p><img src="./img/15-2.png" alt> </p>
+<h2 id="ApplicationRunner"><a href="#ApplicationRunner" class="headerlink" title="ApplicationRunner"></a>ApplicationRunner</h2><p>ApplicationRunner 和 CommandLineRunner 功能一致，用法也基本一致，唯一的区别主要体现在对参数的处理上，ApplicationRunner 可以接收更多类型的参数（ApplicationRunner 除了可以接收 CommandLineRunner 的参数之外，还可以接收 key/value 形式的参数）。</p>
+<p>使用 ApplicationRunner ，自定义类实现 ApplicationRunner 接口即可，组件注册以及组件优先级的配置都和 CommandLineRunner 一致，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Component</span></span><br><span class="line"><span class="hljs-meta">@Order</span>(<span class="hljs-number">98</span>)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MyApplicationRunner1</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">ApplicationRunner</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">run</span><span class="hljs-params">(ApplicationArguments args)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        List&lt;String&gt; nonOptionArgs = args.getNonOptionArgs();</span><br><span class="line">        System.out.println(<span class="hljs-string">"MyApplicationRunner1&gt;&gt;&gt;"</span>+nonOptionArgs);</span><br><span class="line">        Set&lt;String&gt; optionNames = args.getOptionNames();</span><br><span class="line">        <span class="hljs-keyword">for</span> (String key : optionNames) &#123;</span><br><span class="line">            System.out.println(<span class="hljs-string">"MyApplicationRunner1&gt;&gt;&gt;"</span>+key + <span class="hljs-string">":"</span> + args.getOptionValues(key));</span><br><span class="line">        &#125;</span><br><span class="line">        String[] sourceArgs = args.getSourceArgs();</span><br><span class="line">        System.out.println(<span class="hljs-string">"MyApplicationRunner1&gt;&gt;&gt;"</span>+Arrays.toString(sourceArgs));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当项目启动时，这里的 run 方法就会被自动执行，关于 run 方法的参数 ApplicationArguments ，我说如下几点：</p>
+<ol>
+<li>args.getNonOptionArgs();可以用来获取命令行中的无key参数（和CommandLineRunner一样）。</li>
+<li>args.getOptionNames();可以用来获取所有key/value形式的参数的key。</li>
+<li>args.getOptionValues(key));可以根据key获取key/value 形式的参数的value。</li>
+<li>args.getSourceArgs(); 则表示获取命令行中的所有参数。</li>
+</ol>
+<p>ApplicationRunner 定义完成后，传启动参数也是两种方式，参数类型也有两种，第一种和 CommandLineRunner 一致，第二种则是 –key=value 的形式，在 IDEA 中定义方式如下：</p>
+<p><img src="./img/15-3.png" alt> </p>
+<p>或者使用 如下启动命令： </p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -jar devtools-0.0.1-SNAPSHOT.jar 三国演义 西游记 --age=99</span><br></pre></td></tr></table></figure>
+<p>运行结果如下：</p>
+<p><img src="./img/15-4.png" alt></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>整体来说 ，这两种的用法的差异不大 ，主要体现在对参数的处理上，小伙伴可以根据项目中的实际情况选择合适的解决方案。相关案例已经上传到 GitHub，欢迎小伙伴们们下载：<a href="https://github.com/lenve/javaboy-code-samples" target="_blank" rel="noopener">https://github.com/lenve/javaboy-code-samples</a></p>
+</div>
         
         
         
-        <div class="level is-mobile">
-            <div class="level-start">
-                <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/0817/github-chrome.html#more">阅读更多</a>
-                </div>
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-10-27T08:17:06.619Z">2019-10-27</time>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    10 分钟 读完 (大约 1507 个字)
+                </span>
+                
+                
             </div>
         </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/1027/0.html"></a>
+            
+        </h1>
+        
+            <div class="content"> <p>今天和小伙伴们来聊一聊通过CORS解决跨域问题。</p>
+<h2 id="同源策略"><a href="#同源策略" class="headerlink" title="同源策略"></a>同源策略</h2><p>很多人对跨域有一种误解，以为这是前端的事，和后端没关系，其实不是这样的，说到跨域，就不得不说说浏览器的同源策略。</p>
+<p>同源策略是由 Netscape 提出的一个著名的安全策略，它是浏览器最核心也最基本的安全功能，现在所有支持 JavaScript 的浏览器都会使用这个策略。所谓同源是指协议、域名以及端口要相同。同源策略是基于安全方面的考虑提出来的，这个策略本身没问题，但是我们在实际开发中，由于各种原因又经常有跨域的需求，传统的跨域方案是 JSONP，JSONP 虽然能解决跨域但是有一个很大的局限性，那就是只支持 GET 请求，不支持其他类型的请求，而今天我们说的 CORS（跨域源资源共享）（CORS，Cross-origin resource sharing）是一个 W3C 标准，它是一份浏览器技术的规范，提供了 Web 服务从不同网域传来沙盒脚本的方法，以避开浏览器的同源策略，这是 JSONP 模式的现代版。</p>
+<p>在 Spring 框架中，对于 CORS 也提供了相应的解决方案，今天我们就来看看 SpringBoot 中如何实现 CORS。</p>
+<h2 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h2><p>接下来我们就来看看 Spring Boot 中如何实现这个东西。</p>
+<p>首先创建两个普通的 Spring Boot 项目，这个就不用我多说，第一个命名为 provider 提供服务，第二个命名为 consumer 消费服务，第一个配置端口为 8080，第二个配置配置为 8081，然后在 provider 上提供两个 hello 接口，一个 get，一个 post，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@RestController</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HelloController</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@GetMapping</span>(<span class="hljs-string">"/hello"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">hello</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-string">"hello"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@PostMapping</span>(<span class="hljs-string">"/hello"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">hello2</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-string">"post hello"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在 consumer 的 resources/static 目录下创建一个 html 文件，发送一个简单的 ajax 请求，如下：</p>
+<figure class="highlight html hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"app"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"button"</span> <span class="hljs-attr">onclick</span>=<span class="hljs-string">"btnClick()"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"get_button"</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"button"</span> <span class="hljs-attr">onclick</span>=<span class="hljs-string">"btnClick2()"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"post_button"</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">script</span>&gt;</span><span class="hljs-undefined"></span></span><br><span class="line"><span class="hljs-undefined">    function btnClick() &#123;</span></span><br><span class="line"><span class="hljs-undefined">        $.get('http://localhost:8080/hello', function (msg) &#123;</span></span><br><span class="line"><span class="hljs-undefined">            $("#app").html(msg);</span></span><br><span class="line"><span class="hljs-undefined">        &#125;);</span></span><br><span class="line"><span class="hljs-undefined">    &#125;</span></span><br><span class="line"><span class="hljs-undefined"></span></span><br><span class="line"><span class="hljs-undefined">    function btnClick2() &#123;</span></span><br><span class="line"><span class="hljs-undefined">        $.post('http://localhost:8080/hello', function (msg) &#123;</span></span><br><span class="line"><span class="hljs-undefined">            $("#app").html(msg);</span></span><br><span class="line"><span class="hljs-undefined">        &#125;);</span></span><br><span class="line"><span class="hljs-undefined">    &#125;</span></span><br><span class="line"><span class="hljs-undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>然后分别启动两个项目，发送请求按钮，观察浏览器控制台如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Access to XMLHttpRequest at &apos;http://localhost:8080/hello&apos; from origin &apos;http://localhost:8081&apos; has been blocked by CORS policy: No &apos;Access-Control-Allow-Origin&apos; header is present on the requested resource.</span><br></pre></td></tr></table></figure>
+<p>可以看到，由于同源策略的限制，请求无法发送成功。</p>
+<p>使用 CORS 可以在前端代码不做任何修改的情况下，实现跨域，那么接下来看看在 provider 中如何配置。首先可以通过 <code>@CrossOrigin</code> 注解配置某一个方法接受某一个域的请求，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@RestController</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HelloController</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@CrossOrigin</span>(value = <span class="hljs-string">"http://localhost:8081"</span>)</span><br><span class="line">    <span class="hljs-meta">@GetMapping</span>(<span class="hljs-string">"/hello"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">hello</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-string">"hello"</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@CrossOrigin</span>(value = <span class="hljs-string">"http://localhost:8081"</span>)</span><br><span class="line">    <span class="hljs-meta">@PostMapping</span>(<span class="hljs-string">"/hello"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">hello2</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-string">"post hello"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个注解表示这两个接口接受来自 <code>http://localhost:8081</code> 地址的请求，配置完成后，重启 provider ，再次发送请求，浏览器控制台就不会报错了，consumer 也能拿到数据了。</p>
+<p>此时观察浏览器请求网络控制台，可以看到响应头中多了如下信息：</p>
+<p><img src="./img/14-1.png" alt></p>
+<p>这个表示服务端愿意接收来自 <code>http://localhost:8081</code> 的请求，拿到这个信息后，浏览器就不会再去限制本次请求的跨域了。</p>
+<p>provider 上，每一个方法上都去加注解未免太麻烦了，有的小伙伴想到可以讲注解直接加在 Controller 上，不过每个 Controller 都要加还是麻烦，在 Spring Boot 中，还可以通过全局配置一次性解决这个问题，全局配置只需要在 SpringMVC 的配置类中重写 addCorsMappings 方法即可，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">WebMvcConfig</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">WebMvcConfigurer</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">addCorsMappings</span><span class="hljs-params">(CorsRegistry registry)</span> </span>&#123;</span><br><span class="line">        registry.addMapping(<span class="hljs-string">"/**"</span>)</span><br><span class="line">        .allowedOrigins(<span class="hljs-string">"http://localhost:8081"</span>)</span><br><span class="line">        .allowedMethods(<span class="hljs-string">"*"</span>)</span><br><span class="line">        .allowedHeaders(<span class="hljs-string">"*"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>/**</code> 表示本应用的所有方法都会去处理跨域请求，allowedMethods 表示允许通过的请求数，allowedHeaders 则表示允许的请求头。经过这样的配置之后，就不必在每个方法上单独配置跨域了。</p>
+<h2 id="存在的问题"><a href="#存在的问题" class="headerlink" title="存在的问题"></a>存在的问题</h2><p>了解了整个 CORS 的工作过程之后，我们通过 Ajax 发送跨域请求，虽然用户体验提高了，但是也有潜在的威胁存在，常见的就是 CSRF（Cross-site request forgery）跨站请求伪造。跨站请求伪造也被称为 one-click attack 或者 session riding，通常缩写为 CSRF 或者 XSRF，是一种挟制用户在当前已登录的 Web 应用程序上执行非本意的操作的攻击方法，举个例子：</p>
+<blockquote>
+<p>假如一家银行用以运行转账操作的URL地址如下：<code>http://icbc.com/aa?bb=cc</code>，那么，一个恶意攻击者可以在另一个网站上放置如下代码：<code>&lt;img src=&quot;http://icbc.com/aa?bb=cc&quot;&gt;</code>，如果用户访问了恶意站点，而她之前刚访问过银行不久，登录信息尚未过期，那么她就会遭受损失。</p>
+</blockquote>
+<p>基于此，浏览器在实际操作中，会对请求进行分类，分为简单请求，预先请求，带凭证的请求等，预先请求会首先发送一个 options 探测请求，和浏览器进行协商是否接受请求。默认情况下跨域请求是不需要凭证的，但是服务端可以配置要求客户端提供凭证，这样就可以有效避免 csrf 攻击。</p>
+<p>好了，这个问题就说这么多，关于 Spring Boot 中的 CORS ，松哥还有一个小小的视频教程</p>
+<ul>
+<li><a href="https://mp.weixin.qq.com/s/GcMuJ23WVvo2s_6LSgR4fA" target="_blank" rel="noopener">Spring Boot 中使用 CORS 解决跨域问题</a></li>
+</ul>
+</div>
+        
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-10-27T08:17:06.619Z">2019-10-27</time>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    12 分钟 读完 (大约 1843 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/1027/0.html"></a>
+            
+        </h1>
+        
+            <div class="content"> <p>在 Spring Boot 项目中 ，异常统一处理，可以使用 Spring 中 @ControllerAdvice 来统一处理，也可以自己来定义异常处理方案。Spring Boot 中，对异常的处理有一些默认的策略，我们分别来看。</p>
+<p>默认情况下，Spring Boot 中的异常页面 是这样的：</p>
+<p><img src="./img/13-1.png" alt></p>
+<p>我们从这个异常提示中，也能看出来，之所以用户看到这个页面，是因为开发者没有明确提供一个 /error 路径，如果开发者提供了 /error 路径 ，这个页面就不会展示出来，不过在 Spring Boot 中，提供 /error 路径实际上是下下策，Spring  Boot 本身在处理异常时，也是当所有条件都不满足时，才会去找 /error 路径。那么我们就先来看看，在 Spring Boot 中，如何自定义 error 页面，整体上来说，可以分为两种，一种是静态页面，另一种是动态页面。</p>
+<h2 id="静态异常页面"><a href="#静态异常页面" class="headerlink" title="静态异常页面"></a>静态异常页面</h2><p>自定义静态异常页面，又分为两种，第一种 是使用 HTTP 响应码来命名页面，例如 404.html、405.html、500.html ….，另一种就是直接定义一个 4xx.html，表示400-499 的状态都显示这个异常页面，5xx.html 表示 500-599 的状态显示这个异常页面。</p>
+<p>默认是在 <code>classpath:/static/error/</code> 路径下定义相关页面：</p>
+<p><img src="./img/13-2.png" alt></p>
+<p>此时，启动项目，如果项目抛出 500 请求错误，就会自动展示 500.html 这个页面，发生 404 就会展示 404.html 页面。如果异常展示页面既存在 5xx.html，也存在 500.html ，此时，发生500异常时，优先展示 500.html 页面。</p>
+<h2 id="动态异常页面"><a href="#动态异常页面" class="headerlink" title="动态异常页面"></a>动态异常页面</h2><p>动态的异常页面定义方式和静态的基本 一致，可以采用的页面模板有 jsp、freemarker、thymeleaf。动态异常页面，也支持 404.html 或者 4xx.html ，但是一般来说，由于动态异常页面可以直接展示异常详细信息，所以就没有必要挨个枚举错误了 ，直接定义 4xx.html（这里使用thymeleaf模板）或者 5xx.html 即可。</p>
+<p><strong>注意，动态页面模板，不需要开发者自己去定义控制器，直接定义异常页面即可 ，Spring Boot 中自带的异常处理器会自动查找到异常页面。</strong> </p>
+<p>页面定义如下：</p>
+<p><img src="./img/13-3.png" alt></p>
+<p>页面内容如下：</p>
+<figure class="highlight html hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">&lt;!DOCTYPE html&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">html</span> <span class="hljs-attr">lang</span>=<span class="hljs-string">"en"</span> <span class="hljs-attr">xmlns:th</span>=<span class="hljs-string">"http://www.thymeleaf.org"</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">head</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">charset</span>=<span class="hljs-string">"UTF-8"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">title</span>&gt;</span>Title<span class="hljs-tag">&lt;/<span class="hljs-name">title</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">head</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">body</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">h1</span>&gt;</span>5xx<span class="hljs-tag">&lt;/<span class="hljs-name">h1</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">table</span> <span class="hljs-attr">border</span>=<span class="hljs-string">"1"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>path<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span> <span class="hljs-attr">th:text</span>=<span class="hljs-string">"$&#123;path&#125;"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>error<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span> <span class="hljs-attr">th:text</span>=<span class="hljs-string">"$&#123;error&#125;"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>message<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span> <span class="hljs-attr">th:text</span>=<span class="hljs-string">"$&#123;message&#125;"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>timestamp<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span> <span class="hljs-attr">th:text</span>=<span class="hljs-string">"$&#123;timestamp&#125;"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>status<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span> <span class="hljs-attr">th:text</span>=<span class="hljs-string">"$&#123;status&#125;"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">table</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">body</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">html</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>默认情况下，完整的异常信息就是这5条，展示 效果如下 ：</p>
+<p><img src="./img/13-4.png" alt></p>
+<p>如果动态页面和静态页面同时定义了异常处理页面，例如  <code>classpath:/static/error/404.html</code> 和 <code>classpath:/templates/error/404.html</code> 同时存在时，默认使用动态页面。即完整的错误页面查找方式应该是这样： </p>
+<p>发生了 500 错误–&gt;查找动态 500.html 页面–&gt;查找静态 500.html –&gt;  查找动态 5xx.html–&gt;查找静态 5xx.html。</p>
+<h2 id="自定义异常数据"><a href="#自定义异常数据" class="headerlink" title="自定义异常数据"></a>自定义异常数据</h2><p>默认情况下，在 Spring Boot 中，所有的异常数据其实就是上文所展示出来的 5 条数据，这 5 条数据定义在 <code>org.springframework.boot.web.reactive.error.DefaultErrorAttributes</code> 类中，具体定义在 <code>getErrorAttributes</code> 方法中 ：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> Map&lt;String, Object&gt; <span class="hljs-title">getErrorAttributes</span><span class="hljs-params">(ServerRequest request,</span></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-params">                <span class="hljs-keyword">boolean</span> includeStackTrace)</span> </span>&#123;</span><br><span class="line">        Map&lt;String, Object&gt; errorAttributes = <span class="hljs-keyword">new</span> LinkedHashMap&lt;&gt;();</span><br><span class="line">        errorAttributes.put(<span class="hljs-string">"timestamp"</span>, <span class="hljs-keyword">new</span> Date());</span><br><span class="line">        errorAttributes.put(<span class="hljs-string">"path"</span>, request.path());</span><br><span class="line">        Throwable error = getError(request);</span><br><span class="line">        HttpStatus errorStatus = determineHttpStatus(error);</span><br><span class="line">        errorAttributes.put(<span class="hljs-string">"status"</span>, errorStatus.value());</span><br><span class="line">        errorAttributes.put(<span class="hljs-string">"error"</span>, errorStatus.getReasonPhrase());</span><br><span class="line">        errorAttributes.put(<span class="hljs-string">"message"</span>, determineMessage(error));</span><br><span class="line">        handleException(errorAttributes, determineException(error), includeStackTrace);</span><br><span class="line">        <span class="hljs-keyword">return</span> errorAttributes;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>DefaultErrorAttributes 类本身则是在 org.springframework.boot.autoconfigure.web.servlet.error.ErrorMvcAutoConfiguration 异常自动配置类中定义的，如果开发者没有自己提供一个 ErrorAttributes 的实例的话，那么 Spring Boot 将自动提供一个 ErrorAttributes 的实例，也就是  DefaultErrorAttributes 。</p>
+<p>基于此 ，开发者自定义 ErrorAttributes 有两种方式 ：</p>
+<ol>
+<li>直接实现 ErrorAttributes 接口</li>
+<li>继承 DefaultErrorAttributes（推荐），因为 DefaultErrorAttributes 中对异常数据的处理已经完成，开发者可以直接使用。</li>
+</ol>
+<p>具体定义如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Component</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MyErrorAttributes</span>  <span class="hljs-keyword">extends</span> <span class="hljs-title">DefaultErrorAttributes</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> Map&lt;String, Object&gt; <span class="hljs-title">getErrorAttributes</span><span class="hljs-params">(WebRequest webRequest, <span class="hljs-keyword">boolean</span> includeStackTrace)</span> </span>&#123;</span><br><span class="line">        Map&lt;String, Object&gt; map = <span class="hljs-keyword">super</span>.getErrorAttributes(webRequest, includeStackTrace);</span><br><span class="line">        <span class="hljs-keyword">if</span> ((Integer)map.get(<span class="hljs-string">"status"</span>) == <span class="hljs-number">500</span>) &#123;</span><br><span class="line">            map.put(<span class="hljs-string">"message"</span>, <span class="hljs-string">"服务器内部错误!"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="hljs-keyword">return</span> map;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>定义好的 ErrorAttributes 一定要注册成一个 Bean ，这样，Spring Boot 就不会使用默认的 DefaultErrorAttributes 了，运行效果如下图：</p>
+<p><img src="./img/13-5.png" alt> </p>
+<h2 id="自定义异常视图"><a href="#自定义异常视图" class="headerlink" title="自定义异常视图"></a>自定义异常视图</h2><p>异常视图默认就是前面所说的静态或者动态页面，这个也是可以自定义的，首先 ，默认的异常视图加载逻辑在 org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController 类的 errorHtml 方法中，这个方法用来返回异常页面+数据，还有另外一个 error 方法，这个方法用来返回异常数据（如果是 ajax 请求，则该方法会被触发）。</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@RequestMapping</span>(produces = MediaType.TEXT_HTML_VALUE)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> ModelAndView <span class="hljs-title">errorHtml</span><span class="hljs-params">(HttpServletRequest request,</span></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-params">                HttpServletResponse response)</span> </span>&#123;</span><br><span class="line">        HttpStatus status = getStatus(request);</span><br><span class="line">        Map&lt;String, Object&gt; model = Collections.unmodifiableMap(getErrorAttributes(</span><br><span class="line">                        request, isIncludeStackTrace(request, MediaType.TEXT_HTML)));</span><br><span class="line">        response.setStatus(status.value());</span><br><span class="line">        ModelAndView modelAndView = resolveErrorView(request, response, status, model);</span><br><span class="line">        <span class="hljs-keyword">return</span> (modelAndView != <span class="hljs-keyword">null</span>) ? modelAndView : <span class="hljs-keyword">new</span> ModelAndView(<span class="hljs-string">"error"</span>, model);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在该方法中 ，首先会通过 getErrorAttributes 方法去获取异常数据（实际上会调用到 ErrorAttributes 的实例 的 getErrorAttributes 方法），然后调用 resolveErrorView 去创建一个 ModelAndView ，如果这里创建失败，那么用户将会看到默认的错误提示页面。</p>
+<p>正常情况下， resolveErrorView 方法会来到 DefaultErrorViewResolver 类的 resolveErrorView 方法中：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> ModelAndView <span class="hljs-title">resolveErrorView</span><span class="hljs-params">(HttpServletRequest request, HttpStatus status,</span></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-params">                Map&lt;String, Object&gt; model)</span> </span>&#123;</span><br><span class="line">        ModelAndView modelAndView = resolve(String.valueOf(status.value()), model);</span><br><span class="line">        <span class="hljs-keyword">if</span> (modelAndView == <span class="hljs-keyword">null</span> &amp;&amp; SERIES_VIEWS.containsKey(status.series())) &#123;</span><br><span class="line">                modelAndView = resolve(SERIES_VIEWS.get(status.series()), model);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="hljs-keyword">return</span> modelAndView;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在这里，首先以异常响应码作为视图名分别去查找动态页面和静态页面，如果没有查找到，则再以 4xx 或者 5xx 作为视图名再去分别查找动态或者静态页面。</p>
+<p>要自定义异常视图解析，也很容易 ，由于 DefaultErrorViewResolver 是在 ErrorMvcAutoConfiguration 类中提供的实例，即开发者没有提供相关实例时，会使用默认的 DefaultErrorViewResolver ，开发者提供了自己的 ErrorViewResolver 实例后，默认的配置就会失效，因此，自定义异常视图，只需要提供 一个 ErrorViewResolver 的实例即可：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Component</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MyErrorViewResolver</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">DefaultErrorViewResolver</span> </span>&#123;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">MyErrorViewResolver</span><span class="hljs-params">(ApplicationContext applicationContext, ResourceProperties resourceProperties)</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">super</span>(applicationContext, resourceProperties);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> ModelAndView <span class="hljs-title">resolveErrorView</span><span class="hljs-params">(HttpServletRequest request, HttpStatus status, Map&lt;String, Object&gt; model)</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> ModelAndView(<span class="hljs-string">"/aaa/123"</span>, model);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>实际上，开发者也可以在这里定义异常数据（直接在 resolveErrorView 方法重新定义一个 model ，将参数中的model 数据拷贝过去并修改，注意参数中的 model 类型为 UnmodifiableMap，即不可以直接修改），而不需要自定义 MyErrorAttributes。定义完成后，提供一个名为 123 的视图，如下图：</p>
+<p><img src="./img/13-6.png" alt></p>
+<p>如此之后，错误试图就算定义成功了。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>实际上也可以自定义异常控制器 BasicErrorController ，不过松哥觉得这样太大动干戈了，没必要，前面几种方式已经可以满足我们的大部分开发需求了。如果是前后端分离架构，异常处理还有其他一些处理方案，这个松哥以后和大家聊。</p>
+</div>
+        
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-10-27T08:17:06.618Z">2019-10-27</time>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    7 分钟 读完 (大约 1054 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/1027/0.html"></a>
+            
+        </h1>
+        
+            <div class="content"> <p>严格来说，本文并不算是 Spring Boot 中的知识点，但是很多学过 SpringMVC 的小伙伴，对于 @ControllerAdvice 却并不熟悉，Spring Boot 和 SpringMVC 一脉相承，@ControllerAdvice 在 Spring Boot 中也有广泛的使用场景，因此本文我们就来聊一聊这个问题。</p>
+<p>@ControllerAdvice ，很多初学者可能都没有听说过这个注解，实际上，这是一个非常有用的注解，顾名思义，这是一个增强的 Controller。使用这个 Controller ，可以实现三个方面的功能：  </p>
+<ol>
+<li>全局异常处理</li>
+<li>全局数据绑定</li>
+<li>全局数据预处理</li>
+</ol>
+<p>灵活使用这三个功能，可以帮助我们简化很多工作，需要注意的是，这是 SpringMVC 提供的功能，在 Spring Boot 中可以直接使用，下面分别来看。  </p>
+<h1 id="全局异常处理"><a href="#全局异常处理" class="headerlink" title="全局异常处理"></a>全局异常处理</h1><p>使用 @ControllerAdvice 实现全局异常处理，只需要定义类，添加该注解即可定义方式如下：  </p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@ControllerAdvice</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MyGlobalExceptionHandler</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@ExceptionHandler</span>(Exception.class)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> ModelAndView <span class="hljs-title">customException</span><span class="hljs-params">(Exception e)</span> </span>&#123;</span><br><span class="line">        ModelAndView mv = <span class="hljs-keyword">new</span> ModelAndView();</span><br><span class="line">        mv.addObject(<span class="hljs-string">"message"</span>, e.getMessage());</span><br><span class="line">        mv.setViewName(<span class="hljs-string">"myerror"</span>);</span><br><span class="line">        <span class="hljs-keyword">return</span> mv;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在该类中，可以定义多个方法，不同的方法处理不同的异常，例如专门处理空指针的方法、专门处理数组越界的方法…，也可以直接向上面代码一样，在一个方法中处理所有的异常信息。  </p>
+<p>@ExceptionHandler 注解用来指明异常的处理类型，即如果这里指定为 NullpointerException，则数组越界异常就不会进到这个方法中来。  </p>
+<h1 id="全局数据绑定"><a href="#全局数据绑定" class="headerlink" title="全局数据绑定"></a>全局数据绑定</h1><p>全局数据绑定功能可以用来做一些初始化的数据操作，我们可以将一些公共的数据定义在添加了 @ControllerAdvice 注解的类中，这样，在每一个  Controller 的接口中，就都能够访问导致这些数据。  </p>
+<p>使用步骤，首先定义全局数据，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@ControllerAdvice</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MyGlobalExceptionHandler</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@ModelAttribute</span>(name = <span class="hljs-string">"md"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> Map&lt;String,Object&gt; <span class="hljs-title">mydata</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        HashMap&lt;String, Object&gt; map = <span class="hljs-keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">        map.put(<span class="hljs-string">"age"</span>, <span class="hljs-number">99</span>);</span><br><span class="line">        map.put(<span class="hljs-string">"gender"</span>, <span class="hljs-string">"男"</span>);</span><br><span class="line">        <span class="hljs-keyword">return</span> map;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>使用 @ModelAttribute 注解标记该方法的返回数据是一个全局数据，默认情况下，这个全局数据的 key 就是返回的变量名，value 就是方法返回值，当然开发者可以通过 @ModelAttribute 注解的 name 属性去重新指定 key。  </p>
+<p>定义完成后，在任何一个Controller 的接口中，都可以获取到这里定义的数据：  </p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@RestController</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HelloController</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@GetMapping</span>(<span class="hljs-string">"/hello"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">hello</span><span class="hljs-params">(Model model)</span> </span>&#123;</span><br><span class="line">        Map&lt;String, Object&gt; map = model.asMap();</span><br><span class="line">        System.out.println(map);</span><br><span class="line">        <span class="hljs-keyword">int</span> i = <span class="hljs-number">1</span> / <span class="hljs-number">0</span>;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-string">"hello controller advice"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="全局数据预处理"><a href="#全局数据预处理" class="headerlink" title="全局数据预处理"></a>全局数据预处理</h1><p>考虑我有两个实体类，Book 和 Author，分别定义如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Book</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">private</span> String name;</span><br><span class="line">    <span class="hljs-keyword">private</span> Long price;</span><br><span class="line">    <span class="hljs-comment">//getter/setter</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Author</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">private</span> String name;</span><br><span class="line">    <span class="hljs-keyword">private</span> Integer age;</span><br><span class="line">    <span class="hljs-comment">//getter/setter</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>此时，如果我定义一个数据添加接口，如下：  </p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@PostMapping</span>(<span class="hljs-string">"/book"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">addBook</span><span class="hljs-params">(Book book, Author author)</span> </span>&#123;</span><br><span class="line">    System.out.println(book);</span><br><span class="line">    System.out.println(author);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个时候，添加操作就会有问题，因为两个实体类都有一个 name 属性，从前端传递时 ，无法区分。此时，通过 @ControllerAdvice 的全局数据预处理可以解决这个问题</p>
+<p>解决步骤如下:  </p>
+<p>1.给接口中的变量取别名  </p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@PostMapping</span>(<span class="hljs-string">"/book"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">addBook</span><span class="hljs-params">(@ModelAttribute(<span class="hljs-string">"b"</span>)</span> Book book, @<span class="hljs-title">ModelAttribute</span><span class="hljs-params">(<span class="hljs-string">"a"</span>)</span> Author author) </span>&#123;</span><br><span class="line">    System.out.println(book);</span><br><span class="line">    System.out.println(author);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>2.进行请求数据预处理<br>在 @ControllerAdvice 标记的类中添加如下代码:</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@InitBinder</span>(<span class="hljs-string">"b"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">b</span><span class="hljs-params">(WebDataBinder binder)</span> </span>&#123;</span><br><span class="line">    binder.setFieldDefaultPrefix(<span class="hljs-string">"b."</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-meta">@InitBinder</span>(<span class="hljs-string">"a"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">a</span><span class="hljs-params">(WebDataBinder binder)</span> </span>&#123;</span><br><span class="line">    binder.setFieldDefaultPrefix(<span class="hljs-string">"a."</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>@InitBinder(“b”) 注解表示该方法用来处理和Book和相关的参数,在方法中,给参数添加一个 b 前缀,即请求参数要有b前缀.</p>
+<p>3.发送请求  </p>
+<p>请求发送时,通过给不同对象的参数添加不同的前缀,可以实现参数的区分.  </p>
+<p><img src="./img/12-1.png" alt>  </p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>这就是松哥给大伙介绍的 @ControllerAdvice 的几个简单用法，这些点既可以在传统的 SSM 项目中使用，也可以在 Spring Boot + Spring Cloud 微服务中使用，欢迎大家有问题一起讨论。  </p>
+</div>
+        
+        
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-10-27T08:17:06.617Z">2019-10-27</time>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    12 分钟 读完 (大约 1836 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/1027/0.html"></a>
+            
+        </h1>
+        
+            <div class="content"> <p>当我们使用 SpringMVC 框架时，静态资源会被拦截，需要添加额外配置，之前老有小伙伴在微信上问松哥 Spring Boot 中的静态资源加载问题：“松哥，我的 HTML 页面好像没有样式？”，今天我就通过一篇文章，来和大伙仔细聊一聊这个问题。</p>
+<h2 id="1-SSM-中的配置"><a href="#1-SSM-中的配置" class="headerlink" title="1. SSM 中的配置"></a>1. SSM 中的配置</h2><p>要讲 Spring Boot 中的问题，我们得先回到 SSM 环境搭建中，一般来说，我们可以通过 <code>&lt;mvc:resources /&gt;</code> 节点来配置不拦截静态资源，如下：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">mvc:resources</span> <span class="hljs-attr">mapping</span>=<span class="hljs-string">"/js/**"</span> <span class="hljs-attr">location</span>=<span class="hljs-string">"/js/"</span>/&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">mvc:resources</span> <span class="hljs-attr">mapping</span>=<span class="hljs-string">"/css/**"</span> <span class="hljs-attr">location</span>=<span class="hljs-string">"/css/"</span>/&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">mvc:resources</span> <span class="hljs-attr">mapping</span>=<span class="hljs-string">"/html/**"</span> <span class="hljs-attr">location</span>=<span class="hljs-string">"/html/"</span>/&gt;</span></span><br></pre></td></tr></table></figure>
+<p>由于这是一种Ant风格的路径匹配符，<code>/**</code> 表示可以匹配任意层级的路径，因此上面的代码也可以像下面这样简写：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">mvc:resources</span> <span class="hljs-attr">mapping</span>=<span class="hljs-string">"/**"</span> <span class="hljs-attr">location</span>=<span class="hljs-string">"/"</span>/&gt;</span></span><br></pre></td></tr></table></figure>
+<p>这种配置是在 XML 中的配置，大家知道，SpringMVC 的配置除了在XML中配置，也可以在 Java 代码中配置，如果在 Java 代码中配置的话，我们只需要自定义一个类，继承自 WebMvcConfigurationSupport 即可：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-meta">@ComponentScan</span>(basePackages = <span class="hljs-string">"org.javaboy.javassm"</span>)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SpringMVCConfig</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">WebMvcConfigurationSupport</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">addResourceHandlers</span><span class="hljs-params">(ResourceHandlerRegistry registry)</span> </span>&#123;</span><br><span class="line">        registry.addResourceHandler(<span class="hljs-string">"/**"</span>).addResourceLocations(<span class="hljs-string">"/"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>重写 WebMvcConfigurationSupport 类中的 addResourceHandlers 方法，在该方法中配置静态资源位置即可，这里的含义和上面 xml 配置的含义一致，因此无需多说。</p>
+<p>这是我们传统的解决方案，在 Spring Boot 中，其实配置方式和这个一脉相承，只是有一些自动化的配置了。</p>
+<h2 id="2-Spring-Boot-中的配置"><a href="#2-Spring-Boot-中的配置" class="headerlink" title="2. Spring Boot 中的配置"></a>2. Spring Boot 中的配置</h2><p>在 Spring Boot 中，如果我们是从 <code>https://start.spring.io</code> 这个网站上创建的项目，或者使用 IntelliJ IDEA 中的 Spring Boot 初始化工具创建的项目，默认都会存在 <code>resources/static</code> 目录，很多小伙伴也知道静态资源只要放到这个目录下，就可以直接访问，除了这里还有没有其他可以放静态资源的位置呢？为什么放在这里就能直接访问了呢？这就是本文要讨论的问题了。</p>
+<h3 id="2-1-整体规划"><a href="#2-1-整体规划" class="headerlink" title="2.1 整体规划"></a>2.1 整体规划</h3><p>首先，在 Spring Boot 中，默认情况下，一共有 5 个位置可以放静态资源，五个路径分别是如下 5 个：</p>
+<ol>
+<li><code>classpath:/META-INF/resources/</code></li>
+<li><code>classpath:/resources/</code></li>
+<li><code>classpath:/static/</code></li>
+<li><code>classpath:/public/</code></li>
+<li><code>/</code></li>
+</ol>
+<p>前四个目录好理解，分别对应了 resources 目录下不同的目录，第 5 个 <code>/</code> 是啥意思呢？我们知道，在 Spring Boot 项目中，默认是没有 <code>webapp</code> 这个目录的，当然我们也可以自己添加（例如在需要使用JSP的时候），这里第 5 个 <code>/</code> 其实就是表示 webapp 目录中的静态资源也不被拦截。如果同一个文件分别出现在五个目录下，那么优先级也是按照上面列出的顺序。 </p>
+<p>不过，虽然有 5 个存储目录，除了第 5 个用的比较少之外，其他四个，系统默认创建了 <code>classpath:/static/</code> ， 正常情况下，我们只需要将我们的静态资源放到这个目录下即可，也不需要额外去创建其他静态资源目录，例如我在 <code>classpath:/static/</code> 目录下放了一张名为 1.png 的图片，那么我的访问路径是：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://localhost:8080/1.png</span><br></pre></td></tr></table></figure>
+<p>这里大家注意，请求地址中并不需要 static，如果加上了 static 反而多此一举会报 404 错误。很多人会觉得奇怪，为什么不需要添加 static 呢？资源明明放在 static 目录下。其实这个效果很好实现，例如在 SSM 配置中，我们的静态资源拦截配置如果是下面这样：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">mvc:resources</span> <span class="hljs-attr">mapping</span>=<span class="hljs-string">"/**"</span> <span class="hljs-attr">location</span>=<span class="hljs-string">"/static/"</span>/&gt;</span></span><br></pre></td></tr></table></figure>
+<p>如果我们是这样配置的话，请求地址如果是 <code>http://localhost:8080/1.png</code> 实际上系统会去 <code>/static/1.png</code> 目录下查找相关的文件。</p>
+<p>所以我们理所当然的猜测，在 Spring Boot 中可能也是类似的配置。</p>
+<h3 id="2-2-源码解读"><a href="#2-2-源码解读" class="headerlink" title="2.2 源码解读"></a>2.2 源码解读</h3><p>胡适之先生说：“大胆猜想，小心求证”，我们这里就通过源码解读来看看 Spring Boot 中的静态资源到底是怎么配置的。</p>
+<p>首先我们在 WebMvcAutoConfiguration 类中看到了 SpringMVC 自动化配置的相关的内容，找到了静态资源拦截的配置，如下：</p>
+<p><img src="./img/11-1.png" alt></p>
+<p>可以看到这里静态资源的定义和我们前面提到的 Java 配置 SSM 中的配置非常相似，其中，this.mvcProperties.getStaticPathPattern() 方法对应的值是 <code>/**</code>，this.resourceProperties.getStaticLocations() 方法返回了四个位置，分别是：</p>
+<ul>
+<li>classpath:/META-INF/resources/</li>
+<li>classpath:/resources/</li>
+<li>classpath:/static/</li>
+<li>classpath:/public/</li>
+</ul>
+<p>然后在 getResourceLocations 方法中，又添加了 <code>/</code> ，因此这里返回值一共有 5 个。其中， <code>/</code> 表示 <code>webapp</code> 目录，即 <code>webapp</code> 中的静态文件也可以直接访问。静态资源的匹配路径按照定义路径优先级依次降低。因此这里的配置和我们前面提到的如出一辙。这样大伙就知道了为什么 <code>Spring Boot</code> 中支持 5 个静态资源位置，同时也明白了为什么静态资源请求路径中不需要 <code>/static</code> ，因为在路径映射中已经自动的添加上了 <code>/static</code> 了。</p>
+<h3 id="2-3-自定义配置"><a href="#2-3-自定义配置" class="headerlink" title="2.3 自定义配置"></a>2.3 自定义配置</h3><p>当然，这个是系统默认配置，如果我们并不想将资源放在系统默认的这五个位置上，也可以自定义静态资源位置和映射，自定义的方式也有两种，可以通过 application.properties 来定义，也可以在 Java 代码中来定义，下面分别来看。</p>
+<h4 id="2-3-1-application-properties"><a href="#2-3-1-application-properties" class="headerlink" title="2.3.1 application.properties"></a>2.3.1 application.properties</h4><p>在配置文件中定义的方式比较简单，如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">spring.resources.static-locations=classpath:/</span><br><span class="line">spring.mvc.static-path-pattern=/**</span><br></pre></td></tr></table></figure>
+<p>第一行配置表示定义资源位置，第二行配置表示定义请求 URL 规则。以上文的配置为例，如果我们这样定义了，表示可以将静态资源放在 resources 目录下的任意地方，我们访问的时候当然也需要写完整的路径，例如在 <code>resources/static</code> 目录下有一张名为 1.png 的图片，那么访问路径就是 <code>http://localhost:8080/static/1.png</code> ,注意此时的 <code>static</code> 不能省略。</p>
+<h4 id="2-3-2-Java-代码定义"><a href="#2-3-2-Java-代码定义" class="headerlink" title="2.3.2 Java 代码定义"></a>2.3.2 Java 代码定义</h4><p>当然，在 Spring Boot 中我们也可以通过 Java 代码来自定义，方式和 Java 配置的 SSM 比较类似，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">WebMVCConfig</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">WebMvcConfigurer</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">addResourceHandlers</span><span class="hljs-params">(ResourceHandlerRegistry registry)</span> </span>&#123;</span><br><span class="line">        registry.addResourceHandler(<span class="hljs-string">"/**"</span>).addResourceLocations(<span class="hljs-string">"classpath:/aaa/"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里代码基本和前面一致，比较简单，不再赘述。</p>
+<h2 id="3-总结"><a href="#3-总结" class="headerlink" title="3. 总结"></a>3. 总结</h2><p>这里需要提醒大家的是，松哥见到有很多人用了 Thymeleaf 之后，会将静态资源也放在 resources/templates 目录下，注意，templates 目录并不是静态资源目录，它是一个放页面模板的位置（你看到的 Thymeleaf 模板虽然后缀为 .html，其实并不是静态资源）。好了，通过上面的讲解，相信大家对 Spring Boot 中静态资源的位置有一个深刻了解了，应该不会再在项目中出错了吧！</p>
+</div>
+        
+        
         
         
     </div>
@@ -697,7 +1112,7 @@
             
             <li><span class="pagination-ellipsis has-text-black-ter">&hellip;</span></li>
             
-            <li><a class="pagination-link has-text-black-ter" href="/page/17/">17</a></li>
+            <li><a class="pagination-link has-text-black-ter" href="/page/22/">22</a></li>
             
         </ul>
     </nav>
@@ -745,7 +1160,7 @@
                         文章
                     </p>
                     <p class="title has-text-weight-normal">
-                        166
+                        214
                     </p>
                 </div>
             </div>
@@ -1220,7 +1635,7 @@
                     <span class="level-item">十二月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">9</span>
+                    <span class="level-item tag">22</span>
                 </span>
             </a>
         </li>
@@ -1231,7 +1646,7 @@
                     <span class="level-item">十一月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">6</span>
+                    <span class="level-item tag">21</span>
                 </span>
             </a>
         </li>
@@ -1242,7 +1657,7 @@
                     <span class="level-item">十月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">11</span>
+                    <span class="level-item tag">24</span>
                 </span>
             </a>
         </li>
@@ -1253,7 +1668,7 @@
                     <span class="level-item">九月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">22</span>
+                    <span class="level-item tag">28</span>
                 </span>
             </a>
         </li>
@@ -1286,7 +1701,7 @@
                     <span class="level-item">六月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">43</span>
+                    <span class="level-item tag">44</span>
                 </span>
             </a>
         </li>
@@ -1613,7 +2028,7 @@
                     <span class="level-item">十二月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">9</span>
+                    <span class="level-item tag">22</span>
                 </span>
             </a>
         </li>
@@ -1624,7 +2039,7 @@
                     <span class="level-item">十一月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">6</span>
+                    <span class="level-item tag">21</span>
                 </span>
             </a>
         </li>
@@ -1635,7 +2050,7 @@
                     <span class="level-item">十月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">11</span>
+                    <span class="level-item tag">24</span>
                 </span>
             </a>
         </li>
@@ -1646,7 +2061,7 @@
                     <span class="level-item">九月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">22</span>
+                    <span class="level-item tag">28</span>
                 </span>
             </a>
         </li>
@@ -1679,7 +2094,7 @@
                     <span class="level-item">六月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">43</span>
+                    <span class="level-item tag">44</span>
                 </span>
             </a>
         </li>
