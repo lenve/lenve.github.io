@@ -157,101 +157,17 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-10-27T08:17:06.617Z">2019-10-27</time>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    12 分钟 读完 (大约 1836 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/1027/0.html"></a>
-            
-        </h1>
-        
-            <div class="content"> <p>当我们使用 SpringMVC 框架时，静态资源会被拦截，需要添加额外配置，之前老有小伙伴在微信上问松哥 Spring Boot 中的静态资源加载问题：“松哥，我的 HTML 页面好像没有样式？”，今天我就通过一篇文章，来和大伙仔细聊一聊这个问题。</p>
-<h2 id="1-SSM-中的配置"><a href="#1-SSM-中的配置" class="headerlink" title="1. SSM 中的配置"></a>1. SSM 中的配置</h2><p>要讲 Spring Boot 中的问题，我们得先回到 SSM 环境搭建中，一般来说，我们可以通过 <code>&lt;mvc:resources /&gt;</code> 节点来配置不拦截静态资源，如下：</p>
-<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">mvc:resources</span> <span class="hljs-attr">mapping</span>=<span class="hljs-string">"/js/**"</span> <span class="hljs-attr">location</span>=<span class="hljs-string">"/js/"</span>/&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">mvc:resources</span> <span class="hljs-attr">mapping</span>=<span class="hljs-string">"/css/**"</span> <span class="hljs-attr">location</span>=<span class="hljs-string">"/css/"</span>/&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">mvc:resources</span> <span class="hljs-attr">mapping</span>=<span class="hljs-string">"/html/**"</span> <span class="hljs-attr">location</span>=<span class="hljs-string">"/html/"</span>/&gt;</span></span><br></pre></td></tr></table></figure>
-<p>由于这是一种Ant风格的路径匹配符，<code>/**</code> 表示可以匹配任意层级的路径，因此上面的代码也可以像下面这样简写：</p>
-<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">mvc:resources</span> <span class="hljs-attr">mapping</span>=<span class="hljs-string">"/**"</span> <span class="hljs-attr">location</span>=<span class="hljs-string">"/"</span>/&gt;</span></span><br></pre></td></tr></table></figure>
-<p>这种配置是在 XML 中的配置，大家知道，SpringMVC 的配置除了在XML中配置，也可以在 Java 代码中配置，如果在 Java 代码中配置的话，我们只需要自定义一个类，继承自 WebMvcConfigurationSupport 即可：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-meta">@ComponentScan</span>(basePackages = <span class="hljs-string">"org.javaboy.javassm"</span>)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SpringMVCConfig</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">WebMvcConfigurationSupport</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">addResourceHandlers</span><span class="hljs-params">(ResourceHandlerRegistry registry)</span> </span>&#123;</span><br><span class="line">        registry.addResourceHandler(<span class="hljs-string">"/**"</span>).addResourceLocations(<span class="hljs-string">"/"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>重写 WebMvcConfigurationSupport 类中的 addResourceHandlers 方法，在该方法中配置静态资源位置即可，这里的含义和上面 xml 配置的含义一致，因此无需多说。</p>
-<p>这是我们传统的解决方案，在 Spring Boot 中，其实配置方式和这个一脉相承，只是有一些自动化的配置了。</p>
-<h2 id="2-Spring-Boot-中的配置"><a href="#2-Spring-Boot-中的配置" class="headerlink" title="2. Spring Boot 中的配置"></a>2. Spring Boot 中的配置</h2><p>在 Spring Boot 中，如果我们是从 <code>https://start.spring.io</code> 这个网站上创建的项目，或者使用 IntelliJ IDEA 中的 Spring Boot 初始化工具创建的项目，默认都会存在 <code>resources/static</code> 目录，很多小伙伴也知道静态资源只要放到这个目录下，就可以直接访问，除了这里还有没有其他可以放静态资源的位置呢？为什么放在这里就能直接访问了呢？这就是本文要讨论的问题了。</p>
-<h3 id="2-1-整体规划"><a href="#2-1-整体规划" class="headerlink" title="2.1 整体规划"></a>2.1 整体规划</h3><p>首先，在 Spring Boot 中，默认情况下，一共有 5 个位置可以放静态资源，五个路径分别是如下 5 个：</p>
-<ol>
-<li><code>classpath:/META-INF/resources/</code></li>
-<li><code>classpath:/resources/</code></li>
-<li><code>classpath:/static/</code></li>
-<li><code>classpath:/public/</code></li>
-<li><code>/</code></li>
-</ol>
-<p>前四个目录好理解，分别对应了 resources 目录下不同的目录，第 5 个 <code>/</code> 是啥意思呢？我们知道，在 Spring Boot 项目中，默认是没有 <code>webapp</code> 这个目录的，当然我们也可以自己添加（例如在需要使用JSP的时候），这里第 5 个 <code>/</code> 其实就是表示 webapp 目录中的静态资源也不被拦截。如果同一个文件分别出现在五个目录下，那么优先级也是按照上面列出的顺序。 </p>
-<p>不过，虽然有 5 个存储目录，除了第 5 个用的比较少之外，其他四个，系统默认创建了 <code>classpath:/static/</code> ， 正常情况下，我们只需要将我们的静态资源放到这个目录下即可，也不需要额外去创建其他静态资源目录，例如我在 <code>classpath:/static/</code> 目录下放了一张名为 1.png 的图片，那么我的访问路径是：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://localhost:8080/1.png</span><br></pre></td></tr></table></figure>
-<p>这里大家注意，请求地址中并不需要 static，如果加上了 static 反而多此一举会报 404 错误。很多人会觉得奇怪，为什么不需要添加 static 呢？资源明明放在 static 目录下。其实这个效果很好实现，例如在 SSM 配置中，我们的静态资源拦截配置如果是下面这样：</p>
-<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">mvc:resources</span> <span class="hljs-attr">mapping</span>=<span class="hljs-string">"/**"</span> <span class="hljs-attr">location</span>=<span class="hljs-string">"/static/"</span>/&gt;</span></span><br></pre></td></tr></table></figure>
-<p>如果我们是这样配置的话，请求地址如果是 <code>http://localhost:8080/1.png</code> 实际上系统会去 <code>/static/1.png</code> 目录下查找相关的文件。</p>
-<p>所以我们理所当然的猜测，在 Spring Boot 中可能也是类似的配置。</p>
-<h3 id="2-2-源码解读"><a href="#2-2-源码解读" class="headerlink" title="2.2 源码解读"></a>2.2 源码解读</h3><p>胡适之先生说：“大胆猜想，小心求证”，我们这里就通过源码解读来看看 Spring Boot 中的静态资源到底是怎么配置的。</p>
-<p>首先我们在 WebMvcAutoConfiguration 类中看到了 SpringMVC 自动化配置的相关的内容，找到了静态资源拦截的配置，如下：</p>
-<p><img src="./img/11-1.png" alt></p>
-<p>可以看到这里静态资源的定义和我们前面提到的 Java 配置 SSM 中的配置非常相似，其中，this.mvcProperties.getStaticPathPattern() 方法对应的值是 <code>/**</code>，this.resourceProperties.getStaticLocations() 方法返回了四个位置，分别是：</p>
-<ul>
-<li>classpath:/META-INF/resources/</li>
-<li>classpath:/resources/</li>
-<li>classpath:/static/</li>
-<li>classpath:/public/</li>
-</ul>
-<p>然后在 getResourceLocations 方法中，又添加了 <code>/</code> ，因此这里返回值一共有 5 个。其中， <code>/</code> 表示 <code>webapp</code> 目录，即 <code>webapp</code> 中的静态文件也可以直接访问。静态资源的匹配路径按照定义路径优先级依次降低。因此这里的配置和我们前面提到的如出一辙。这样大伙就知道了为什么 <code>Spring Boot</code> 中支持 5 个静态资源位置，同时也明白了为什么静态资源请求路径中不需要 <code>/static</code> ，因为在路径映射中已经自动的添加上了 <code>/static</code> 了。</p>
-<h3 id="2-3-自定义配置"><a href="#2-3-自定义配置" class="headerlink" title="2.3 自定义配置"></a>2.3 自定义配置</h3><p>当然，这个是系统默认配置，如果我们并不想将资源放在系统默认的这五个位置上，也可以自定义静态资源位置和映射，自定义的方式也有两种，可以通过 application.properties 来定义，也可以在 Java 代码中来定义，下面分别来看。</p>
-<h4 id="2-3-1-application-properties"><a href="#2-3-1-application-properties" class="headerlink" title="2.3.1 application.properties"></a>2.3.1 application.properties</h4><p>在配置文件中定义的方式比较简单，如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">spring.resources.static-locations=classpath:/</span><br><span class="line">spring.mvc.static-path-pattern=/**</span><br></pre></td></tr></table></figure>
-<p>第一行配置表示定义资源位置，第二行配置表示定义请求 URL 规则。以上文的配置为例，如果我们这样定义了，表示可以将静态资源放在 resources 目录下的任意地方，我们访问的时候当然也需要写完整的路径，例如在 <code>resources/static</code> 目录下有一张名为 1.png 的图片，那么访问路径就是 <code>http://localhost:8080/static/1.png</code> ,注意此时的 <code>static</code> 不能省略。</p>
-<h4 id="2-3-2-Java-代码定义"><a href="#2-3-2-Java-代码定义" class="headerlink" title="2.3.2 Java 代码定义"></a>2.3.2 Java 代码定义</h4><p>当然，在 Spring Boot 中我们也可以通过 Java 代码来自定义，方式和 Java 配置的 SSM 比较类似，如下：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">WebMVCConfig</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">WebMvcConfigurer</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">addResourceHandlers</span><span class="hljs-params">(ResourceHandlerRegistry registry)</span> </span>&#123;</span><br><span class="line">        registry.addResourceHandler(<span class="hljs-string">"/**"</span>).addResourceLocations(<span class="hljs-string">"classpath:/aaa/"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这里代码基本和前面一致，比较简单，不再赘述。</p>
-<h2 id="3-总结"><a href="#3-总结" class="headerlink" title="3. 总结"></a>3. 总结</h2><p>这里需要提醒大家的是，松哥见到有很多人用了 Thymeleaf 之后，会将静态资源也放在 resources/templates 目录下，注意，templates 目录并不是静态资源目录，它是一个放页面模板的位置（你看到的 Thymeleaf 模板虽然后缀为 .html，其实并不是静态资源）。好了，通过上面的讲解，相信大家对 Spring Boot 中静态资源的位置有一个深刻了解了，应该不会再在项目中出错了吧！</p>
-</div>
-        
-        
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-10-24T01:50:15.000Z">2019-10-24</time>
+                <time class="level-item has-text-grey" datetime="2019-08-16T05:06:09.000Z">2019-08-16</time>
                 
                 <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/杂谈/">杂谈</a>
+                <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
                 </div>
                 
                 
                 <span class="level-item has-text-grey">
                     
                     
-                    34 分钟 读完 (大约 5170 个字)
+                    12 分钟 读完 (大约 1835 个字)
                 </span>
                 
                 
@@ -260,18 +176,18 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/1024/1024.html">1024，20个入行故事，浮世中见证着程序员的奋斗</a>
+                <a class="has-link-black-ter" href="/2019/0816/spring-boot-springmvc.html">Spring Boot 中自定义 SpringMVC 配置，到底继承谁？</a>
             
         </h1>
         
-            <div class="content"> <p>上周，在 1024 来临之际，松哥向大家征集程序员的入行故事，收到了许多小伙伴的留言。</p></div>
+            <div class="content"> <p>用过 Spring Boot 的小伙伴都知道，我们只需要在项目中引入 <code>spring-boot-starter-web</code> 依赖，SpringMVC 的一整套东西就会自动给我们配置好，但是，真实的项目环境比较复杂，系统自带的配置不一定满足我们的需求，往往我们还需要结合实际情况自定义配置。</p></div>
         
         
         
         <div class="level is-mobile">
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/1024/1024.html#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2019/0816/spring-boot-springmvc.html#more">阅读更多</a>
                 </div>
             </div>
         </div>
@@ -293,17 +209,17 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-10-21T01:49:52.000Z">2019-10-21</time>
+                <time class="level-item has-text-grey" datetime="2019-08-15T05:06:25.000Z">2019-08-15</time>
                 
                 <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/杂谈/">杂谈</a>
+                <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
                 </div>
                 
                 
                 <span class="level-item has-text-grey">
                     
                     
-                    7 分钟 读完 (大约 1064 个字)
+                    10 分钟 读完 (大约 1467 个字)
                 </span>
                 
                 
@@ -312,18 +228,18 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/1021/996.html">晚十点半之前下班是耻辱？老板干嘛老爱和员工谈创业精神？</a>
+                <a class="has-link-black-ter" href="/2019/0815/springboot-vue.html">七个开源的 Spring Boot 前后端分离项目，一定要收藏！</a>
             
         </h1>
         
-            <div class="content"> <p>这两天又有一个话题触动了广大程序员的神经，某互联网公司高管在内部邮件中公开指责员工晚上 10:30 后没有加班，没有创业精神，表示这是公司的耻辱日。</p></div>
+            <div class="content"> <p>前后端分离已经在慢慢走进各公司的技术栈，根据松哥了解到的消息，不少公司都已经切换到这个技术栈上面了。即使贵司目前没有切换到这个技术栈上面，松哥也非常建议大家学习一下前后端分离开发，以免在公司干了两三年，SSH 框架用的滚瓜烂熟，出来却发现自己依然没有任何优势！</p></div>
         
         
         
         <div class="level is-mobile">
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/1021/996.html#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2019/0815/springboot-vue.html#more">阅读更多</a>
                 </div>
             </div>
         </div>
@@ -345,17 +261,17 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-10-16T11:51:55.000Z">2019-10-16</time>
+                <time class="level-item has-text-grey" datetime="2019-08-14T13:52:22.000Z">2019-08-14</time>
                 
                 <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/vhr/">vhr</a>
+                <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
                 </div>
                 
                 
                 <span class="level-item has-text-grey">
                     
                     
-                    14 分钟 读完 (大约 2171 个字)
+                    7 分钟 读完 (大约 1115 个字)
                 </span>
                 
                 
@@ -364,18 +280,18 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/1016/vhr.html">微人事 star 数超 10k，如何打造一个 star 数超 10k 的开源项目</a>
+                <a class="has-link-black-ter" href="/2019/0814/springboot-bug.html">Spring Boot 中的同一个 Bug，竟然把我坑了两次！</a>
             
         </h1>
         
-            <div class="content"> <p>看了下，微人事(<a href="https://github.com/lenve/vhr" target="_blank" rel="noopener">https://github.com/lenve/vhr</a>)项目 star 数超 10k 啦，松哥第一个 star 数过万的开源项目就这样诞生了。</p></div>
+            <div class="content"> <p>真是郁闷，不过这事又一次提醒我解决问题还是要根治，不能囫囵吞枣，否则相同的问题可能会以不同的形式出现，每次都得花时间去搞。刨根问底，一步到位，再遇到类似问题就可以分分钟解决了。</p></div>
         
         
         
         <div class="level is-mobile">
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/1016/vhr.html#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2019/0814/springboot-bug.html#more">阅读更多</a>
                 </div>
             </div>
         </div>
@@ -397,17 +313,17 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-10-16T11:47:12.000Z">2019-10-16</time>
+                <time class="level-item has-text-grey" datetime="2019-08-13T13:47:14.000Z">2019-08-13</time>
                 
                 <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/redis/">redis</a>
+                <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
                 </div>
                 
                 
                 <span class="level-item has-text-grey">
                     
                     
-                    4 分钟 读完 (大约 615 个字)
+                    9 分钟 读完 (大约 1291 个字)
                 </span>
                 
                 
@@ -416,18 +332,18 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/1016/redis-guide.html">原创的离线版 Redis 教程，给力！</a>
+                <a class="has-link-black-ter" href="/2019/0813/springboot-https.html">Spring Boot 加入 Https 功能有那么难吗？</a>
             
         </h1>
         
-            <div class="content"> <p>嗯，你没看错，松哥又给大家送干货来了。这次是可以离线阅读的 PDF 版教程哦。</p></div>
+            <div class="content"> <p>https 现在已经越来越普及了，特别是做一些小程序或者公众号开发的时候，https 基本上都是刚需了。</p></div>
         
         
         
         <div class="level is-mobile">
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/1016/redis-guide.html#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2019/0813/springboot-https.html#more">阅读更多</a>
                 </div>
             </div>
         </div>
@@ -449,17 +365,17 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-10-16T11:44:46.000Z">2019-10-16</time>
+                <time class="level-item has-text-grey" datetime="2019-08-12T13:55:46.000Z">2019-08-12</time>
                 
                 <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/vue/">vue</a>
+                <a class="has-link-grey -link" href="/categories/生活/">生活</a>
                 </div>
                 
                 
                 <span class="level-item has-text-grey">
                     
                     
-                    11 分钟 读完 (大约 1675 个字)
+                    30 分钟 读完 (大约 4571 个字)
                 </span>
                 
                 
@@ -468,18 +384,18 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/1016/vue-router.html">前后端分离开发中动态菜单的两种实现方案</a>
+                <a class="has-link-black-ter" href="/2019/0812/life.html">一个野生程序员的自我修养</a>
             
         </h1>
         
-            <div class="content"> <p>关于前后端分离开发中的权限处理问题，松哥之前写过一篇文章和大家聊这个问题：</p></div>
+            <div class="content"> <p>6 月 25 对我来说是一个特殊的日子，2011 年 6 月 25 ，高考分数出来，我去了遥远的南方读书。2015 年 6 月 25 正式步入社会！每年到了这个日子，总不免唏嘘感慨！(今年 6 月 25 我的公众号读者突破了 1w,也算是一个特殊日子吧！)</p></div>
         
         
         
         <div class="level is-mobile">
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/1016/vue-router.html#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2019/0812/life.html#more">阅读更多</a>
                 </div>
             </div>
         </div>
@@ -501,17 +417,17 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-10-16T11:44:24.000Z">2019-10-16</time>
+                <time class="level-item has-text-grey" datetime="2019-08-08T13:40:59.000Z">2019-08-08</time>
                 
                 <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/nginx/">nginx</a>
+                <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
                 </div>
                 
                 
                 <span class="level-item has-text-grey">
                     
                     
-                    14 分钟 读完 (大约 2099 个字)
+                    6 分钟 读完 (大约 886 个字)
                 </span>
                 
                 
@@ -520,18 +436,18 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/1016/nginx.html">使用 Nginx 部署前后端分离项目，解决跨域问题</a>
+                <a class="has-link-black-ter" href="/2019/0808/springboot-livereload.html">Spring Boot 修改静态资源一定要重启项目才会生效吗？未必！</a>
             
         </h1>
         
-            <div class="content"> <p>前后端分离这个问题其实松哥和大家聊过很多了，上周松哥把自己的两个开源项目部署在服务器上以帮助大家可以快速在线预览（<a href="https://mp.weixin.qq.com/s/GvqLzCZngQiMqVE_ZTafeA" target="_blank" rel="noopener">喜大普奔，两个开源的 Spring Boot + Vue 前后端分离项目可以在线体验了</a>），然后群里就有小伙伴想让松哥来聊聊如何结合 Nginx 来部署前后端分离项目？今天我们就来聊一聊这个话题。</p></div>
+            <div class="content"> <h1 id="回顾热部署"><a href="#回顾热部署" class="headerlink" title="回顾热部署"></a>回顾热部署</h1><p>Spring Boot 中的热部署相信大家都用过吧，只需要添加 <code>spring-boot-devtools</code> 依赖就可以轻松实现热部署。Spring Boot 中热部署最最关键的原理就是两个不同的 classloader：</p></div>
         
         
         
         <div class="level is-mobile">
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/1016/nginx.html#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2019/0808/springboot-livereload.html#more">阅读更多</a>
                 </div>
             </div>
         </div>
@@ -553,13 +469,17 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-10-16T11:39:46.995Z">2019-10-16</time>
+                <time class="level-item has-text-grey" datetime="2019-08-05T13:37:31.000Z">2019-08-05</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/微服务/">微服务</a>
+                </div>
                 
                 
                 <span class="level-item has-text-grey">
                     
                     
-                    12 分钟 读完 (大约 1806 个字)
+                    11 分钟 读完 (大约 1680 个字)
                 </span>
                 
                 
@@ -568,18 +488,18 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/1016/0.html"></a>
+                <a class="has-link-black-ter" href="/2019/0805/microservice.html">身边的人都说微服务好，好在哪？</a>
             
         </h1>
         
-            <div class="content"> <p>虽然现在慢慢在流行前后端分离开发，但是据松哥所了解到的，还是有一些公司在做前后端不分的开发，而在前后端不分的开发中，我们就会需要后端页面模板（实际上，即使前后端分离，也会在一些场景下需要使用页面模板，例如邮件发送模板）。</p></div>
+            <div class="content"> <p>微服务这么火，多少人多少公司都想试试水。</p></div>
         
         
         
         <div class="level is-mobile">
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/1016/0.html#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2019/0805/microservice.html#more">阅读更多</a>
                 </div>
             </div>
         </div>
@@ -601,111 +521,17 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-10-16T11:39:46.995Z">2019-10-16</time>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    9 分钟 读完 (大约 1318 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/1016/0.html"></a>
-            
-        </h1>
-        
-            <div class="content"> <p>今天来聊聊 Spring Boot 整合 Freemarker。</p>
-<h1 id="Freemarker-简介"><a href="#Freemarker-简介" class="headerlink" title="Freemarker 简介"></a>Freemarker 简介</h1><p>这是一个相当老牌的开源的免费的模版引擎。通过 Freemarker 模版，我们可以将数据渲染成 HTML 网页、电子邮件、配置文件以及源代码等。Freemarker 不是面向最终用户的，而是一个 Java 类库，我们可以将之作为一个普通的组件嵌入到我们的产品中。</p>
-<p>来看一张来自 Freemarker 官网的图片：</p>
-<p><img src="./img/10-1.png" alt></p>
-<p>可以看到，Freemarker 可以将模版和数据渲染成 HTML 。</p>
-<p>Freemarker 模版后缀为 <code>.ftl</code>(FreeMarker Template Language)。FTL 是一种简单的、专用的语言，它不是像 Java 那样成熟的编程语言。在模板中，你可以专注于如何展现数据， 而在模板之外可以专注于要展示什么数据。</p>
-<p>好了，这是一个简单的介绍，接下来我们来看看 Freemarker 和 Spring Boot 的一个整合操作。</p>
-<h1 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h1><p>在 SSM 中整合 Freemarker ，所有的配置文件加起来，前前后后大约在 50 行左右，Spring Boot 中要几行配置呢？ 0 行！</p>
-<h2 id="1-创建工程"><a href="#1-创建工程" class="headerlink" title="1.创建工程"></a>1.创建工程</h2><p>首先创建一个 Spring Boot 工程，引入 Freemarker 依赖，如下图：</p>
-<p><img src="./img/10-2.png" alt></p>
-<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-freemarker<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-web<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p>工程创建完成后，在 <code>org.springframework.boot.autoconfigure.freemarker.FreeMarkerAutoConfiguration</code> 类中，可以看到关于 Freemarker 的自动化配置：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-meta">@ConditionalOnClass</span>(&#123; freemarker.template.Configuration.class, FreeMarkerConfigurationFactory.class &#125;)</span><br><span class="line"><span class="hljs-meta">@EnableConfigurationProperties</span>(FreeMarkerProperties.class)</span><br><span class="line"><span class="hljs-meta">@Import</span>(&#123; FreeMarkerServletWebConfiguration.class, FreeMarkerReactiveWebConfiguration.class,</span><br><span class="line">                FreeMarkerNonWebConfiguration.class &#125;)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">FreeMarkerAutoConfiguration</span> </span>&#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>从这里可以看出，当 <code>classpath</code> 下存在 <code>freemarker.template.Configuration</code> 以及 <code>FreeMarkerConfigurationFactory</code> 时，配置才会生效，也就是说当我们引入了 <code>Freemarker</code> 之后，配置就会生效。但是这里的自动化配置只做了模板位置检查，其他配置则是在导入的 <code>FreeMarkerServletWebConfiguration</code> 配置中完成的。那么我们再来看看 <code>FreeMarkerServletWebConfiguration</code> 类，部分源码如下：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-meta">@ConditionalOnWebApplication</span>(type = ConditionalOnWebApplication.Type.SERVLET)</span><br><span class="line"><span class="hljs-meta">@ConditionalOnClass</span>(&#123; Servlet.class, FreeMarkerConfigurer.class &#125;)</span><br><span class="line"><span class="hljs-meta">@AutoConfigureAfter</span>(WebMvcAutoConfiguration.class)</span><br><span class="line"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">FreeMarkerServletWebConfiguration</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">AbstractFreeMarkerConfiguration</span> </span>&#123;</span><br><span class="line">        <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-title">FreeMarkerServletWebConfiguration</span><span class="hljs-params">(FreeMarkerProperties properties)</span> </span>&#123;</span><br><span class="line">                <span class="hljs-keyword">super</span>(properties);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="hljs-meta">@Bean</span></span><br><span class="line">        <span class="hljs-meta">@ConditionalOnMissingBean</span>(FreeMarkerConfig.class)</span><br><span class="line">        <span class="hljs-function"><span class="hljs-keyword">public</span> FreeMarkerConfigurer <span class="hljs-title">freeMarkerConfigurer</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">                FreeMarkerConfigurer configurer = <span class="hljs-keyword">new</span> FreeMarkerConfigurer();</span><br><span class="line">                applyProperties(configurer);</span><br><span class="line">                <span class="hljs-keyword">return</span> configurer;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="hljs-meta">@Bean</span></span><br><span class="line">        <span class="hljs-meta">@ConditionalOnMissingBean</span>(name = <span class="hljs-string">"freeMarkerViewResolver"</span>)</span><br><span class="line">        <span class="hljs-meta">@ConditionalOnProperty</span>(name = <span class="hljs-string">"spring.freemarker.enabled"</span>, matchIfMissing = <span class="hljs-keyword">true</span>)</span><br><span class="line">        <span class="hljs-function"><span class="hljs-keyword">public</span> FreeMarkerViewResolver <span class="hljs-title">freeMarkerViewResolver</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">                FreeMarkerViewResolver resolver = <span class="hljs-keyword">new</span> FreeMarkerViewResolver();</span><br><span class="line">                getProperties().applyToMvcViewResolver(resolver);</span><br><span class="line">                <span class="hljs-keyword">return</span> resolver;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>我们来简单看下这段源码：</p>
-<ol>
-<li>@ConditionalOnWebApplication 表示当前配置在 web 环境下才会生效。</li>
-<li>ConditionalOnClass 表示当前配置在存在 Servlet 和 FreeMarkerConfigurer 时才会生效。</li>
-<li>@AutoConfigureAfter 表示当前自动化配置在 WebMvcAutoConfiguration 之后完成。</li>
-<li>代码中，主要提供了 FreeMarkerConfigurer 和 FreeMarkerViewResolver。</li>
-<li>FreeMarkerConfigurer 是 Freemarker 的一些基本配置，例如 templateLoaderPath、defaultEncoding 等</li>
-<li>FreeMarkerViewResolver 则是视图解析器的基本配置，包含了viewClass、suffix、allowRequestOverride、allowSessionOverride 等属性。</li>
-</ol>
-<p>另外还有一点，在这个类的构造方法中，注入了 FreeMarkerProperties：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@ConfigurationProperties</span>(prefix = <span class="hljs-string">"spring.freemarker"</span>)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">FreeMarkerProperties</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">AbstractTemplateViewResolverProperties</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String DEFAULT_TEMPLATE_LOADER_PATH = <span class="hljs-string">"classpath:/templates/"</span>;</span><br><span class="line">        <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String DEFAULT_PREFIX = <span class="hljs-string">""</span>;</span><br><span class="line">        <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String DEFAULT_SUFFIX = <span class="hljs-string">".ftl"</span>;</span><br><span class="line">        <span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment">         * Well-known FreeMarker keys which are passed to FreeMarker's Configuration.</span></span><br><span class="line"><span class="hljs-comment">         */</span></span><br><span class="line">        <span class="hljs-keyword">private</span> Map&lt;String, String&gt; settings = <span class="hljs-keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>FreeMarkerProperties 中则配置了 Freemarker 的基本信息，例如模板位置在 <code>classpath:/templates/</code> ，再例如模板后缀为 <code>.ftl</code>，那么这些配置我们以后都可以在 application.properties 中进行修改。</p>
-<p>如果我们在 SSM 的 XML 文件中自己配置 Freemarker ，也不过就是配置这些东西。现在，这些配置由  FreeMarkerServletWebConfiguration​  帮我们完成了。</p>
-<h2 id="2-创建类"><a href="#2-创建类" class="headerlink" title="2.创建类"></a>2.创建类</h2><p>首先我们来创建一个 User 类，如下：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">User</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">private</span> Long id;</span><br><span class="line">    <span class="hljs-keyword">private</span> String username;</span><br><span class="line">    <span class="hljs-keyword">private</span> String address;</span><br><span class="line">    <span class="hljs-comment">//省略 getter/setter</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>再来创建 <code>UserController</code>：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Controller</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserController</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@GetMapping</span>(<span class="hljs-string">"/index"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">index</span><span class="hljs-params">(Model model)</span> </span>&#123;</span><br><span class="line">        List&lt;User&gt; users = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">10</span>; i++) &#123;</span><br><span class="line">            User user = <span class="hljs-keyword">new</span> User();</span><br><span class="line">            user.setId((<span class="hljs-keyword">long</span>) i);</span><br><span class="line">            user.setUsername(<span class="hljs-string">"javaboy&gt;&gt;&gt;&gt;"</span> + i);</span><br><span class="line">            user.setAddress(<span class="hljs-string">"www.javaboy.org&gt;&gt;&gt;&gt;"</span> + i);</span><br><span class="line">            users.add(user);</span><br><span class="line">        &#125;</span><br><span class="line">        model.addAttribute(<span class="hljs-string">"users"</span>, users);</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-string">"index"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>最后在 freemarker 中渲染数据：</p>
-<figure class="highlight html hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">&lt;!DOCTYPE html&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">html</span> <span class="hljs-attr">lang</span>=<span class="hljs-string">"en"</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">head</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">charset</span>=<span class="hljs-string">"UTF-8"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">title</span>&gt;</span>Title<span class="hljs-tag">&lt;/<span class="hljs-name">title</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">head</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">body</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">table</span> <span class="hljs-attr">border</span>=<span class="hljs-string">"1"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>用户编号<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>用户名称<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>用户地址<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">#list</span> <span class="hljs-attr">users</span> <span class="hljs-attr">as</span> <span class="hljs-attr">user</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>$&#123;user.id&#125;<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>$&#123;user.username&#125;<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>$&#123;user.address&#125;<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">#list</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">table</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">body</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">html</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p>运行效果如下：</p>
-<p><img src="./img/10-3.png" alt></p>
-<h1 id="其他配置"><a href="#其他配置" class="headerlink" title="其他配置"></a>其他配置</h1><p>如果我们要修改模版文件位置等，可以在 application.properties 中进行配置：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">spring.freemarker.allow-request-override=false</span><br><span class="line">spring.freemarker.allow-session-override=false</span><br><span class="line">spring.freemarker.cache=false</span><br><span class="line">spring.freemarker.charset=UTF-8</span><br><span class="line">spring.freemarker.check-template-location=true</span><br><span class="line">spring.freemarker.content-type=text/html</span><br><span class="line">spring.freemarker.expose-request-attributes=false</span><br><span class="line">spring.freemarker.expose-session-attributes=false</span><br><span class="line">spring.freemarker.suffix=.ftl</span><br><span class="line">spring.freemarker.template-loader-path=classpath:/templates/</span><br></pre></td></tr></table></figure>
-<p>配置文件按照顺序依次解释如下：</p>
-<ol>
-<li>HttpServletRequest的属性是否可以覆盖controller中model的同名项</li>
-<li>HttpSession的属性是否可以覆盖controller中model的同名项</li>
-<li>是否开启缓存</li>
-<li>模板文件编码</li>
-<li>是否检查模板位置</li>
-<li>Content-Type的值</li>
-<li>是否将HttpServletRequest中的属性添加到Model中</li>
-<li>是否将HttpSession中的属性添加到Model中</li>
-<li>模板文件后缀</li>
-<li>模板文件位置</li>
-</ol>
-<p>好了，整合完成之后，Freemarker 的更多用法，就和在 SSM 中使用 Freemarker 一样了，这里我就不再赘述。</p>
-<h1 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h1><p>本文和大家简单聊一聊 Spring Boot 整合 Freemarker，算是对 Spring Boot2 教程的一个补充（后面还会有一些补充），有问题欢迎留言讨论。</p>
-<p>本项目案例，我已经上传到 GitHub 上，欢迎大家 star：<a href="https://github.com/lenve/javaboy-code-samples" target="_blank" rel="noopener">https://github.com/lenve/javaboy-code-samples</a></p>
-</div>
-        
-        
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-10-15T11:51:00.000Z">2019-10-15</time>
+                <time class="level-item has-text-grey" datetime="2019-08-02T12:26:48.000Z">2019-08-02</time>
                 
                 <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/SpringSecurity/">SpringSecurity</a>
+                <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
                 </div>
                 
                 
                 <span class="level-item has-text-grey">
                     
                     
-                    11 分钟 读完 (大约 1660 个字)
+                    11 分钟 读完 (大约 1682 个字)
                 </span>
                 
                 
@@ -714,19 +540,123 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/1015/springsecurity.html">Spring Security 前后端分离登录，非法请求直接返回 JSON</a>
+                <a class="has-link-black-ter" href="/2019/0802/springboot-conditional.html">条件注解，Spring Boot 的基石！</a>
             
         </h1>
         
-            <div class="content"> <p>hello 各位小伙伴，国庆节终于过完啦，松哥也回来啦，今天开始咱们继续发干货！</p>
-<p>关于 Spring Security，松哥之前发过多篇文章和大家聊聊这个安全框架的使用：</p></div>
+            <div class="content"> <p>Spring Boot 中的自动化配置确实够吸引人，甚至有人说 Spring Boot 让 Java 又一次焕发了生机，这话虽然听着有点夸张，但是不可否认的是，曾经臃肿繁琐的 Spring 配置确实让人感到头大，而 Spring Boot 带来的全新自动化配置，又确实缓解了这个问题。</p></div>
         
         
         
         <div class="level is-mobile">
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/1015/springsecurity.html#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2019/0802/springboot-conditional.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-08-01T12:26:27.000Z">2019-08-01</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Spring/">Spring</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    14 分钟 读完 (大约 2072 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/0801/spring-xml.html">Spring 中用 XML 装配 Bean，竟然有五种姿势！</a>
+            
+        </h1>
+        
+            <div class="content"> <p>Spring Boot 系列还在不断的更新，有小伙伴和松哥抱怨对 Spring 还不太懂，其实我 2016 年的时候写过一点点 Spring 的教程，但是不够详细，因此，最近决定再挖一个坑，和大家聊聊 Spring 的一些常见用法，也顺便聊聊源码。</p></div>
+        
+        
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/0801/spring-xml.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-07-29T00:17:40.000Z">2019-07-29</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/微服务/">微服务</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    10 分钟 读完 (大约 1521 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/0729/microservice.html">天天吹微服务，单体应用有啥不好？</a>
+            
+        </h1>
+        
+            <div class="content"> <p>单体应用确实有问题！</p>
+<p>最近在研究微服务架构，有一点点心得，打算在公众号上写几篇文章和大家慢慢分享下。</p></div>
+        
+        
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/0729/microservice.html#more">阅读更多</a>
                 </div>
             </div>
         </div>
@@ -766,7 +696,7 @@
             
             <li><span class="pagination-ellipsis has-text-black-ter">&hellip;</span></li>
             
-            <li><a class="pagination-link has-text-black-ter" href="/page/22/">22</a></li>
+            <li><a class="pagination-link has-text-black-ter" href="/page/17/">17</a></li>
             
         </ul>
     </nav>
@@ -814,7 +744,7 @@
                         文章
                     </p>
                     <p class="title has-text-weight-normal">
-                        214
+                        166
                     </p>
                 </div>
             </div>
@@ -1006,7 +936,7 @@
                 <span class="level-item">Spring Boot</span>
             </span>
             <span class="level-end">
-                <span class="level-item tag">56</span>
+                <span class="level-item tag">55</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/SpringMVC/">
@@ -1199,19 +1129,6 @@
             
             <div class="media-content">
                 <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-12T01:22:24.000Z">2020-01-12</time></div>
-                    <a href="/2020/0112/java-ssm.html" class="has-link-black-ter is-size-6">Spring Boot2 系列教程(一)纯 Java 搭建 SSM 项目</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
-        <article class="media">
-            
-            <div class="media-content">
-                <div class="content">
                     <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-10T01:26:39.000Z">2020-01-10</time></div>
                     <a href="/2020/0110/free-domain.html" class="has-link-black-ter is-size-6">天呐，世界上还有免费的域名，赶紧抢注一个压压惊</a>
                     <p class="is-size-7 is-uppercase">
@@ -1260,6 +1177,19 @@
             </div>
         </article>
         
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-03T01:25:37.000Z">2020-01-03</time></div>
+                    <a href="/2020/0103/2019-article.html" class="has-link-black-ter is-size-6">2019 原创技术干货整理</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/2019/">2019</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
     </div>
 </div>
 
@@ -1278,7 +1208,7 @@
                     <span class="level-item">一月 2020</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">7</span>
+                    <span class="level-item tag">6</span>
                 </span>
             </a>
         </li>
@@ -1289,7 +1219,7 @@
                     <span class="level-item">十二月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">22</span>
+                    <span class="level-item tag">9</span>
                 </span>
             </a>
         </li>
@@ -1300,7 +1230,7 @@
                     <span class="level-item">十一月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">21</span>
+                    <span class="level-item tag">6</span>
                 </span>
             </a>
         </li>
@@ -1311,7 +1241,7 @@
                     <span class="level-item">十月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">24</span>
+                    <span class="level-item tag">11</span>
                 </span>
             </a>
         </li>
@@ -1322,7 +1252,7 @@
                     <span class="level-item">九月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">27</span>
+                    <span class="level-item tag">22</span>
                 </span>
             </a>
         </li>
@@ -1355,7 +1285,7 @@
                     <span class="level-item">六月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">44</span>
+                    <span class="level-item tag">43</span>
                 </span>
             </a>
         </li>
@@ -1592,19 +1522,6 @@
             
             <div class="media-content">
                 <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-12T01:22:24.000Z">2020-01-12</time></div>
-                    <a href="/2020/0112/java-ssm.html" class="has-link-black-ter is-size-6">Spring Boot2 系列教程(一)纯 Java 搭建 SSM 项目</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
-        <article class="media">
-            
-            <div class="media-content">
-                <div class="content">
                     <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-10T01:26:39.000Z">2020-01-10</time></div>
                     <a href="/2020/0110/free-domain.html" class="has-link-black-ter is-size-6">天呐，世界上还有免费的域名，赶紧抢注一个压压惊</a>
                     <p class="is-size-7 is-uppercase">
@@ -1653,6 +1570,19 @@
             </div>
         </article>
         
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-03T01:25:37.000Z">2020-01-03</time></div>
+                    <a href="/2020/0103/2019-article.html" class="has-link-black-ter is-size-6">2019 原创技术干货整理</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/2019/">2019</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
     </div>
 </div>
 
@@ -1671,7 +1601,7 @@
                     <span class="level-item">一月 2020</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">7</span>
+                    <span class="level-item tag">6</span>
                 </span>
             </a>
         </li>
@@ -1682,7 +1612,7 @@
                     <span class="level-item">十二月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">22</span>
+                    <span class="level-item tag">9</span>
                 </span>
             </a>
         </li>
@@ -1693,7 +1623,7 @@
                     <span class="level-item">十一月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">21</span>
+                    <span class="level-item tag">6</span>
                 </span>
             </a>
         </li>
@@ -1704,7 +1634,7 @@
                     <span class="level-item">十月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">24</span>
+                    <span class="level-item tag">11</span>
                 </span>
             </a>
         </li>
@@ -1715,7 +1645,7 @@
                     <span class="level-item">九月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">27</span>
+                    <span class="level-item tag">22</span>
                 </span>
             </a>
         </li>
@@ -1748,7 +1678,7 @@
                     <span class="level-item">六月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">44</span>
+                    <span class="level-item tag">43</span>
                 </span>
             </a>
         </li>

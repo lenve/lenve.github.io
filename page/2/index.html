@@ -157,1055 +157,17 @@
         
         <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
             <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-12-31T00:36:08.776Z">2019-12-31</time>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    22 分钟 读完 (大约 3261 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/1231/0.html"></a>
-            
-        </h1>
-        
-            <div class="content"> <p>邮件发送其实是一个非常常见的需求，用户注册，找回密码等地方，都会用到，使用 JavaSE 代码发送邮件，步骤还是挺繁琐的，Spring Boot 中对于邮件发送，提供了相关的自动化配置类，使得邮件发送变得非常容易，本文我们就来一探究竟！看看使用 Spring Boot 发送邮件的 5 中姿势。</p>
-<h1 id="邮件基础"><a href="#邮件基础" class="headerlink" title="邮件基础"></a>邮件基础</h1><p>我们经常会听到各种各样的邮件协议，比如 SMTP、POP3、IMAP ，那么这些协议有什么作用，有什么区别？我们先来讨论一下这个问题。  </p>
-<p>SMTP 是一个基于 TCP/IP 的应用层协议，江湖地位有点类似于 HTTP，SMTP 服务器默认监听的端口号为 25 。看到这里，小伙伴们可能会想到既然 SMTP 协议是基于 TCP/IP 的应用层协议，那么我是不是也可以通过 Socket 发送一封邮件呢？回答是肯定的。  </p>
-<p>生活中我们投递一封邮件要经过如下几个步骤：  </p>
-<ol>
-<li>深圳的小王先将邮件投递到深圳的邮局  </li>
-<li>深圳的邮局将邮件运送到上海的邮局  </li>
-<li>上海的小张来邮局取邮件   </li>
-</ol>
-<p>这是一个缩减版的生活中邮件发送过程。这三个步骤可以分别对应我们的邮件发送过程，假设从 <a href="mailto:aaa@qq.com" target="_blank" rel="noopener">aaa@qq.com</a> 发送邮件到 <a href="mailto:111@163.com" target="_blank" rel="noopener">111@163.com</a> ：  </p>
-<ol>
-<li><a href="mailto:aaa@qq.com" target="_blank" rel="noopener">aaa@qq.com</a> 先将邮件投递到腾讯的邮件服务器  </li>
-<li>腾讯的邮件服务器将我们的邮件投递到网易的邮件服务器  </li>
-<li><a href="mailto:111@163.com" target="_blank" rel="noopener">111@163.com</a> 登录网易的邮件服务器查看邮件  </li>
-</ol>
-<p>邮件投递大致就是这个过程，这个过程就涉及到了多个协议，我们来分别看一下。  </p>
-<p>SMTP 协议全称为 Simple Mail Transfer Protocol，译作简单邮件传输协议，它定义了邮件客户端软件与 SMTP 服务器之间，以及 SMTP 服务器与 SMTP 服务器之间的通信规则。</p>
-<p>也就是说 <a href="mailto:aaa@qq.com" target="_blank" rel="noopener">aaa@qq.com</a> 用户先将邮件投递到腾讯的 SMTP 服务器这个过程就使用了 SMTP 协议，然后腾讯的 SMTP 服务器将邮件投递到网易的 SMTP 服务器这个过程也依然使用了 SMTP 协议，SMTP 服务器就是用来收邮件。</p>
-<p>而 POP3 协议全称为 Post Office Protocol ，译作邮局协议，它定义了邮件客户端与 POP3 服务器之间的通信规则，那么该协议在什么场景下会用到呢？当邮件到达网易的 SMTP 服务器之后， <a href="mailto:111@163.com" target="_blank" rel="noopener">111@163.com</a> 用户需要登录服务器查看邮件，这个时候就该协议就用上了：邮件服务商都会为每一个用户提供专门的邮件存储空间，SMTP 服务器收到邮件之后，就将邮件保存到相应用户的邮件存储空间中，如果用户要读取邮件，就需要通过邮件服务商的 POP3 邮件服务器来完成。</p>
-<p>最后，可能也有小伙伴们听说过 IMAP 协议，这个协议是对 POP3 协议的扩展，功能更强，作用类似，这里不再赘述。  </p>
-<h1 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h1><p>目前国内大部分的邮件服务商都不允许直接使用用户名/密码的方式来在代码中发送邮件，都是要先申请授权码，这里以 QQ 邮箱为例，向大家演示授权码的申请流程：首先我们需要先登录 QQ 邮箱网页版，点击上方的设置按钮：  </p>
-<p><img src="./img/43-1.jpg" alt="p266">  </p>
-<p>然后点击账户选项卡：  </p>
-<p><img src="./img/43-2.jpg" alt="p267">  </p>
-<p>在账户选项卡中找到开启POP3/SMTP选项，如下：  </p>
-<p><img src="./img/43-3.jpg" alt="p268">  </p>
-<p>点击开启，开启相关功能，开启过程需要手机号码验证，按照步骤操作即可，不赘述。开启成功之后，即可获取一个授权码，将该号码保存好，一会使用。</p>
-<h1 id="项目创建"><a href="#项目创建" class="headerlink" title="项目创建"></a>项目创建</h1><p>接下来，我们就可以创建项目了，Spring Boot 中，对于邮件发送提供了自动配置类，开发者只需要加入相关依赖，然后配置一下邮箱的基本信息，就可以发送邮件了。</p>
-<ul>
-<li>首先创建一个 Spring Boot 项目，引入邮件发送依赖：</li>
-</ul>
-<p><img src="./img/43-4.png" alt></p>
-<p>创建完成后，项目依赖如下：</p>
-<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-mail<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-web<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<ul>
-<li>配置邮箱基本信息</li>
-</ul>
-<p>项目创建成功后，接下来在 application.properties 中配置邮箱的基本信息：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">spring.mail.host=smtp.qq.com</span><br><span class="line">spring.mail.port=587</span><br><span class="line">spring.mail.username=1510161612@qq.com</span><br><span class="line">spring.mail.password=ubknfzhjkhrbbabe</span><br><span class="line">spring.mail.default-encoding=UTF-8</span><br><span class="line">spring.mail.properties.mail.smtp.socketFactoryClass=javax.net.ssl.SSLSocketFactory</span><br><span class="line">spring.mail.properties.mail.debug=true</span><br></pre></td></tr></table></figure>
-<p>配置含义分别如下：</p>
-<ul>
-<li>配置 SMTP 服务器地址</li>
-<li>SMTP 服务器的端口</li>
-<li>配置邮箱用户名</li>
-<li>配置密码，注意，不是真正的密码，而是刚刚申请到的授权码</li>
-<li>默认的邮件编码</li>
-<li>配饰 SSL 加密工厂</li>
-<li>表示开启 DEBUG 模式，这样，邮件发送过程的日志会在控制台打印出来，方便排查错误</li>
-</ul>
-<p>如果不知道 smtp 服务器的端口或者地址的的话，可以参考 腾讯的邮箱文档</p>
-<ul>
-<li><a href="https://service.mail.qq.com/cgi-bin/help?subtype=1&amp;&amp;id=28&amp;&amp;no=371" target="_blank" rel="noopener">https://service.mail.qq.com/cgi-bin/help?subtype=1&amp;&amp;id=28&amp;&amp;no=371</a></li>
-</ul>
-<p>做完这些之后，Spring Boot 就会自动帮我们配置好邮件发送类，相关的配置在 <code>org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration</code> 类中，部分源码如下：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-meta">@ConditionalOnClass</span>(&#123; MimeMessage.class, MimeType.class, MailSender.class &#125;)</span><br><span class="line"><span class="hljs-meta">@ConditionalOnMissingBean</span>(MailSender.class)</span><br><span class="line"><span class="hljs-meta">@Conditional</span>(MailSenderCondition.class)</span><br><span class="line"><span class="hljs-meta">@EnableConfigurationProperties</span>(MailProperties.class)</span><br><span class="line"><span class="hljs-meta">@Import</span>(&#123; MailSenderJndiConfiguration.class, MailSenderPropertiesConfiguration.class &#125;)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MailSenderAutoConfiguration</span> </span>&#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>从这段代码中，可以看到，导入了另外一个配置 <code>MailSenderPropertiesConfiguration</code> 类，这个类中，提供了邮件发送相关的工具类：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-meta">@ConditionalOnProperty</span>(prefix = <span class="hljs-string">"spring.mail"</span>, name = <span class="hljs-string">"host"</span>)</span><br><span class="line"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MailSenderPropertiesConfiguration</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> MailProperties properties;</span><br><span class="line">        MailSenderPropertiesConfiguration(MailProperties properties) &#123;</span><br><span class="line">                <span class="hljs-keyword">this</span>.properties = properties;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="hljs-meta">@Bean</span></span><br><span class="line">        <span class="hljs-meta">@ConditionalOnMissingBean</span></span><br><span class="line">        <span class="hljs-function"><span class="hljs-keyword">public</span> JavaMailSenderImpl <span class="hljs-title">mailSender</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">                JavaMailSenderImpl sender = <span class="hljs-keyword">new</span> JavaMailSenderImpl();</span><br><span class="line">                applyProperties(sender);</span><br><span class="line">                <span class="hljs-keyword">return</span> sender;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>可以看到，这里创建了一个 <code>JavaMailSenderImpl</code> 的实例， <code>JavaMailSenderImpl</code> 是 <code>JavaMailSender</code> 的一个实现，我们将使用 <code>JavaMailSenderImpl</code> 来完成邮件的发送工作。</p>
-<p>做完如上两步，邮件发送的准备工作就算是完成了，接下来就可以直接发送邮件了。</p>
-<p>具体的发送，有 5 种不同的方式，我们一个一个来看。</p>
-<h2 id="发送简单邮件"><a href="#发送简单邮件" class="headerlink" title="发送简单邮件"></a>发送简单邮件</h2><p>简单邮件就是指邮件内容是一个普通的文本文档：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Autowired</span></span><br><span class="line">JavaMailSender javaMailSender;</span><br><span class="line"><span class="hljs-meta">@Test</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">sendSimpleMail</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    SimpleMailMessage message = <span class="hljs-keyword">new</span> SimpleMailMessage();</span><br><span class="line">    message.setSubject(<span class="hljs-string">"这是一封测试邮件"</span>);</span><br><span class="line">    message.setFrom(<span class="hljs-string">"1510161612@qq.com"</span>);</span><br><span class="line">    message.setTo(<span class="hljs-string">"25xxxxx755@qq.com"</span>);</span><br><span class="line">    message.setCc(<span class="hljs-string">"37xxxxx37@qq.com"</span>);</span><br><span class="line">    message.setBcc(<span class="hljs-string">"14xxxxx098@qq.com"</span>);</span><br><span class="line">    message.setSentDate(<span class="hljs-keyword">new</span> Date());</span><br><span class="line">    message.setText(<span class="hljs-string">"这是测试邮件的正文"</span>);</span><br><span class="line">    javaMailSender.send(message);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>从上往下，代码含义分别如下：</p>
-<ol>
-<li>构建一个邮件对象</li>
-<li>设置邮件主题</li>
-<li>设置邮件发送者</li>
-<li>设置邮件接收者，可以有多个接收者</li>
-<li>设置邮件抄送人，可以有多个抄送人</li>
-<li>设置隐秘抄送人，可以有多个</li>
-<li>设置邮件发送日期</li>
-<li>设置邮件的正文</li>
-<li>发送邮件</li>
-</ol>
-<p>最后执行该方法，就可以实现邮件的发送，发送效果图如下：</p>
-<p><img src="./img/43-5.png" alt></p>
-<h2 id="发送带附件的邮件"><a href="#发送带附件的邮件" class="headerlink" title="发送带附件的邮件"></a>发送带附件的邮件</h2><p>邮件的附件可以是图片，也可以是普通文件，都是支持的。</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Test</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">sendAttachFileMail</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> MessagingException </span>&#123;</span><br><span class="line">    MimeMessage mimeMessage = javaMailSender.createMimeMessage();</span><br><span class="line">    MimeMessageHelper helper = <span class="hljs-keyword">new</span> MimeMessageHelper(mimeMessage,<span class="hljs-keyword">true</span>);</span><br><span class="line">    helper.setSubject(<span class="hljs-string">"这是一封测试邮件"</span>);</span><br><span class="line">    helper.setFrom(<span class="hljs-string">"1510161612@qq.com"</span>);</span><br><span class="line">    helper.setTo(<span class="hljs-string">"25xxxxx755@qq.com"</span>);</span><br><span class="line">    helper.setCc(<span class="hljs-string">"37xxxxx37@qq.com"</span>);</span><br><span class="line">    helper.setBcc(<span class="hljs-string">"14xxxxx098@qq.com"</span>);</span><br><span class="line">    helper.setSentDate(<span class="hljs-keyword">new</span> Date());</span><br><span class="line">    helper.setText(<span class="hljs-string">"这是测试邮件的正文"</span>);</span><br><span class="line">    helper.addAttachment(<span class="hljs-string">"javaboy.jpg"</span>,<span class="hljs-keyword">new</span> File(<span class="hljs-string">"C:\\Users\\sang\\Downloads\\javaboy.png"</span>));</span><br><span class="line">    javaMailSender.send(mimeMessage);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>注意这里在构建邮件对象上和前文有所差异，这里是通过 javaMailSender 来获取一个复杂邮件对象，然后再利用 MimeMessageHelper 对邮件进行配置，MimeMessageHelper 是一个邮件配置的辅助工具类，创建时候的 true 表示构建一个 multipart message 类型的邮件，有了 MimeMessageHelper 之后，我们针对邮件的配置都是由 MimeMessageHelper 来代劳。</p>
-<p>最后通过 addAttachment 方法来添加一个附件。</p>
-<p>执行该方法，邮件发送效果图如下：</p>
-<p><img src="./img/43-6.png" alt></p>
-<h2 id="发送带图片资源的邮件"><a href="#发送带图片资源的邮件" class="headerlink" title="发送带图片资源的邮件"></a>发送带图片资源的邮件</h2><p>图片资源和附件有什么区别呢？图片资源是放在邮件正文中的，即一打开邮件，就能看到图片。但是一般来说，不建议使用这种方式，一些公司会对邮件内容的大小有限制（因为这种方式是将图片一起发送的）。</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Test</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">sendImgResMail</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> MessagingException </span>&#123;</span><br><span class="line">    MimeMessage mimeMessage = javaMailSender.createMimeMessage();</span><br><span class="line">    MimeMessageHelper helper = <span class="hljs-keyword">new</span> MimeMessageHelper(mimeMessage, <span class="hljs-keyword">true</span>);</span><br><span class="line">    helper.setSubject(<span class="hljs-string">"这是一封测试邮件"</span>);</span><br><span class="line">    helper.setFrom(<span class="hljs-string">"1510161612@qq.com"</span>);</span><br><span class="line">    helper.setTo(<span class="hljs-string">"25xxxxx755@qq.com"</span>);</span><br><span class="line">    helper.setCc(<span class="hljs-string">"37xxxxx37@qq.com"</span>);</span><br><span class="line">    helper.setBcc(<span class="hljs-string">"14xxxxx098@qq.com"</span>);</span><br><span class="line">    helper.setSentDate(<span class="hljs-keyword">new</span> Date());</span><br><span class="line">    helper.setText(<span class="hljs-string">"&lt;p&gt;hello 大家好，这是一封测试邮件，这封邮件包含两种图片，分别如下&lt;/p&gt;&lt;p&gt;第一张图片：&lt;/p&gt;&lt;img src='cid:p01'/&gt;&lt;p&gt;第二张图片：&lt;/p&gt;&lt;img src='cid:p02'/&gt;"</span>,<span class="hljs-keyword">true</span>);</span><br><span class="line">    helper.addInline(<span class="hljs-string">"p01"</span>,<span class="hljs-keyword">new</span> FileSystemResource(<span class="hljs-keyword">new</span> File(<span class="hljs-string">"C:\\Users\\sang\\Downloads\\javaboy.png"</span>)));</span><br><span class="line">    helper.addInline(<span class="hljs-string">"p02"</span>,<span class="hljs-keyword">new</span> FileSystemResource(<span class="hljs-keyword">new</span> File(<span class="hljs-string">"C:\\Users\\sang\\Downloads\\javaboy2.png"</span>)));</span><br><span class="line">    javaMailSender.send(mimeMessage);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这里的邮件 text 是一个 HTML 文本，里边涉及到的图片资源先用一个占位符占着，setText 方法的第二个参数 true 表示第一个参数是一个 HTML 文本。</p>
-<p>setText 之后，再通过 addInline 方法来添加图片资源。</p>
-<p>最后执行该方法，发送邮件，效果如下：</p>
-<p><img src="./img/43-7.png" alt></p>
-<p>在公司实际开发中，第一种和第三种都不是使用最多的邮件发送方案。因为正常来说，邮件的内容都是比较的丰富的，所以大部分邮件都是通过 HTML 来呈现的，如果直接拼接 HTML 字符串，这样以后不好维护，为了解决这个问题，一般邮件发送，都会有相应的邮件模板。最具代表性的两个模板就是 <code>Freemarker</code> 模板和 <code>Thyemeleaf</code> 模板了。</p>
-<h2 id="使用-Freemarker-作邮件模板"><a href="#使用-Freemarker-作邮件模板" class="headerlink" title="使用 Freemarker 作邮件模板"></a>使用 Freemarker 作邮件模板</h2><p>首先需要引入 Freemarker 依赖：</p>
-<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-freemarker<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p>然后在 <code>resources/templates</code> 目录下创建一个 <code>mail.ftl</code> 作为邮件发送模板：</p>
-<figure class="highlight html hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">&lt;!DOCTYPE html&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">html</span> <span class="hljs-attr">lang</span>=<span class="hljs-string">"en"</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">head</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">charset</span>=<span class="hljs-string">"UTF-8"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">title</span>&gt;</span>Title<span class="hljs-tag">&lt;/<span class="hljs-name">title</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">head</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">body</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>hello 欢迎加入 xxx 大家庭，您的入职信息如下：<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">table</span> <span class="hljs-attr">border</span>=<span class="hljs-string">"1"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>姓名<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>$&#123;username&#125;<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>工号<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>$&#123;num&#125;<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>薪水<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>$&#123;salary&#125;<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">table</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">style</span>=<span class="hljs-string">"color: #ff1a0e"</span>&gt;</span>一起努力创造辉煌<span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">body</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">html</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p>接下来，将邮件模板渲染成 HTML ，然后发送即可。</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Test</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">sendFreemarkerMail</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> MessagingException, IOException, TemplateException </span>&#123;</span><br><span class="line">    MimeMessage mimeMessage = javaMailSender.createMimeMessage();</span><br><span class="line">    MimeMessageHelper helper = <span class="hljs-keyword">new</span> MimeMessageHelper(mimeMessage, <span class="hljs-keyword">true</span>);</span><br><span class="line">    helper.setSubject(<span class="hljs-string">"这是一封测试邮件"</span>);</span><br><span class="line">    helper.setFrom(<span class="hljs-string">"1510161612@qq.com"</span>);</span><br><span class="line">    helper.setTo(<span class="hljs-string">"25xxxxx755@qq.com"</span>);</span><br><span class="line">    helper.setCc(<span class="hljs-string">"37xxxxx37@qq.com"</span>);</span><br><span class="line">    helper.setBcc(<span class="hljs-string">"14xxxxx098@qq.com"</span>);</span><br><span class="line">    helper.setSentDate(<span class="hljs-keyword">new</span> Date());</span><br><span class="line">    <span class="hljs-comment">//构建 Freemarker 的基本配置</span></span><br><span class="line">    Configuration configuration = <span class="hljs-keyword">new</span> Configuration(Configuration.VERSION_2_3_0);</span><br><span class="line">    <span class="hljs-comment">// 配置模板位置</span></span><br><span class="line">    ClassLoader loader = MailApplication.class.getClassLoader();</span><br><span class="line">    configuration.setClassLoaderForTemplateLoading(loader, <span class="hljs-string">"templates"</span>);</span><br><span class="line">    <span class="hljs-comment">//加载模板</span></span><br><span class="line">    Template template = configuration.getTemplate(<span class="hljs-string">"mail.ftl"</span>);</span><br><span class="line">    User user = <span class="hljs-keyword">new</span> User();</span><br><span class="line">    user.setUsername(<span class="hljs-string">"javaboy"</span>);</span><br><span class="line">    user.setNum(<span class="hljs-number">1</span>);</span><br><span class="line">    user.setSalary((<span class="hljs-keyword">double</span>) <span class="hljs-number">99999</span>);</span><br><span class="line">    StringWriter out = <span class="hljs-keyword">new</span> StringWriter();</span><br><span class="line">    <span class="hljs-comment">//模板渲染，渲染的结果将被保存到 out 中 ，将out 中的 html 字符串发送即可</span></span><br><span class="line">    template.process(user, out);</span><br><span class="line">    helper.setText(out.toString(),<span class="hljs-keyword">true</span>);</span><br><span class="line">    javaMailSender.send(mimeMessage);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>需要注意的是，虽然引入了 <code>Freemarker</code> 的自动化配置，但是我们在这里是直接 <code>new Configuration</code> 来重新配置 <code>Freemarker</code> 的，所以 Freemarker 默认的配置这里不生效，因此，在填写模板位置时，值为 <code>templates</code> 。</p>
-<p>调用该方法，发送邮件，效果图如下：</p>
-<p><img src="./img/43-8.png" alt></p>
-<h2 id="使用-Thymeleaf-作邮件模板"><a href="#使用-Thymeleaf-作邮件模板" class="headerlink" title="使用 Thymeleaf 作邮件模板"></a>使用 Thymeleaf 作邮件模板</h2><p>推荐在 Spring Boot 中使用 Thymeleaf 来构建邮件模板。因为 Thymeleaf 的自动化配置提供了一个 TemplateEngine，通过 TemplateEngine 可以方便的将 Thymeleaf 模板渲染为 HTML ，同时，Thymeleaf 的自动化配置在这里是继续有效的 。</p>
-<p>首先，引入 Thymeleaf 依赖：</p>
-<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-thymeleaf<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p>然后，创建 <code>Thymeleaf</code> 邮件模板：</p>
-<figure class="highlight html hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">&lt;!DOCTYPE html&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">html</span> <span class="hljs-attr">lang</span>=<span class="hljs-string">"en"</span> <span class="hljs-attr">xmlns:th</span>=<span class="hljs-string">"http://www.thymeleaf.org"</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">head</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">charset</span>=<span class="hljs-string">"UTF-8"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">title</span>&gt;</span>Title<span class="hljs-tag">&lt;/<span class="hljs-name">title</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">head</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">body</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>hello 欢迎加入 xxx 大家庭，您的入职信息如下：<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">table</span> <span class="hljs-attr">border</span>=<span class="hljs-string">"1"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>姓名<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span> <span class="hljs-attr">th:text</span>=<span class="hljs-string">"$&#123;username&#125;"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>工号<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span> <span class="hljs-attr">th:text</span>=<span class="hljs-string">"$&#123;num&#125;"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span>&gt;</span>薪水<span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">td</span> <span class="hljs-attr">th:text</span>=<span class="hljs-string">"$&#123;salary&#125;"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">td</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">tr</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">table</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">style</span>=<span class="hljs-string">"color: #ff1a0e"</span>&gt;</span>一起努力创造辉煌<span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">body</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">html</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p>接下来发送邮件：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Autowired</span></span><br><span class="line">TemplateEngine templateEngine;</span><br><span class="line"></span><br><span class="line"><span class="hljs-meta">@Test</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">sendThymeleafMail</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> MessagingException </span>&#123;</span><br><span class="line">    MimeMessage mimeMessage = javaMailSender.createMimeMessage();</span><br><span class="line">    MimeMessageHelper helper = <span class="hljs-keyword">new</span> MimeMessageHelper(mimeMessage, <span class="hljs-keyword">true</span>);</span><br><span class="line">    helper.setSubject(<span class="hljs-string">"这是一封测试邮件"</span>);</span><br><span class="line">    helper.setFrom(<span class="hljs-string">"1510161612@qq.com"</span>);</span><br><span class="line">    helper.setTo(<span class="hljs-string">"25xxxxx755@qq.com"</span>);</span><br><span class="line">    helper.setCc(<span class="hljs-string">"37xxxxx37@qq.com"</span>);</span><br><span class="line">    helper.setBcc(<span class="hljs-string">"14xxxxx098@qq.com"</span>);</span><br><span class="line">    helper.setSentDate(<span class="hljs-keyword">new</span> Date());</span><br><span class="line">    Context context = <span class="hljs-keyword">new</span> Context();</span><br><span class="line">    context.setVariable(<span class="hljs-string">"username"</span>, <span class="hljs-string">"javaboy"</span>);</span><br><span class="line">    context.setVariable(<span class="hljs-string">"num"</span>,<span class="hljs-string">"000001"</span>);</span><br><span class="line">    context.setVariable(<span class="hljs-string">"salary"</span>, <span class="hljs-string">"99999"</span>);</span><br><span class="line">    String process = templateEngine.process(<span class="hljs-string">"mail.html"</span>, context);</span><br><span class="line">    helper.setText(process,<span class="hljs-keyword">true</span>);</span><br><span class="line">    javaMailSender.send(mimeMessage);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>调用该方法，发送邮件，效果图如下：</p>
-<p><img src="./img/43-8.png" alt></p>
-<p>好了，这就是我们今天说的 5 种邮件发送姿势，不知道你掌握了没有呢？</p>
-<p>本文案例已经上传到 GitHub：<a href="https://github.com/lenve/javaboy-code-samples" target="_blank" rel="noopener">https://github.com/lenve/javaboy-code-samples</a>。</p>
-<p>有问题欢迎留言讨论。</p>
-</div>
-        
-        
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-12-31T00:36:08.776Z">2019-12-31</time>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    10 分钟 读完 (大约 1557 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/1231/0.html"></a>
-            
-        </h1>
-        
-            <div class="content"> <p>之前松哥和大家分享过一篇将 Spring Boot 项目部署到远程 Docker 上的文章：</p>
-<ul>
-<li><a href="https://mp.weixin.qq.com/s/7DrvNHM6MGc7lwz8JDULSQ" target="_blank" rel="noopener">一键部署 Spring Boot 到远程 Docker 容器</a></li>
-</ul>
-<p>但是这种部署有一个问题，就是一个小小的 helloworld 构建成镜像之后，竟然都有 660 MB+，这就有点过分了；而且这种方式步骤繁琐，很多人看了头大。</p>
-<p>因此松哥今天想再和大家聊一聊另外一种方案 <strong>Jib</strong>，这是谷歌开源的一个容器化运行方案，使用它我们将 Spring Boot 进行容器化部署只要两步：</p>
-<ul>
-<li>第一步配置 Maven Plugin</li>
-<li>第二步构建</li>
-</ul>
-<p>我们一起来看看。</p>
-<h2 id="Jib"><a href="#Jib" class="headerlink" title="Jib"></a>Jib</h2><p>在之前那篇文章中，我们将 Spring Boot 项目进行容器化部署，要求开发人员要有一定的 Docker 技能作为支撑，然而在实际开发中，并非每个人都是 Docker 专家，或者说会用 Docker。</p>
-<p>有鉴于此，Google 搞出来一个 Jib，使 Spring Boot 容器化部署变得更加简便，开发人员可以不需要任何 Docker 相关的技能，就能将 Spring Boot 项目构建成 Docker 中的镜像，而且还可以“顺便”将镜像 push 到 register 上，极大的简化了部署过程。</p>
-<p>Jib 使用 Java 开发，使用也非常简单，可以作为 Maven 或者 Gradle 的插件直接集成到我们的项目中。它利用镜像分层和注册表缓存来实现快速、增量的构建。Jib 会自动读取项目的构建配置，代码组织到不同的层（依赖项、资源、类）中，然后它只会重新构建和推送发生变更的层。在项目进行快速迭代时，Jib 只将发生变更的层推送到 registers 来缩短构建时间。</p>
-<p>好了，大致了解了 Jib 之后，接下来我们来看看 Jib 要怎么使用。</p>
-<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><p>Jib 可以直接将构建好的镜像 push 到 registers 上，如果公司有自己的私有镜像站的话，可以直接推送到私有镜像站上，本文我就将构建好的镜像推送到官方的 Docker Hub 上，因此需要大家提前准备一个 Docker Hub 的账号，账号大家可以直接去 Docker Hub 上面注册（<a href="https://hub.docker.com/" target="_blank" rel="noopener">https://hub.docker.com/</a>），大家要是对 Docker Hub 这些东西不了解，可以在公众号后台回复 docker，获取松哥自制的 Docker 教程。</p>
-<h2 id="牛刀小试"><a href="#牛刀小试" class="headerlink" title="牛刀小试"></a>牛刀小试</h2><p>首先我们来创建一个 Spring Boot 工程，创建时只需要添加一个 Web 依赖即可：</p>
-<p><img src="./img/42-1.png" alt></p>
-<p>项目创建成功后，添加一个 HelloController 用来做测试：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@RestController</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HelloController</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@GetMapping</span>(<span class="hljs-string">"/hello"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">hello</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-string">"hello jib"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>然后，在 pom.xml 中添加上 Jib 的插件，如下：</p>
-<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">plugin</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>com.google.cloud.tools<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>jib-maven-plugin<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>1.7.0<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">configuration</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">from</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">image</span>&gt;</span>openjdk:alpine<span class="hljs-tag">&lt;/<span class="hljs-name">image</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">from</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">to</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">image</span>&gt;</span>docker.io/wongsung/dockerjib<span class="hljs-tag">&lt;/<span class="hljs-name">image</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">tags</span>&gt;</span></span><br><span class="line">                <span class="hljs-tag">&lt;<span class="hljs-name">tag</span>&gt;</span>v1<span class="hljs-tag">&lt;/<span class="hljs-name">tag</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;/<span class="hljs-name">tags</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">auth</span>&gt;</span></span><br><span class="line">                <span class="hljs-tag">&lt;<span class="hljs-name">username</span>&gt;</span>wongsung<span class="hljs-tag">&lt;/<span class="hljs-name">username</span>&gt;</span></span><br><span class="line">                <span class="hljs-tag">&lt;<span class="hljs-name">password</span>&gt;</span>你的密码<span class="hljs-tag">&lt;/<span class="hljs-name">password</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;/<span class="hljs-name">auth</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">to</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">configuration</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">executions</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">execution</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">phase</span>&gt;</span>package<span class="hljs-tag">&lt;/<span class="hljs-name">phase</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">goals</span>&gt;</span></span><br><span class="line">                <span class="hljs-tag">&lt;<span class="hljs-name">goal</span>&gt;</span>build<span class="hljs-tag">&lt;/<span class="hljs-name">goal</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;/<span class="hljs-name">goals</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">execution</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">executions</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">plugin</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p>关于这段配置，我说如下几点：</p>
-<ol>
-<li>首先就是版本号的问题，我这里使用的是 <code>1.7.0</code> ，网上有的教程比较老，用的 0.x 的版本，老的版本在配置 Docker 认证的时候非常麻烦，所以版本这块建议大家使用当前最新版。</li>
-<li>from 中的配置表示本镜像构建所基于的根镜像为 <code>openjdk:alpine</code></li>
-<li>to 中的配置表示本镜像构建完成后，要发布到哪里去，如果是发布到私有镜像站，就写自己私有镜像站的地址，如果是发布到 Docker Hub 上，就参考我这里的写法 <code>docker.io/wongsung/dockerjib</code>，其中 wongsung 表示你在 Docker Hub 上注册的用户名，dockerjib 表示你镜像的名字，可以随意取。</li>
-<li>tags 中配置的是自己镜像的版本。</li>
-<li>auth 中配置你在 Docker Hub 上的用户名/密码。</li>
-<li>executions 节点中的就是常规配置了，我就不再多说了。</li>
-</ol>
-<p>配置完成后，在命令行执行如下命令将当前下项目构建成一个 Docker 镜像并 push 到 Docker Hub：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mvn compile jib:build</span><br></pre></td></tr></table></figure>
-<p>构建完成后，我们在 Docker Hub 上就能看到自己的镜像了：</p>
-<p><img src="./img/42-2.png" alt></p>
-<p>接下来，启动 Docker ，在 Docker 中执行如下命令拉取镜像下来并运行：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -d --name mydockerjib -p 8080:8080 docker.io/wongsung/dockerjib:v1</span><br></pre></td></tr></table></figure>
-<p>启动成功后，我们在浏览器中就可以直接访问我们刚才的 Spring Boot 项目中的 hello 接口了：</p>
-<p><img src="./img/42-3.png" alt></p>
-<p>是不是很方便？比我第一次给大家介绍的方案要方便很多。</p>
-<p><strong>注意</strong></p>
-<p>这种方式是将项目构建成镜像后并 push 到 registers 上，这种构建方式不需要你本地安装 Docker，如果你需要在本地运行镜像，那当然需要 Docker，单纯的构建是不需要 Docker 环境的。</p>
-<h2 id="本地构建"><a href="#本地构建" class="headerlink" title="本地构建"></a>本地构建</h2><p>如果你电脑本地刚好安装了 Docker ，有 Docker 环境，那么也可以将项目构建成本地 Docker 的镜像，</p>
-<p>首先我们来查看一下本地镜像：</p>
-<p><img src="./img/42-4.png" alt></p>
-<p>可以看到只有 MySQL 镜像，然后我们执行如下命令构建本地镜像：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mvn compile jib:dockerBuild</span><br></pre></td></tr></table></figure>
-<p>看到如下构建日志信息表示构建成功：</p>
-<p><img src="./img/42-5.png" alt></p>
-<p>构建完成后，我们再来看本地镜像：</p>
-<p><img src="./img/42-6.png" alt></p>
-<p>可以都看到，已经构建成功了，接下来启动命令和上面一样，我就不重复展示了。</p>
-<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>容器的出现，让我们的 Java 程序比任何时候都接近“一次编写，到处运行”，Spring Boot 容器化部署也是越来越方便，后面有空松哥再和大家聊聊结合 jenkins 的用法，好了，本文的案例我已经上传到 GitHub：<a href="https://github.com/lenve/javaboy-code-samples，有问题欢迎留言讨论。" target="_blank" rel="noopener">https://github.com/lenve/javaboy-code-samples，有问题欢迎留言讨论。</a></p>
-</div>
-        
-        
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-12-31T00:36:08.776Z">2019-12-31</time>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    7 分钟 读完 (大约 1103 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/1231/0.html"></a>
-            
-        </h1>
-        
-            <div class="content"> <p>真是郁闷，不过这事又一次提醒我解决问题还是要根治，不能囫囵吞枣，否则相同的问题可能会以不同的形式出现，每次都得花时间去搞。刨根问底，一步到位，再遇到类似问题就可以分分钟解决了。</p>
-<p>如果大家没看过松哥之前写的 Spring Boot 整合 Spring Session，可以先回顾下：</p>
-<ul>
-<li><a href="https://mp.weixin.qq.com/s/qf-cQ7wI_Sp5pENTLlCRJw" target="_blank" rel="noopener">Spring Boot2 系列教程(二十八)Spring Boot 整合 Session 共享</a></li>
-</ul>
-<h2 id="第一次踩坑"><a href="#第一次踩坑" class="headerlink" title="第一次踩坑"></a>第一次踩坑</h2><p>事情是这样的，大概在今年 6 月初的时候，我在项目中使用到了 Session 共享，当时采用的方案就是 Redis+Spring Session。本来这是一个很简单的问题，我在以前的项目中也用过多次这种方案，早已轻车熟路，但是那次有点不对劲，项目启动时候报了如下错误：</p>
-<p><img src="./img/44-1.png" alt></p>
-<p>一模一样的代码，但是运行就是会出错，我感觉莫名其妙。因为在 Spring Boot 中整合 Spring Session 是一个非常简单的操作，就几行 Redis 的配置而已，我在确认了代码没问题之后，很快想到了可能是版本问题，因为当时 Spring Boot2.1.5 刚刚发布，我喜欢用最新版。于是我尝试将 Spring Boot 的版本切换到 2.1.4 ，切换回去之后，果然就 OK了，再次启动项目又不会报错了。于是基本确定这是 Spring Boot 的版本升级带来的问题。</p>
-<p>但是当时我并没有深究，我以为就是官方出于安全考虑，让你在使用 Redis 时强制加上 Spring Security（因为根据错误提示，很容想到加上 Spring Security 依赖），加上 Spring Security 依赖之后，果然就没有问题了，我也没有多想，这件事就这样过了。​</p>
-<h2 id="第二次踩坑"><a href="#第二次踩坑" class="headerlink" title="第二次踩坑"></a>第二次踩坑</h2><p>前两天我在给星球上的小伙伴录制 Spring Boot 视频的时候，采用了  Spring Boot 最新版 2.1.7，也是 Spring Session，但是在创建项目的时候，忘记添加 Spring Security 依赖了（第一次踩坑之后，我每次用 Spring Session 都会自觉的加上 Spring Security 依赖），运行的时候竟然没报错！我就郁闷了。</p>
-<p>于是我去试了 Spring Boot2.1.4、Spring Boot2.1.6 发现都没有问题，在使用 Spring Session 的时候都不需要添加 Spring Security 依赖，只有 Spring Boot2.1.5 才有这个问题。于是我大概明白了，这可能是一个 Bug，而不是版本升级的新功能。</p>
-<p>这一次，那我就打算追究一下问题的根源。</p>
-<h2 id="源头"><a href="#源头" class="headerlink" title="源头"></a>源头</h2><p>要追究问题的源头，我们当然得从 Spring Session 的自动化配置类开始。</p>
-<p>在 Spring Boot2.1.5 的 <code>org.springframework.boot.autoconfigure.session.SessionAutoConfiguration</code> 类中，我看到如下源码：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Bean</span></span><br><span class="line"><span class="hljs-meta">@Conditional</span>(DefaultCookieSerializerCondition.class)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> DefaultCookieSerializer <span class="hljs-title">cookieSerializer</span><span class="hljs-params">(ServerProperties serverProperties,</span></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-params">		ObjectProvider&lt;SpringSessionRememberMeServices&gt; springSessionRememberMeServices)</span> </span>&#123;</span><br><span class="line">	<span class="hljs-comment">//.....</span></span><br><span class="line">	map.from(cookie::getMaxAge).to((maxAge) -&gt; cookieSerializer</span><br><span class="line">			.setCookieMaxAge((<span class="hljs-keyword">int</span>) maxAge.getSeconds()));</span><br><span class="line">	springSessionRememberMeServices.ifAvailable((</span><br><span class="line">			rememberMeServices) -&gt; cookieSerializer.setRememberMeRequestAttribute(</span><br><span class="line">					SpringSessionRememberMeServices.REMEMBER_ME_LOGIN_ATTR));</span><br><span class="line">	<span class="hljs-keyword">return</span> cookieSerializer;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>从这一段源码中我们可以看到，这里使用到了 SpringSessionRememberMeServices ，而这个类中则用到 Spring Security 中相关的类。因此，如果不引入 Spring Security 就会报错。</p>
-<p>我们再来看看 Spring Boot2.1.6 中 <code>org.springframework.boot.autoconfigure.session.SessionAutoConfiguration</code> 类的源码，如下：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Bean</span></span><br><span class="line"><span class="hljs-meta">@Conditional</span>(DefaultCookieSerializerCondition.class)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> DefaultCookieSerializer <span class="hljs-title">cookieSerializer</span><span class="hljs-params">(ServerProperties serverProperties)</span> </span>&#123;</span><br><span class="line">	<span class="hljs-comment">//...</span></span><br><span class="line">	map.from(cookie::getMaxAge).to((maxAge) -&gt; cookieSerializer.setCookieMaxAge((<span class="hljs-keyword">int</span>) maxAge.getSeconds()));</span><br><span class="line">	<span class="hljs-keyword">if</span> (ClassUtils.isPresent(REMEMBER_ME_SERVICES_CLASS, getClass().getClassLoader())) &#123;</span><br><span class="line">		<span class="hljs-keyword">new</span> RememberMeServicesCookieSerializerCustomizer().apply(cookieSerializer);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> cookieSerializer;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>可以看到，在 Spring Boot2.1.6 中，这个问题已经得到修复。这里就没有 2.1.5 那么冲动了，上来了先用 <code>ClassUtils.isPresent</code> 方法判断了下 REMEMBER_ME_SERVICES_CLASS(<code>org.springframework.security.web.authentication.RememberMeServices</code>) 是否存在，存在的话，才有后面的操作。</p>
-<p>至此，这个问题就总算弄懂了。</p>
-<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>大家平时遇到问题，如果项目不是很赶的话，可以留意多想想，多追究一下原因，说不定你会有很多意外的收获。我这次就是一个活生生的例子，一开始没多想，后来又发现不对劲，前前后后一折腾，反而又多浪费了一些时间。</p>
-</div>
-        
-        
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-12-31T00:36:08.776Z">2019-12-31</time>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    10 分钟 读完 (大约 1561 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/1231/0.html"></a>
-            
-        </h1>
-        
-            <div class="content"> <p>前两天被人问到这样一个问题:</p>
-<p>“松哥，为什么我的 Spring Boot 项目打包成的 jar ，被其他项目依赖之后，总是报找不到类的错误？”</p>
-<p>大伙有这样的疑问，就是因为还没搞清楚可执行 jar 和普通 jar 到底有什么区别？今天松哥就和大家来聊一聊这个问题。</p>
-<h2 id="多了一个插件"><a href="#多了一个插件" class="headerlink" title="多了一个插件"></a>多了一个插件</h2><p>Spring Boot 中默认打包成的 jar 叫做 可执行 jar，这种 jar 不同于普通的 jar，普通的 jar 不可以通过 <code>java -jar xxx.jar</code> 命令执行，普通的 <code>jar</code> 主要是被其他应用依赖，<code>Spring Boot</code> 打成的 <code>jar</code> 可以执行，但是不可以被其他的应用所依赖，即使强制依赖，也无法获取里边的类。但是可执行 jar 并不是 Spring Boot 独有的，Java 工程本身就可以打包成可执行 jar 。</p>
-<p>有的小伙伴可能就有疑问了，既然同样是执行 <code>mvn package</code> 命令进行项目打包，为什么 Spring Boot 项目就打成了可执行 jar ，而普通项目则打包成了不可执行 jar 呢？</p>
-<p>这我们就不得不提 Spring Boot 项目中一个默认的插件配置 <code>spring-boot-maven-plugin</code> ，这个打包插件存在 5 个方面的功能，从插件命令就可以看出：</p>
-<p><img src="./img/40-1.png" alt></p>
-<p>五个功能分别是：</p>
-<ul>
-<li>build-info：生成项目的构建信息文件 build-info.properties</li>
-<li>repackage：这个是默认 goal，在 <code>mvn package</code> 执行之后，这个命令再次打包生成可执行的 jar，同时将 <code>mvn package</code> 生成的 jar 重命名为 <code>*.origin</code></li>
-<li>run：这个可以用来运行 Spring Boot 应用</li>
-<li>start：这个在 <code>mvn integration-test</code> 阶段，进行 <code>Spring Boot</code> 应用生命周期的管理</li>
-<li>stop：这个在 <code>mvn integration-test</code> 阶段，进行 <code>Spring Boot</code> 应用生命周期的管理</li>
-</ul>
-<p>这里功能，默认情况下使用就是 repackage 功能，其他功能要使用，则需要开发者显式配置。</p>
-<h2 id="打包"><a href="#打包" class="headerlink" title="打包"></a>打包</h2><p>repackage 功能的 作用，就是在打包的时候，多做一点额外的事情：</p>
-<ol>
-<li>首先 <code>mvn package</code> 命令 对项目进行打包，打成一个 <code>jar</code>，这个 <code>jar</code> 就是一个普通的 <code>jar</code>，可以被其他项目依赖，但是不可以被执行</li>
-<li><code>repackage</code> 命令，对第一步 打包成的 <code>jar</code> 进行再次打包，将之打成一个 可执行 <code>jar</code> ，通过将第一步打成的 <code>jar</code> 重命名为 <code>*.original</code> 文件</li>
-</ol>
-<p>举个例子：</p>
-<p>对任意一个 Spring Boot 项目进行打包，可以执行 <code>mvn package</code> 命令，也可以直接在 <code>IDEA</code> 中点击 <code>package</code> ，如下 ：</p>
-<p><img src="./img/40-2.png" alt></p>
-<p>打包成功之后， <code>target</code> 中的文件如下：</p>
-<p><img src="./img/40-3.png" alt></p>
-<p>这里有两个文件，第一个 <code>restful-0.0.1-SNAPSHOT.jar</code> 表示打包成的可执行 <code>jar</code> ，第二个 <code>restful-0.0.1-SNAPSHOT.jar.original</code> 则是在打包过程中 ，被重命名的 <code>jar</code>，这是一个不可执行 <code>jar</code>，但是可以被其他项目依赖的 <code>jar</code>。通过对这两个文件的解压，我们可以看出这两者之间的差异。</p>
-<h2 id="两种-jar-的比较"><a href="#两种-jar-的比较" class="headerlink" title="两种 jar 的比较"></a>两种 jar 的比较</h2><p>可执行 <code>jar</code> 解压之后，目录如下：</p>
-<p><img src="./img/40-4.png" alt></p>
-<p>可以看到，可执行 jar 中，我们自己的代码是存在 于 <code>BOOT-INF/classes/</code> 目录下，另外，还有一个 <code>META-INF</code> 的目录，该目录下有一个 <code>MANIFEST.MF</code> 文件，打开该文件，内容如下：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Manifest-Version: 1.0</span><br><span class="line">Implementation-Title: restful</span><br><span class="line">Implementation-Version: 0.0.1-SNAPSHOT</span><br><span class="line">Start-Class: org.javaboy.restful.RestfulApplication</span><br><span class="line">Spring-Boot-Classes: BOOT-INF/classes/</span><br><span class="line">Spring-Boot-Lib: BOOT-INF/lib/</span><br><span class="line">Build-Jdk-Spec: 1.8</span><br><span class="line">Spring-Boot-Version: 2.1.6.RELEASE</span><br><span class="line">Created-By: Maven Archiver 3.4.0</span><br><span class="line">Main-Class: org.springframework.boot.loader.JarLauncher</span><br></pre></td></tr></table></figure>
-<p>可以看到，这里定义了一个 <code>Start-Class</code>，这就是可执行 <code>jar</code> 的入口类，<code>Spring-Boot-Classes</code> 表示我们自己代码编译后的位置，<code>Spring-Boot-Lib</code> 则表示项目依赖的 <code>jar</code> 的位置。</p>
-<p>换句话说，如果自己要打一个可执行 <code>jar</code> 包的话，除了添加相关依赖之外，还需要配置 <code>META-INF/MANIFEST.MF</code> 文件。</p>
-<p>这是可执行 jar 的结构，那么不可执行 jar 的结构呢？</p>
-<p>我们首先将默认的后缀 <code>.original</code> 除去，然后给文件重命名，重命名完成，进行解压：</p>
-<p><img src="./img/40-5.png" alt></p>
-<p>解压后可以看到，不可执行 <code>jar</code> 根目录就相当于我们的 <code>classpath</code>，解压之后，直接就能看到我们的代码，它也有 <code>META-INF/MANIFEST.MF</code> 文件，但是文件中没有定义启动类等。</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Manifest-Version: 1.0</span><br><span class="line">Implementation-Title: restful</span><br><span class="line">Implementation-Version: 0.0.1-SNAPSHOT</span><br><span class="line">Build-Jdk-Spec: 1.8</span><br><span class="line">Created-By: Maven Archiver 3.4.0</span><br></pre></td></tr></table></figure>
-<p><strong>注意</strong></p>
-<p>这个不可以执行 <code>jar</code> 也没有将项目的依赖打包进来。</p>
-<p>从这里我们就可以看出，两个 <code>jar</code> ，虽然都是 <code>jar</code> 包，但是内部结构是完全不同的，因此一个可以直接执行，另一个则可以被其他项目依赖。</p>
-<h2 id="一次打包两个-jar"><a href="#一次打包两个-jar" class="headerlink" title="一次打包两个 jar"></a>一次打包两个 jar</h2><p>一般来说，Spring Boot 直接打包成可执行 <code>jar</code> 就可以了，不建议将 Spring Boot 作为普通的 <code>jar</code> 被其他的项目所依赖。如果有这种需求，建议将被依赖的部分，单独抽出来做一个普通的 <code>Maven</code> 项目，然后在 Spring Boot 中引用这个 <code>Maven</code> 项目。</p>
-<p>如果非要将 Spring Boot 打包成一个普通 <code>jar</code> 被其他项目依赖，技术上来说，也是可以的，给 <code>spring-boot-maven-plugin</code> 插件添加如下配置：</p>
-<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">build</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">plugins</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">plugin</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-maven-plugin<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">configuration</span>&gt;</span></span><br><span class="line">                <span class="hljs-tag">&lt;<span class="hljs-name">classifier</span>&gt;</span>exec<span class="hljs-tag">&lt;/<span class="hljs-name">classifier</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;/<span class="hljs-name">configuration</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">plugin</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">plugins</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">build</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p>配置的 <code>classifier</code> 表示可执行 <code>jar</code> 的名字，配置了这个之后，在插件执行 <code>repackage</code> 命令时，就不会给 <code>mvn package</code> 所打成的 <code>jar</code> 重命名了，所以，打包后的 jar 如下：</p>
-<p><img src="./img/40-6.png" alt></p>
-<p>第一个 jar 表示可以被其他项目依赖的 jar ，第二个 jar 则表示一个可执行 jar。</p>
-<p>好了，关于 Spring Boot 中 jar 的问题，我们就说这么多，有问题欢迎留言讨论。</p>
-</div>
-        
-        
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-12-31T00:36:08.775Z">2019-12-31</time>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    6 分钟 读完 (大约 917 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/1231/0.html"></a>
-            
-        </h1>
-        
-            <div class="content"> <h1 id="回顾热部署"><a href="#回顾热部署" class="headerlink" title="回顾热部署"></a>回顾热部署</h1><p>Spring Boot 中的热部署相信大家都用过吧，只需要添加 <code>spring-boot-devtools</code> 依赖就可以轻松实现热部署。Spring Boot 中热部署最最关键的原理就是两个不同的 classloader：</p>
-<ul>
-<li>base classloader</li>
-<li>restart classloader</li>
-</ul>
-<p>其中 base classloader 用来加载那些不会变化的类，例如各种第三方依赖，而 restart classloader 则用来加载那些会发生变化的类，例如你自己写的代码。Spring Boot 中热部署的原理就是当代码发生变化时，base classloader 不变，而 restart classloader 则会被废弃，被另一个新的 restart classloader 代替。在整个过程中，因为只重新加载了变化的类，所以启动速度要被重启快。</p>
-<p>但是有另外一个问题，就是静态资源文件！使用 devtools ，默认情况下当静态资源发生变化时，并不会触发项目重启。虽然我们可以通过配置解决这一问题，但是没有必要！因为静态资源文件发生变化后不需要编译，按理说保存后刷新下就可以访问到了。</p>
-<p>那么如何才能实现静态资源变化后，不编译就能自动刷新呢？ LiveReload 可以帮助我们实现这一功能！</p>
-<h1 id="LiveReload"><a href="#LiveReload" class="headerlink" title="LiveReload"></a>LiveReload</h1><p>devtools 中默认嵌入了 LiveReload 服务器，利用 LiveReload 可以实现静态文件的热部署，LiveReload 可以在资源发生变化时自动触发浏览器更新，LiveReload 支持 Chrome、Firefox 以及 Safari 。以 Chrome 为例，在 Chrome 应用商店搜索 LiveReload ，结果如下图：</p>
-<p><img src="./img/39-1.png" alt></p>
-<p>将第一个搜索结果添加到 Chrome 中，添加成功后，在 Chrome 右上角有一个 LiveReload 图标</p>
-<p><img src="./img/39-2.png" alt></p>
-<p>在浏览器中打开项目的页面，然后点击浏览器右上角的 LiveReload 按钮，打开 LiveReload 连接。</p>
-<p><strong>注意：</strong></p>
-<p>LiveReload 是和浏览器选项卡绑定在一起的，在哪个选项卡中打开了 LiveReload，就在哪个选项卡中访问页面，这样才有效果。</p>
-<p>打开 LiveReload 之后，我们启动一个加了 devtools 依赖的 Spring Boot 项目：</p>
-<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-devtools<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">scope</span>&gt;</span>runtime<span class="hljs-tag">&lt;/<span class="hljs-name">scope</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">optional</span>&gt;</span>true<span class="hljs-tag">&lt;/<span class="hljs-name">optional</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p>此时随便在 resources/static 目录下添加一个静态 html 页面，然后启动 Spring Boot 项目，在<strong>打开了 LiveReload 的选项卡中访问 html 页面</strong>。</p>
-<p>访问成功后，我们再去手动修改 html 页面代码，修改成功后，回到浏览器，不用做任何操作，就会发现浏览器自动刷新了，页面已经更新了。</p>
-<p>整个过程中，我的 Spring Boot 项目并没有重启。</p>
-<p>如果开发者安装并且启动了 LiveReload 插件，同时也添加了 devtools 依赖，但是却并不想当静态页面发生变化时浏览器自动刷新，那么可以在 application.properties 中添加如下代码进行配置：</p>
-<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spring.devtools.livereload.enabled=false</span><br></pre></td></tr></table></figure>
-<h1 id="最佳实践"><a href="#最佳实践" class="headerlink" title="最佳实践"></a>最佳实践</h1><p>建议开发者使用 LiveReload 策略而不是项目重启策略来实现静态资源的动态加载，因为项目重启所耗费时间一般来说要超过使用LiveReload 所耗费的时间。</p>
-<p>Firefox 也可以安装 LiveReload 插件，装好之后和 Chrome 用法基本一致，这里不再赘述。</p>
-<p>如果小伙伴们的 Chrome 商店使用不便，可以在松哥公众号后台回复 livereload，松哥有下载好的离线安装包。</p>
-</div>
-        
-        
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-12-31T00:36:08.775Z">2019-12-31</time>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    11 分钟 读完 (大约 1630 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/1231/0.html"></a>
-            
-        </h1>
-        
-            <div class="content"> <p>关于 Spring Security，松哥之前发过多篇文章和大家聊聊这个安全框架的使用：</p>
-<ol>
-<li><a href="https://mp.weixin.qq.com/s/88zkkf6WyS_Jtv74qOdr8Q" target="_blank" rel="noopener">手把手带你入门 Spring Security！</a></li>
-<li><a href="https://mp.weixin.qq.com/s/B9t0EtOCiM3wiCbosByMrQ" target="_blank" rel="noopener">Spring Security 登录添加验证码</a></li>
-<li><a href="https://mp.weixin.qq.com/s/QApGe7I94lAMiYy8qbLZ9A" target="_blank" rel="noopener">SpringSecurity 登录使用 JSON 格式数据</a></li>
-<li><a href="https://mp.weixin.qq.com/s/-K8W06y_-hvJvIgNsk3V_A" target="_blank" rel="noopener">Spring Security 中的角色继承问题</a></li>
-<li><a href="https://mp.weixin.qq.com/s/Ykzo5sWdfmKig810Gp8JRw" target="_blank" rel="noopener">Spring Security 中使用 JWT!</a></li>
-<li><a href="https://mp.weixin.qq.com/s/1rVPzJGCtDZKvMoA4BYzIA" target="_blank" rel="noopener">Spring Security 结合 OAuth2</a></li>
-</ol>
-<p>不过，今天要和小伙伴们聊一聊 Spring Security 中的另外一个问题，那就是在 Spring Security 中未获认证的请求默认会重定向到登录页，但是在前后端分离的登录中，这个默认行为则显得非常不合适，今天我们主要来看看如何实现未获认证的请求直接返回 JSON ，而不是重定向到登录页面。</p>
-<h2 id="前置知识"><a href="#前置知识" class="headerlink" title="前置知识"></a>前置知识</h2><p>这里关于 Spring Security 的基本用法我就不再赘述了，如果小伙伴们不了解，可以参考上面的 6 篇文章。</p>
-<p>大家知道，在自定义 Spring Security 配置的时候，有这样几个属性：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">configure</span><span class="hljs-params">(HttpSecurity http)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    http.authorizeRequests()</span><br><span class="line">            .anyRequest().authenticated()</span><br><span class="line">            .formLogin()</span><br><span class="line">            .loginProcessingUrl(<span class="hljs-string">"/doLogin"</span>)</span><br><span class="line">            .loginPage(<span class="hljs-string">"/login"</span>)</span><br><span class="line">            <span class="hljs-comment">//其他配置</span></span><br><span class="line">            .permitAll()</span><br><span class="line">            .and()</span><br><span class="line">            .csrf().disable();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这里有两个比较重要的属性：</p>
-<ul>
-<li>loginProcessingUrl：这个表示配置处理登录请求的接口地址，例如你是表单登录，那么 form 表单中 action 的值就是这里填的值。</li>
-<li>loginPage：这个表示登录页的地址，例如当你访问一个需要登录后才能访问的资源时，系统就会自动给你通过重定向跳转到这个页面上来。</li>
-</ul>
-<p>这种配置在前后端不分的登录中是没有问题的，在前后端分离的登录中，这种配置就有问题了。我举个简单的例子，例如我想访问 <code>/hello</code> 接口，但是这个接口需要登录之后才能访问，我现在没有登录就直接去访问这个接口了，那么系统会给我返回 302，让我去登录页面，在前后端分离中，我的后端一般是没有登录页面的，就是一个提示 JSON，例如下面这样：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@GetMapping</span>(<span class="hljs-string">"/login"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> RespBean <span class="hljs-title">login</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">return</span> RespBean.error(<span class="hljs-string">"尚未登录，请登录!"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>完整代码大家可以参考我的微人事项目。</p>
-</blockquote>
-<p>也就是说，当我没有登录直接去访问 <code>/hello</code> 这个接口的时候，我会看到上面这段 JSON 字符串。在前后端分离开发中，这个看起来没问题（后端不再做页面跳转，无论发生什么都是返回 JSON）。但是问题就出在这里，系统默认的跳转是一个重定向，就是说当你访问 <code>/hello</code> 的时候，服务端会给浏览器返回 302，同时响应头中有一个 Location 字段，它的值为 <code>http://localhost:8081/login</code> ，也就是告诉浏览器你去访问 <code>http://localhost:8081/login</code> 地址吧。浏览器收到指令之后，就会直接去访问 <code>http://localhost:8081/login</code> 地址，如果此时是开发环境并且请求还是 Ajax 请求，就会发生跨域。因为前后端分离开发中，前端我们一般在 NodeJS 上启动，然后前端的所有请求通过 NodeJS 做请求转发，现在服务端直接把请求地址告诉浏览器了，浏览器就会直接去访问 <code>http://localhost:8081/login</code> 了，而不会做请求转发了，因此就发生了跨域问题。</p>
-<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>很明显，上面的问题我们不能用跨域的思路来解决，虽然这种方式看起来也能解决问题，但不是最佳方案。</p>
-<p>如果我们的 Spring Security 在用户未获认证的时候去请求一个需要认证后才能请求的数据，此时不给用户重定向，而是直接就返回一个 JSON，告诉用户这个请求需要认证之后才能发起，就不会有上面的事情了。</p>
-<p>这里就涉及到 Spring Security 中的一个接口 <code>AuthenticationEntryPoint</code> ，该接口有一个实现类：<code>LoginUrlAuthenticationEntryPoint</code> ，该类中有一个方法 <code>commence</code>，如下：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * Performs the redirect (or forward) to the login form URL.</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">commence</span><span class="hljs-params">(HttpServletRequest request, HttpServletResponse response,</span></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-params">		AuthenticationException authException)</span> </span>&#123;</span><br><span class="line">	String redirectUrl = <span class="hljs-keyword">null</span>;</span><br><span class="line">	<span class="hljs-keyword">if</span> (useForward) &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> (forceHttps &amp;&amp; <span class="hljs-string">"http"</span>.equals(request.getScheme())) &#123;</span><br><span class="line">			redirectUrl = buildHttpsRedirectUrlForRequest(request);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> (redirectUrl == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			String loginForm = determineUrlToUseForThisRequest(request, response,</span><br><span class="line">					authException);</span><br><span class="line">			<span class="hljs-keyword">if</span> (logger.isDebugEnabled()) &#123;</span><br><span class="line">				logger.debug(<span class="hljs-string">"Server side forward to: "</span> + loginForm);</span><br><span class="line">			&#125;</span><br><span class="line">			RequestDispatcher dispatcher = request.getRequestDispatcher(loginForm);</span><br><span class="line">			dispatcher.forward(request, response);</span><br><span class="line">			<span class="hljs-keyword">return</span>;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		redirectUrl = buildRedirectUrlToLoginPage(request, response, authException);</span><br><span class="line">	&#125;</span><br><span class="line">	redirectStrategy.sendRedirect(request, response, redirectUrl);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>首先我们从这个方法的注释中就可以看出，这个方法是用来决定到底是要重定向还是要 forward，通过 Debug 追踪，我们发现默认情况下 useForward 的值为 false，所以请求走进了重定向。</p>
-<p>那么我们解决问题的思路很简单，直接重写这个方法，在方法中返回 JSON 即可，不再做重定向操作，具体配置如下：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">configure</span><span class="hljs-params">(HttpSecurity http)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    http.authorizeRequests()</span><br><span class="line">            .anyRequest().authenticated()</span><br><span class="line">            .formLogin()</span><br><span class="line">            .loginProcessingUrl(<span class="hljs-string">"/doLogin"</span>)</span><br><span class="line">            .loginPage(<span class="hljs-string">"/login"</span>)</span><br><span class="line">            <span class="hljs-comment">//其他配置</span></span><br><span class="line">            .permitAll()</span><br><span class="line">            .and()</span><br><span class="line">            .csrf().disable().exceptionHandling()</span><br><span class="line">                .authenticationEntryPoint(<span class="hljs-keyword">new</span> AuthenticationEntryPoint() &#123;</span><br><span class="line">            <span class="hljs-meta">@Override</span></span><br><span class="line">            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">commence</span><span class="hljs-params">(HttpServletRequest req, HttpServletResponse resp, AuthenticationException authException)</span> <span class="hljs-keyword">throws</span> IOException, ServletException </span>&#123;</span><br><span class="line">                resp.setContentType(<span class="hljs-string">"application/json;charset=utf-8"</span>);</span><br><span class="line">                PrintWriter out = resp.getWriter();</span><br><span class="line">                RespBean respBean = RespBean.error(<span class="hljs-string">"访问失败!"</span>);</span><br><span class="line">                <span class="hljs-keyword">if</span> (authException <span class="hljs-keyword">instanceof</span> InsufficientAuthenticationException) &#123;</span><br><span class="line">                    respBean.setMsg(<span class="hljs-string">"请求失败，请联系管理员!"</span>);</span><br><span class="line">                &#125;</span><br><span class="line">                out.write(<span class="hljs-keyword">new</span> ObjectMapper().writeValueAsString(respBean));</span><br><span class="line">                out.flush();</span><br><span class="line">                out.close();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>在 Spring Security 的配置中加上自定义的 <code>AuthenticationEntryPoint</code> 处理方法，该方法中直接返回相应的 JSON 提示即可。这样，如果用户再去直接访问一个需要认证之后才可以访问的请求，就不会发生重定向操作了，服务端会直接给浏览器一个 JSON 提示，浏览器收到 JSON 之后，该干嘛干嘛。</p>
-<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>好了，一个小小的重定向问题和小伙伴们分享下，不知道大家有没有看懂呢？这也是我最近在重构微人事的时候遇到的问题。预计 12 月份，微人事的 Spring Boot 版本会升级到目前最新版，请小伙伴们留意哦。</p>
-</div>
-        
-        
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-12-31T00:36:08.775Z">2019-12-31</time>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    21 分钟 读完 (大约 3134 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/1231/0.html"></a>
-            
-        </h1>
-        
-            <div class="content"> <p>在前后端分离的项目中，登录策略也有不少，不过 JWT 算是目前比较流行的一种解决方案了，本文就和大家来分享一下如何将 Spring Security 和 JWT 结合在一起使用，进而实现前后端分离时的登录解决方案。</p>
-<h2 id="1-无状态登录"><a href="#1-无状态登录" class="headerlink" title="1 无状态登录"></a>1 无状态登录</h2><h3 id="1-1-什么是有状态？"><a href="#1-1-什么是有状态？" class="headerlink" title="1.1 什么是有状态？"></a>1.1 什么是有状态？</h3><p>有状态服务，即服务端需要记录每次会话的客户端信息，从而识别客户端身份，根据用户身份进行请求的处理，典型的设计如 Tomcat 中的 Session。例如登录：用户登录后，我们把用户的信息保存在服务端 session 中，并且给用户一个 cookie 值，记录对应的 session，然后下次请求，用户携带 cookie 值来（这一步有浏览器自动完成），我们就能识别到对应 session，从而找到用户的信息。这种方式目前来看最方便，但是也有一些缺陷，如下：</p>
-<ul>
-<li>服务端保存大量数据，增加服务端压力</li>
-<li>服务端保存用户状态，不支持集群化部署</li>
-</ul>
-<h3 id="1-2-什么是无状态"><a href="#1-2-什么是无状态" class="headerlink" title="1.2 什么是无状态"></a>1.2 什么是无状态</h3><p>微服务集群中的每个服务，对外提供的都使用 RESTful 风格的接口。而 RESTful 风格的一个最重要的规范就是：服务的无状态性，即：</p>
-<ul>
-<li>服务端不保存任何客户端请求者信息</li>
-<li>客户端的每次请求必须具备自描述信息，通过这些信息识别客户端身份</li>
-</ul>
-<p>那么这种无状态性有哪些好处呢？</p>
-<ul>
-<li>客户端请求不依赖服务端的信息，多次请求不需要必须访问到同一台服务器</li>
-<li>服务端的集群和状态对客户端透明</li>
-<li>服务端可以任意的迁移和伸缩（可以方便的进行集群化部署）</li>
-<li>减小服务端存储压力</li>
-</ul>
-<h3 id="1-3-如何实现无状态"><a href="#1-3-如何实现无状态" class="headerlink" title="1.3 如何实现无状态"></a>1.3 如何实现无状态</h3><p>无状态登录的流程：</p>
-<ul>
-<li>首先客户端发送账户名/密码到服务端进行认证</li>
-<li>认证通过后，服务端将用户信息加密并且编码成一个 token，返回给客户端</li>
-<li>以后客户端每次发送请求，都需要携带认证的 token</li>
-<li>服务端对客户端发送来的 token 进行解密，判断是否有效，并且获取用户登录信息</li>
-</ul>
-<h3 id="1-4-JWT"><a href="#1-4-JWT" class="headerlink" title="1.4 JWT"></a>1.4 JWT</h3><h4 id="1-4-1-简介"><a href="#1-4-1-简介" class="headerlink" title="1.4.1 简介"></a>1.4.1 简介</h4><p>JWT，全称是 Json Web Token， 是一种 JSON 风格的轻量级的授权和身份认证规范，可实现无状态、分布式的 Web 应用授权：</p>
-<p><img src="./img/37-1.png" alt></p>
-<p>JWT 作为一种规范，并没有和某一种语言绑定在一起，常用的 Java 实现是 GitHub 上的开源项目 jjwt，地址如下：<code>https://github.com/jwtk/jjwt</code></p>
-<h4 id="1-4-2-JWT数据格式"><a href="#1-4-2-JWT数据格式" class="headerlink" title="1.4.2 JWT数据格式"></a>1.4.2 JWT数据格式</h4><p>JWT 包含三部分数据：</p>
-<ul>
-<li><p>Header：头部，通常头部有两部分信息：</p>
-<ul>
-<li>声明类型，这里是JWT</li>
-<li>加密算法，自定义</li>
-</ul>
-</li>
-</ul>
-<p>我们会对头部进行 Base64Url 编码（可解码），得到第一部分数据。</p>
-<ul>
-<li><p>Payload：载荷，就是有效数据，在官方文档中(RFC7519)，这里给了7个示例信息：</p>
-<ul>
-<li>iss (issuer)：表示签发人</li>
-<li>exp (expiration time)：表示token过期时间</li>
-<li>sub (subject)：主题</li>
-<li>aud (audience)：受众</li>
-<li>nbf (Not Before)：生效时间</li>
-<li>iat (Issued At)：签发时间</li>
-<li>jti (JWT ID)：编号</li>
-</ul>
-</li>
-</ul>
-<p>这部分也会采用 Base64Url 编码，得到第二部分数据。</p>
-<ul>
-<li>Signature：签名，是整个数据的认证信息。一般根据前两步的数据，再加上服务的的密钥secret（密钥保存在服务端，不能泄露给客户端），通过 Header 中配置的加密算法生成。用于验证整个数据完整和可靠性。</li>
-</ul>
-<p>生成的数据格式如下图：</p>
-<p><img src="./img/37-2.png" alt></p>
-<p>注意，这里的数据通过 <code>.</code> 隔开成了三部分，分别对应前面提到的三部分，另外，这里数据是不换行的，图片换行只是为了展示方便而已。</p>
-<h4 id="1-4-3-JWT-交互流程"><a href="#1-4-3-JWT-交互流程" class="headerlink" title="1.4.3 JWT 交互流程"></a>1.4.3 JWT 交互流程</h4><p>流程图：</p>
-<p> <img src="./img/37-3.png" alt></p>
-<p>步骤翻译：</p>
-<ol>
-<li>应用程序或客户端向授权服务器请求授权</li>
-<li>获取到授权后，授权服务器会向应用程序返回访问令牌</li>
-<li>应用程序使用访问令牌来访问受保护资源（如 API）</li>
-</ol>
-<p>因为 JWT 签发的 token 中已经包含了用户的身份信息，并且每次请求都会携带，这样服务的就无需保存用户信息，甚至无需去数据库查询，这样就完全符合了 RESTful 的无状态规范。</p>
-<h3 id="1-5-JWT-存在的问题"><a href="#1-5-JWT-存在的问题" class="headerlink" title="1.5 JWT 存在的问题"></a>1.5 JWT 存在的问题</h3><p>说了这么多，JWT 也不是天衣无缝，由客户端维护登录状态带来的一些问题在这里依然存在，举例如下：</p>
-<ol>
-<li>续签问题，这是被很多人诟病的问题之一，传统的 cookie+session 的方案天然的支持续签，但是 jwt 由于服务端不保存用户状态，因此很难完美解决续签问题，如果引入 redis，虽然可以解决问题，但是 jwt 也变得不伦不类了。</li>
-<li>注销问题，由于服务端不再保存用户信息，所以一般可以通过修改 secret 来实现注销，服务端 secret 修改后，已经颁发的未过期的 token 就会认证失败，进而实现注销，不过毕竟没有传统的注销方便。</li>
-<li>密码重置，密码重置后，原本的 token 依然可以访问系统，这时候也需要强制修改 secret。</li>
-<li>基于第 2 点和第 3 点，一般建议不同用户取不同 secret。</li>
-</ol>
-<h2 id="2-实战"><a href="#2-实战" class="headerlink" title="2 实战"></a>2 实战</h2><p>说了这么久，接下来我们就来看看这个东西到底要怎么用？</p>
-<h3 id="2-1-环境搭建"><a href="#2-1-环境搭建" class="headerlink" title="2.1 环境搭建"></a>2.1 环境搭建</h3><p>首先我们来创建一个 Spring Boot 项目，创建时需要添加 Spring Security 依赖，创建完成后，添加 <code>jjwt</code> 依赖，完整的 pom.xml 文件如下：</p>
-<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-security<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-web<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>io.jsonwebtoken<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>jjwt<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>0.9.1<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p>然后在项目中创建一个简单的 User 对象实现 UserDetails 接口，如下：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">User</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">UserDetails</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">private</span> String username;</span><br><span class="line">    <span class="hljs-keyword">private</span> String password;</span><br><span class="line">    <span class="hljs-keyword">private</span> List&lt;GrantedAuthority&gt; authorities;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">getUsername</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> username;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">isAccountNonExpired</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">isAccountNonLocked</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">isCredentialsNonExpired</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">isEnabled</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-comment">//省略getter/setter</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这个就是我们的用户对象，先放着备用，再创建一个 HelloController，内容如下：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@RestController</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HelloController</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@GetMapping</span>(<span class="hljs-string">"/hello"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">hello</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-string">"hello jwt !"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@GetMapping</span>(<span class="hljs-string">"/admin"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">admin</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-string">"hello admin !"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>HelloController 很简单，这里有两个接口，设计是 <code>/hello</code> 接口可以被具有 user 角色的用户访问，而 <code>/admin</code> 接口则可以被具有 admin 角色的用户访问。</p>
-<h3 id="2-2-JWT-过滤器配置"><a href="#2-2-JWT-过滤器配置" class="headerlink" title="2.2 JWT 过滤器配置"></a>2.2 JWT 过滤器配置</h3><p>接下来提供两个和 JWT 相关的过滤器配置：</p>
-<ol>
-<li>一个是用户登录的过滤器，在用户的登录的过滤器中校验用户是否登录成功，如果登录成功，则生成一个token返回给客户端，登录失败则给前端一个登录失败的提示。</li>
-<li>第二个过滤器则是当其他请求发送来，校验token的过滤器，如果校验成功，就让请求继续执行。</li>
-</ol>
-<p>这两个过滤器，我们分别来看，先看第一个：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">JwtLoginFilter</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">AbstractAuthenticationProcessingFilter</span> </span>&#123;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-title">JwtLoginFilter</span><span class="hljs-params">(String defaultFilterProcessesUrl, AuthenticationManager authenticationManager)</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">super</span>(<span class="hljs-keyword">new</span> AntPathRequestMatcher(defaultFilterProcessesUrl));</span><br><span class="line">        setAuthenticationManager(authenticationManager);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> Authentication <span class="hljs-title">attemptAuthentication</span><span class="hljs-params">(HttpServletRequest req, HttpServletResponse resp)</span> <span class="hljs-keyword">throws</span> AuthenticationException, IOException, ServletException </span>&#123;</span><br><span class="line">        User user = <span class="hljs-keyword">new</span> ObjectMapper().readValue(req.getInputStream(), User.class);</span><br><span class="line">        <span class="hljs-keyword">return</span> getAuthenticationManager().authenticate(<span class="hljs-keyword">new</span> UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">successfulAuthentication</span><span class="hljs-params">(HttpServletRequest req, HttpServletResponse resp, FilterChain chain, Authentication authResult)</span> <span class="hljs-keyword">throws</span> IOException, ServletException </span>&#123;</span><br><span class="line">        Collection&lt;? extends GrantedAuthority&gt; authorities = authResult.getAuthorities();</span><br><span class="line">        StringBuffer as = <span class="hljs-keyword">new</span> StringBuffer();</span><br><span class="line">        <span class="hljs-keyword">for</span> (GrantedAuthority authority : authorities) &#123;</span><br><span class="line">            as.append(authority.getAuthority())</span><br><span class="line">                    .append(<span class="hljs-string">","</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        String jwt = Jwts.builder()</span><br><span class="line">                .claim(<span class="hljs-string">"authorities"</span>, as)<span class="hljs-comment">//配置用户角色</span></span><br><span class="line">                .setSubject(authResult.getName())</span><br><span class="line">                .setExpiration(<span class="hljs-keyword">new</span> Date(System.currentTimeMillis() + <span class="hljs-number">10</span> * <span class="hljs-number">60</span> * <span class="hljs-number">1000</span>))</span><br><span class="line">                .signWith(SignatureAlgorithm.HS512,<span class="hljs-string">"sang@123"</span>)</span><br><span class="line">                .compact();</span><br><span class="line">        resp.setContentType(<span class="hljs-string">"application/json;charset=utf-8"</span>);</span><br><span class="line">        PrintWriter out = resp.getWriter();</span><br><span class="line">        out.write(<span class="hljs-keyword">new</span> ObjectMapper().writeValueAsString(jwt));</span><br><span class="line">        out.flush();</span><br><span class="line">        out.close();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">unsuccessfulAuthentication</span><span class="hljs-params">(HttpServletRequest req, HttpServletResponse resp, AuthenticationException failed)</span> <span class="hljs-keyword">throws</span> IOException, ServletException </span>&#123;</span><br><span class="line">        resp.setContentType(<span class="hljs-string">"application/json;charset=utf-8"</span>);</span><br><span class="line">        PrintWriter out = resp.getWriter();</span><br><span class="line">        out.write(<span class="hljs-string">"登录失败!"</span>);</span><br><span class="line">        out.flush();</span><br><span class="line">        out.close();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>关于这个类，我说如下几点：</p>
-<ol>
-<li>自定义 JwtLoginFilter 继承自 AbstractAuthenticationProcessingFilter，并实现其中的三个默认方法。</li>
-<li>attemptAuthentication 方法中，我们从登录参数中提取出用户名密码，然后调用 AuthenticationManager.authenticate() 方法去进行自动校验。</li>
-<li>第二步如果校验成功，就会来到 successfulAuthentication 回调中，在 successfulAuthentication 方法中，将用户角色遍历然后用一个 <code>,</code> 连接起来，然后再利用 Jwts 去生成 token，按照代码的顺序，生成过程一共配置了四个参数，分别是用户角色、主题、过期时间以及加密算法和密钥，然后将生成的 token 写出到客户端。</li>
-<li>第二步如果校验失败就会来到 unsuccessfulAuthentication 方法中，在这个方法中返回一个错误提示给客户端即可。</li>
-</ol>
-<p>再来看第二个 token 校验的过滤器：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">JwtFilter</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">GenericFilterBean</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">doFilter</span><span class="hljs-params">(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)</span> <span class="hljs-keyword">throws</span> IOException, ServletException </span>&#123;</span><br><span class="line">        HttpServletRequest req = (HttpServletRequest) servletRequest;</span><br><span class="line">        String jwtToken = req.getHeader(<span class="hljs-string">"authorization"</span>);</span><br><span class="line">        System.out.println(jwtToken);</span><br><span class="line">        Claims claims = Jwts.parser().setSigningKey(<span class="hljs-string">"sang@123"</span>).parseClaimsJws(jwtToken.replace(<span class="hljs-string">"Bearer"</span>,<span class="hljs-string">""</span>))</span><br><span class="line">                .getBody();</span><br><span class="line">        String username = claims.getSubject();<span class="hljs-comment">//获取当前登录用户名</span></span><br><span class="line">        List&lt;GrantedAuthority&gt; authorities = AuthorityUtils.commaSeparatedStringToAuthorityList((String) claims.get(<span class="hljs-string">"authorities"</span>));</span><br><span class="line">        UsernamePasswordAuthenticationToken token = <span class="hljs-keyword">new</span> UsernamePasswordAuthenticationToken(username, <span class="hljs-keyword">null</span>, authorities);</span><br><span class="line">        SecurityContextHolder.getContext().setAuthentication(token);</span><br><span class="line">        filterChain.doFilter(req,servletResponse);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>关于这个过滤器，我说如下几点：</p>
-<ol>
-<li>首先从请求头中提取出 authorization 字段，这个字段对应的 value 就是用户的 token。</li>
-<li>将提取出来的 token 字符串转换为一个 Claims 对象，再从 Claims 对象中提取出当前用户名和用户角色，创建一个 UsernamePasswordAuthenticationToken 放到当前的 Context 中，然后执行过滤链使请求继续执行下去。</li>
-</ol>
-<p>如此之后，两个和 JWT 相关的过滤器就算配置好了。</p>
-<h3 id="2-3-Spring-Security-配置"><a href="#2-3-Spring-Security-配置" class="headerlink" title="2.3 Spring Security 配置"></a>2.3 Spring Security 配置</h3><p>接下来我们来配置 Spring Security,如下：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">WebSecurityConfig</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">WebSecurityConfigurerAdapter</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function">PasswordEncoder <span class="hljs-title">passwordEncoder</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> NoOpPasswordEncoder.getInstance();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">configure</span><span class="hljs-params">(AuthenticationManagerBuilder auth)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        auth.inMemoryAuthentication().withUser(<span class="hljs-string">"admin"</span>)</span><br><span class="line">                .password(<span class="hljs-string">"123"</span>).roles(<span class="hljs-string">"admin"</span>)</span><br><span class="line">                .and()</span><br><span class="line">                .withUser(<span class="hljs-string">"sang"</span>)</span><br><span class="line">                .password(<span class="hljs-string">"456"</span>)</span><br><span class="line">                .roles(<span class="hljs-string">"user"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">configure</span><span class="hljs-params">(HttpSecurity http)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        http.authorizeRequests()</span><br><span class="line">                .antMatchers(<span class="hljs-string">"/hello"</span>).hasRole(<span class="hljs-string">"user"</span>)</span><br><span class="line">                .antMatchers(<span class="hljs-string">"/admin"</span>).hasRole(<span class="hljs-string">"admin"</span>)</span><br><span class="line">                .antMatchers(HttpMethod.POST, <span class="hljs-string">"/login"</span>).permitAll()</span><br><span class="line">                .anyRequest().authenticated()</span><br><span class="line">                .and()</span><br><span class="line">                .addFilterBefore(<span class="hljs-keyword">new</span> JwtLoginFilter(<span class="hljs-string">"/login"</span>,authenticationManager()),UsernamePasswordAuthenticationFilter.class)</span><br><span class="line">                .addFilterBefore(<span class="hljs-keyword">new</span> JwtFilter(),UsernamePasswordAuthenticationFilter.class)</span><br><span class="line">                .csrf().disable();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<ol>
-<li>简单起见，这里我并未对密码进行加密，因此配置了 NoOpPasswordEncoder 的实例。</li>
-<li>简单起见，这里并未连接数据库，我直接在内存中配置了两个用户，两个用户具备不同的角色。</li>
-<li>配置路径规则时， <code>/hello</code> 接口必须要具备 user 角色才能访问， <code>/admin</code> 接口必须要具备 admin 角色才能访问，POST 请求并且是 <code>/login</code> 接口则可以直接通过，其他接口必须认证后才能访问。</li>
-<li>最后配置上两个自定义的过滤器并且关闭掉 csrf 保护。</li>
-</ol>
-<h3 id="2-4-测试"><a href="#2-4-测试" class="headerlink" title="2.4 测试"></a>2.4 测试</h3><p>做完这些之后，我们的环境就算完全搭建起来了，接下来启动项目然后在 POSTMAN 中进行测试，如下：</p>
-<p><img src="./img/37-4.png" alt></p>
-<p>登录成功后返回的字符串就是经过 base64url 转码的 token，一共有三部分，通过一个 <code>.</code> 隔开，我们可以对第一个 <code>.</code> 之前的字符串进行解码，即 Header，如下：</p>
-<p><img src="./img/37-5.png" alt></p>
-<p>再对两个 <code>.</code> 之间的字符解码，即 payload：</p>
-<p><img src="./img/37-6.png" alt></p>
-<p>可以看到，我们设置信息，由于 base64 并不是加密方案，只是一种编码方案，因此，不建议将敏感的用户信息放到 token 中。</p>
-<p>接下来再去访问 <code>/hello</code> 接口，注意认证方式选择 Bearer Token，Token 值为刚刚获取到的值，如下：</p>
-<p><img src="./img/37-7.png" alt></p>
-<p>可以看到，访问成功。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这就是 JWT 结合 Spring Security 的一个简单用法，讲真，如果实例允许，类似的需求我还是推荐使用 OAuth2 中的 password 模式。</p>
-<p>不知道大伙有没有看懂呢？如果没看懂，松哥还有一个关于这个知识点的视频教程，如下：</p>
-<ul>
-<li><a href="https://mp.weixin.qq.com/s/Sn59dxwtsEWoj2wdynQuRQ" target="_blank" rel="noopener">Spring Security + JWT 视频教程</a></li>
-</ul>
-</div>
-        
-        
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-12-31T00:36:08.775Z">2019-12-31</time>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    9 分钟 读完 (大约 1322 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/1231/0.html"></a>
-            
-        </h1>
-        
-            <div class="content"> <p>今天想和小伙伴们来聊一聊 SpringSecurity 中的角色继承问题。</p>
-<p>角色继承实际上是一个很常见的需求，因为大部分公司治理可能都是金字塔形的，上司可能具备下属的部分甚至所有权限，这一现实场景，反映到我们的代码中，就是角色继承了。Spring Security 中为开发者提供了相关的角色继承解决方案，但是这一解决方案在最近的SpringSecurity 版本变迁中，使用方法有所变化。今天除了和小伙伴们分享角色继承外，也来顺便说说这种变化，避免小伙伴们踩坑，同时购买了我的书的小伙伴也需要留意，书是基于 Spring Boot2.0.4 这个版本写的，这个话题和最新版 Spring Boot 的还是有一点差别。</p>
-<h2 id="1-版本分割线"><a href="#1-版本分割线" class="headerlink" title="1.版本分割线"></a>1.版本分割线</h2><p>上文说过，SpringSecurity 在角色继承上有两种不同的写法，在 Spring Boot2.0.8（对应Spring Security 也是5.0.11）上面是一种写法，从 Spring Boot2.1.0（对应 Spring Security5.1.1）又是另外一种写法，本文将从这两种角度出发，向读者介绍两种不同的角色继承写法。</p>
-<h2 id="2-以前的写法"><a href="#2-以前的写法" class="headerlink" title="2.以前的写法"></a>2.以前的写法</h2><p>这里说的以前写法，就是指 SpringBoot2.0.8（含）之前的写法，在之前的写法中，角色继承只需要开发者提供一个 RoleHierarchy 接口的实例即可，例如下面这样：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Bean</span></span><br><span class="line"><span class="hljs-function">RoleHierarchy <span class="hljs-title">roleHierarchy</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    RoleHierarchyImpl roleHierarchy = <span class="hljs-keyword">new</span> RoleHierarchyImpl();</span><br><span class="line">    String hierarchy = <span class="hljs-string">"ROLE_dba &gt; ROLE_admin ROLE_admin &gt; ROLE_user"</span>;</span><br><span class="line">    roleHierarchy.setHierarchy(hierarchy);</span><br><span class="line">    <span class="hljs-keyword">return</span> roleHierarchy;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>在这里我们提供了一个 RoleHierarchy 接口的实例，使用字符串来描述了角色之间的继承关系， <code>ROLE_dba</code> 具备 <code>ROLE_admin</code> 的所有权限，而 <code>ROLE_admin</code> 则具备 <code>ROLE_user</code> 的所有权限，继承与继承之间用一个空格隔开。提供了这个 Bean 之后，以后所有具备 <code>ROLE_user</code> 角色才能访问的资源， <code>ROLE_dba</code> 和 <code>ROLE_admin</code> 也都能访问，具备 <code>ROLE_amdin</code> 角色才能访问的资源， <code>ROLE_dba</code> 也能访问。</p>
-<h2 id="3-现在的写法"><a href="#3-现在的写法" class="headerlink" title="3.现在的写法"></a>3.现在的写法</h2><p>但是上面这种写法仅限于 SpringBoot2.0.8（含）之前的版本，在之后的版本中，这种写法则不被支持，新版的写法是下面这样：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Bean</span></span><br><span class="line"><span class="hljs-function">RoleHierarchy <span class="hljs-title">roleHierarchy</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    RoleHierarchyImpl roleHierarchy = <span class="hljs-keyword">new</span> RoleHierarchyImpl();</span><br><span class="line">    String hierarchy = <span class="hljs-string">"ROLE_dba &gt; ROLE_admin \n ROLE_admin &gt; ROLE_user"</span>;</span><br><span class="line">    roleHierarchy.setHierarchy(hierarchy);</span><br><span class="line">    <span class="hljs-keyword">return</span> roleHierarchy;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>变化主要就是分隔符，将原来用空格隔开的地方，现在用换行符了。这里表达式的含义依然和上面一样，不再赘述。</p>
-<p>上面两种不同写法都是配置角色的继承关系，配置完成后，接下来指定角色和资源的对应关系即可，如下：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">configure</span><span class="hljs-params">(HttpSecurity http)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    http.authorizeRequests().antMatchers(<span class="hljs-string">"/admin/**"</span>)</span><br><span class="line">            .hasRole(<span class="hljs-string">"admin"</span>)</span><br><span class="line">            .antMatchers(<span class="hljs-string">"/db/**"</span>)</span><br><span class="line">            .hasRole(<span class="hljs-string">"dba"</span>)</span><br><span class="line">            .antMatchers(<span class="hljs-string">"/user/**"</span>)</span><br><span class="line">            .hasRole(<span class="hljs-string">"user"</span>)</span><br><span class="line">            .and()</span><br><span class="line">            .formLogin()</span><br><span class="line">            .loginProcessingUrl(<span class="hljs-string">"/doLogin"</span>)</span><br><span class="line">            .permitAll()</span><br><span class="line">            .and()</span><br><span class="line">            .csrf().disable();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这个表示 <code>/db/**</code> 格式的路径需要具备 dba 角色才能访问，<code>/admin/**</code> 格式的路径则需要具备 admin 角色才能访问， <code>/user/**</code> 格式的路径，则需要具备 user 角色才能访问，此时提供相关接口，会发现，dba 除了访问 <code>/db/**</code> ，也能访问 <code>/admin/**</code> 和 <code>/user/**</code> ，admin 角色除了访问 <code>/admin/**</code> ，也能访问 <code>/user/**</code> ，user 角色则只能访问 <code>/user/**</code>。</p>
-<h2 id="4-源码分析"><a href="#4-源码分析" class="headerlink" title="4.源码分析"></a>4.源码分析</h2><p>这样两种不同的写法，其实也对应了两种不同的解析策略，角色继承关系的解析在 RoleHierarchyImpl 类的 buildRolesReachableInOneStepMap 方法中，Spring Boot2.0.8（含）之前该方法的源码如下：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">buildRolesReachableInOneStepMap</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">	Pattern pattern = Pattern.compile(<span class="hljs-string">"(\\s*([^\\s&gt;]+)\\s*&gt;\\s*([^\\s&gt;]+))"</span>);</span><br><span class="line">	Matcher roleHierarchyMatcher = pattern</span><br><span class="line">			.matcher(<span class="hljs-keyword">this</span>.roleHierarchyStringRepresentation);</span><br><span class="line">	<span class="hljs-keyword">this</span>.rolesReachableInOneStepMap = <span class="hljs-keyword">new</span> HashMap&lt;GrantedAuthority, Set&lt;GrantedAuthority&gt;&gt;();</span><br><span class="line">	<span class="hljs-keyword">while</span> (roleHierarchyMatcher.find()) &#123;</span><br><span class="line">		GrantedAuthority higherRole = <span class="hljs-keyword">new</span> SimpleGrantedAuthority(</span><br><span class="line">				roleHierarchyMatcher.group(<span class="hljs-number">2</span>));</span><br><span class="line">		GrantedAuthority lowerRole = <span class="hljs-keyword">new</span> SimpleGrantedAuthority(</span><br><span class="line">				roleHierarchyMatcher.group(<span class="hljs-number">3</span>));</span><br><span class="line">		Set&lt;GrantedAuthority&gt; rolesReachableInOneStepSet;</span><br><span class="line">		<span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.rolesReachableInOneStepMap.containsKey(higherRole)) &#123;</span><br><span class="line">			rolesReachableInOneStepSet = <span class="hljs-keyword">new</span> HashSet&lt;&gt;();</span><br><span class="line">			<span class="hljs-keyword">this</span>.rolesReachableInOneStepMap.put(higherRole,</span><br><span class="line">					rolesReachableInOneStepSet);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			rolesReachableInOneStepSet = <span class="hljs-keyword">this</span>.rolesReachableInOneStepMap</span><br><span class="line">					.get(higherRole);</span><br><span class="line">		&#125;</span><br><span class="line">		addReachableRoles(rolesReachableInOneStepSet, lowerRole);</span><br><span class="line">		logger.debug(<span class="hljs-string">"buildRolesReachableInOneStepMap() - From role "</span> + higherRole</span><br><span class="line">				+ <span class="hljs-string">" one can reach role "</span> + lowerRole + <span class="hljs-string">" in one step."</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>从这段源码中我们可以看到，角色的继承关系是通过正则表达式进行解析，通过空格进行切分，然后构建相应的 map 出来。</p>
-<p>Spring Boot2.1.0（含）之后该方法的源码如下：</p>
-<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">buildRolesReachableInOneStepMap</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">this</span>.rolesReachableInOneStepMap = <span class="hljs-keyword">new</span> HashMap&lt;GrantedAuthority, Set&lt;GrantedAuthority&gt;&gt;();</span><br><span class="line">	<span class="hljs-keyword">try</span> (BufferedReader bufferedReader = <span class="hljs-keyword">new</span> BufferedReader(</span><br><span class="line">			<span class="hljs-keyword">new</span> StringReader(<span class="hljs-keyword">this</span>.roleHierarchyStringRepresentation))) &#123;</span><br><span class="line">		<span class="hljs-keyword">for</span> (String readLine; (readLine = bufferedReader.readLine()) != <span class="hljs-keyword">null</span>;) &#123;</span><br><span class="line">			String[] roles = readLine.split(<span class="hljs-string">" &gt; "</span>);</span><br><span class="line">			<span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">1</span>; i &lt; roles.length; i++) &#123;</span><br><span class="line">				GrantedAuthority higherRole = <span class="hljs-keyword">new</span> SimpleGrantedAuthority(</span><br><span class="line">						roles[i - <span class="hljs-number">1</span>].replaceAll(<span class="hljs-string">"^\\s+|\\s+$"</span>, <span class="hljs-string">""</span>));</span><br><span class="line">				GrantedAuthority lowerRole = <span class="hljs-keyword">new</span> SimpleGrantedAuthority(roles[i].replaceAll(<span class="hljs-string">"^\\s+|\\s+$</span></span><br><span class="line"><span class="hljs-string">				Set&lt;GrantedAuthority&gt; rolesReachableInOneStepSet;</span></span><br><span class="line"><span class="hljs-string">				if (!this.rolesReachableInOneStepMap.containsKey(higherRole)) &#123;</span></span><br><span class="line"><span class="hljs-string">					rolesReachableInOneStepSet = new HashSet&lt;GrantedAuthority&gt;();</span></span><br><span class="line"><span class="hljs-string">					this.rolesReachableInOneStepMap.put(higherRole, rolesReachableInOneStepSet);</span></span><br><span class="line"><span class="hljs-string">				&#125; else &#123;</span></span><br><span class="line"><span class="hljs-string">					rolesReachableInOneStepSet = this.rolesReachableInOneStepMap.get(higherRole);</span></span><br><span class="line"><span class="hljs-string">				&#125;</span></span><br><span class="line"><span class="hljs-string">				addReachableRoles(rolesReachableInOneStepSet, lowerRole);</span></span><br><span class="line"><span class="hljs-string">				if (logger.isDebugEnabled()) &#123;</span></span><br><span class="line"><span class="hljs-string">					logger.debug("</span>buildRolesReachableInOneStepMap() - From role <span class="hljs-string">" + higherRole</span></span><br><span class="line"><span class="hljs-string">							+ "</span> one can reach role <span class="hljs-string">" + lowerRole + "</span> in one step.<span class="hljs-string">");</span></span><br><span class="line"><span class="hljs-string">				&#125;</span></span><br><span class="line"><span class="hljs-string">			&#125;</span></span><br><span class="line"><span class="hljs-string">		&#125;</span></span><br><span class="line"><span class="hljs-string">	&#125; catch (IOException e) &#123;</span></span><br><span class="line"><span class="hljs-string">		throw new IllegalStateException(e);</span></span><br><span class="line"><span class="hljs-string">	&#125;</span></span><br><span class="line"><span class="hljs-string">&#125;</span></span><br></pre></td></tr></table></figure>
-<p>从这里我们可以看到，这里并没有一上来就是用正则表达式，而是先将角色继承字符串转为一个 BufferedReader，然后一行一行的读出来，再进行解析，最后再构建相应的 map。从这里我们可以看出为什么前后版本对此有不同的写法。</p>
-<p>那么小伙伴在开发过程中，还是需要留意这一个差异。好了，角色继承我们就先说到这里。</p>
-</div>
-        
-        
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-12-31T00:36:08.774Z">2019-12-31</time>
-                
-                
-                <span class="level-item has-text-grey">
-                    
-                    
-                    10 分钟 读完 (大约 1455 个字)
-                </span>
-                
-                
-            </div>
-        </div>
-        
-        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
-            
-                <a class="has-link-black-ter" href="/2019/1231/0.html"></a>
-            
-        </h1>
-        
-            <div class="content"> <p>在使用 SpringSecurity 中，大伙都知道默认的登录数据是通过 key/value 的形式来传递的，默认情况下不支持 JSON格式的登录数据，如果有这种需求，就需要自己来解决，本文主要和小伙伴来聊聊这个话题。  </p>
-<h2 id="基本登录方案"><a href="#基本登录方案" class="headerlink" title="基本登录方案"></a>基本登录方案</h2><p>在说如何使用 JSON 登录之前，我们还是先来看看基本的登录吧，本文为了简单，SpringSecurity 在使用中就不连接数据库了，直接在内存中配置用户名和密码，具体操作步骤如下：  </p>
-<ul>
-<li>创建 Spring Boot 工程</li>
-</ul>
-<p>首先创建 SpringBoot 工程，添加 SpringSecurity 依赖，如下：  </p>
-<pre><code class="xml"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span>
-    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span>
-    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-security<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span>
-<span class="tag">&lt;/<span class="name">dependency</span>&gt;</span>
-<span class="tag">&lt;<span class="name">dependency</span>&gt;</span>
-    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span>
-    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-web<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span>
-<span class="tag">&lt;/<span class="name">dependency</span>&gt;</span>
-</code></pre>
-<ul>
-<li>添加 Security 配置</li>
-</ul>
-<p>创建 SecurityConfig，完成 SpringSecurity 的配置，如下：  </p>
-<pre><code class="java"><span class="meta">@Configuration</span>
-<span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SecurityConfig</span> <span class="keyword">extends</span> <span class="title">WebSecurityConfigurerAdapter</span> </span>{
-    <span class="meta">@Bean</span>
-    <span class="function">PasswordEncoder <span class="title">passwordEncoder</span><span class="params">()</span> </span>{
-        <span class="keyword">return</span> <span class="keyword">new</span> BCryptPasswordEncoder();
-    }
-    <span class="meta">@Override</span>
-    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">configure</span><span class="params">(AuthenticationManagerBuilder auth)</span> <span class="keyword">throws</span> Exception </span>{
-        auth.inMemoryAuthentication().withUser(<span class="string">"zhangsan"</span>).password(<span class="string">"$2a$10$2O4EwLrrFPEboTfDOtC0F.RpUMk.3q3KvBHRx7XXKUMLBGjOOBs8q"</span>).roles(<span class="string">"user"</span>);
-    }
-
-    <span class="meta">@Override</span>
-    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">configure</span><span class="params">(WebSecurity web)</span> <span class="keyword">throws</span> Exception </span>{
-    }
-
-    <span class="meta">@Override</span>
-    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">configure</span><span class="params">(HttpSecurity http)</span> <span class="keyword">throws</span> Exception </span>{
-        http.authorizeRequests()
-                .anyRequest().authenticated()
-                .and()
-                .formLogin()
-                .loginProcessingUrl(<span class="string">"/doLogin"</span>)
-                .successHandler(<span class="keyword">new</span> AuthenticationSuccessHandler() {
-                    <span class="meta">@Override</span>
-                    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onAuthenticationSuccess</span><span class="params">(HttpServletRequest req, HttpServletResponse resp, Authentication authentication)</span> <span class="keyword">throws</span> IOException, ServletException </span>{
-                        RespBean ok = RespBean.ok(<span class="string">"登录成功！"</span>,authentication.getPrincipal());
-                        resp.setContentType(<span class="string">"application/json;charset=utf-8"</span>);
-                        PrintWriter out = resp.getWriter();
-                        out.write(<span class="keyword">new</span> ObjectMapper().writeValueAsString(ok));
-                        out.flush();
-                        out.close();
-                    }
-                })
-                .failureHandler(<span class="keyword">new</span> AuthenticationFailureHandler() {
-                    <span class="meta">@Override</span>
-                    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onAuthenticationFailure</span><span class="params">(HttpServletRequest req, HttpServletResponse resp, AuthenticationException e)</span> <span class="keyword">throws</span> IOException, ServletException </span>{
-                        RespBean error = RespBean.error(<span class="string">"登录失败"</span>);
-                        resp.setContentType(<span class="string">"application/json;charset=utf-8"</span>);
-                        PrintWriter out = resp.getWriter();
-                        out.write(<span class="keyword">new</span> ObjectMapper().writeValueAsString(error));
-                        out.flush();
-                        out.close();
-                    }
-                })
-                .loginPage(<span class="string">"/login"</span>)
-                .permitAll()
-                .and()
-                .logout()
-                .logoutUrl(<span class="string">"/logout"</span>)
-                .logoutSuccessHandler(<span class="keyword">new</span> LogoutSuccessHandler() {
-                    <span class="meta">@Override</span>
-                    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onLogoutSuccess</span><span class="params">(HttpServletRequest req, HttpServletResponse resp, Authentication authentication)</span> <span class="keyword">throws</span> IOException, ServletException </span>{
-                        RespBean ok = RespBean.ok(<span class="string">"注销成功！"</span>);
-                        resp.setContentType(<span class="string">"application/json;charset=utf-8"</span>);
-                        PrintWriter out = resp.getWriter();
-                        out.write(<span class="keyword">new</span> ObjectMapper().writeValueAsString(ok));
-                        out.flush();
-                        out.close();
-                    }
-                })
-                .permitAll()
-                .and()
-                .csrf()
-                .disable()
-                .exceptionHandling()
-                .accessDeniedHandler(<span class="keyword">new</span> AccessDeniedHandler() {
-                    <span class="meta">@Override</span>
-                    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">handle</span><span class="params">(HttpServletRequest req, HttpServletResponse resp, AccessDeniedException e)</span> <span class="keyword">throws</span> IOException, ServletException </span>{
-                        RespBean error = RespBean.error(<span class="string">"权限不足，访问失败"</span>);
-                        resp.setStatus(<span class="number">403</span>);
-                        resp.setContentType(<span class="string">"application/json;charset=utf-8"</span>);
-                        PrintWriter out = resp.getWriter();
-                        out.write(<span class="keyword">new</span> ObjectMapper().writeValueAsString(error));
-                        out.flush();
-                        out.close();
-                    }
-                });
-
-    }
-}
-</code></pre>
-<p>这里的配置虽然有点长，但是很基础，配置含义也比较清晰，首先提供 BCryptPasswordEncoder 作为 PasswordEncoder，可以实现对密码的自动加密加盐，非常方便，然后提供了一个名为 <code>zhangsan</code> 的用户，密码是 <code>123</code> ，角色是 <code>user</code> ，最后配置登录逻辑，所有的请求都需要登录后才能访问，登录接口是 <code>/doLogin</code> ，用户名的 key 是 username，密码的 key 是 password，同时配置登录成功、登录失败以及注销成功、权限不足时都给用户返回 JSON 提示，另外，这里虽然配置了登录页面为 <code>/login</code> ，实际上这不是一个页面，而是一段 JSON，在 LoginController 中提供该接口，如下：  </p>
-<pre><code class="java"><span class="meta">@RestController</span>
-<span class="meta">@ResponseBody</span>
-<span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LoginController</span> </span>{
-    <span class="meta">@GetMapping</span>(<span class="string">"/login"</span>)
-    <span class="function"><span class="keyword">public</span> RespBean <span class="title">login</span><span class="params">()</span> </span>{
-        <span class="keyword">return</span> RespBean.error(<span class="string">"尚未登录，请登录"</span>);
-    }
-    <span class="meta">@GetMapping</span>(<span class="string">"/hello"</span>)
-    <span class="function"><span class="keyword">public</span> String <span class="title">hello</span><span class="params">()</span> </span>{
-        <span class="keyword">return</span> <span class="string">"hello"</span>;
-    }
-}
-</code></pre>
-<p>这里 <code>/login</code> 只是一个 JSON 提示，而不是页面， <code>/hello</code> 则是一个测试接口。  </p>
-<p>OK，做完上述步骤就可以开始测试了，运行 SpringBoot 项目，访问 <code>/hello</code> 接口，结果如下：  </p>
-<p><img src="./img/35-1.png" alt>  </p>
-<p>此时先调用登录接口进行登录，如下：  </p>
-<p><img src="./img/35-2.png" alt>  </p>
-<p>登录成功后，再去访问 <code>/hello</code> 接口就可以成功访问了。  </p>
-<h2 id="使用-JSON-登录"><a href="#使用-JSON-登录" class="headerlink" title="使用 JSON 登录"></a>使用 JSON 登录</h2><p>上面演示的是一种原始的登录方案，如果想将用户名密码通过 JSON 的方式进行传递，则需要自定义相关过滤器，通过分析源码我们发现，默认的用户名密码提取在 UsernamePasswordAuthenticationFilter 过滤器中，部分源码如下：  </p>
-<pre><code class="java"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UsernamePasswordAuthenticationFilter</span> <span class="keyword">extends</span></span>
-<span class="class">        <span class="title">AbstractAuthenticationProcessingFilter</span> </span>{
-    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> String SPRING_SECURITY_FORM_USERNAME_KEY = <span class="string">"username"</span>;
-    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> String SPRING_SECURITY_FORM_PASSWORD_KEY = <span class="string">"password"</span>;
-
-    <span class="keyword">private</span> String usernameParameter = SPRING_SECURITY_FORM_USERNAME_KEY;
-    <span class="keyword">private</span> String passwordParameter = SPRING_SECURITY_FORM_PASSWORD_KEY;
-    <span class="keyword">private</span> <span class="keyword">boolean</span> postOnly = <span class="keyword">true</span>;
-    <span class="function"><span class="keyword">public</span> <span class="title">UsernamePasswordAuthenticationFilter</span><span class="params">()</span> </span>{
-        <span class="keyword">super</span>(<span class="keyword">new</span> AntPathRequestMatcher(<span class="string">"/login"</span>, <span class="string">"POST"</span>));
-    }
-
-    <span class="function"><span class="keyword">public</span> Authentication <span class="title">attemptAuthentication</span><span class="params">(HttpServletRequest request,</span></span>
-<span class="function"><span class="params">            HttpServletResponse response)</span> <span class="keyword">throws</span> AuthenticationException </span>{
-        <span class="keyword">if</span> (postOnly &amp;&amp; !request.getMethod().equals(<span class="string">"POST"</span>)) {
-            <span class="keyword">throw</span> <span class="keyword">new</span> AuthenticationServiceException(
-                    <span class="string">"Authentication method not supported: "</span> + request.getMethod());
-        }
-
-        String username = obtainUsername(request);
-        String password = obtainPassword(request);
-
-        <span class="keyword">if</span> (username == <span class="keyword">null</span>) {
-            username = <span class="string">""</span>;
-        }
-
-        <span class="keyword">if</span> (password == <span class="keyword">null</span>) {
-            password = <span class="string">""</span>;
-        }
-
-        username = username.trim();
-
-        UsernamePasswordAuthenticationToken authRequest = <span class="keyword">new</span> UsernamePasswordAuthenticationToken(
-                username, password);
-
-        <span class="comment">// Allow subclasses to set the "details" property</span>
-        setDetails(request, authRequest);
-
-        <span class="keyword">return</span> <span class="keyword">this</span>.getAuthenticationManager().authenticate(authRequest);
-    }
-
-    <span class="function"><span class="keyword">protected</span> String <span class="title">obtainPassword</span><span class="params">(HttpServletRequest request)</span> </span>{
-        <span class="keyword">return</span> request.getParameter(passwordParameter);
-    }
-
-    <span class="function"><span class="keyword">protected</span> String <span class="title">obtainUsername</span><span class="params">(HttpServletRequest request)</span> </span>{
-        <span class="keyword">return</span> request.getParameter(usernameParameter);
-    }
-    <span class="comment">//...</span>
-    <span class="comment">//...</span>
-}
-</code></pre>
-<p>从这里可以看到，默认的 <code>用户名/密码</code> 提取就是通过 request 中的 getParameter 来提取的，如果想使用 JSON 传递用户名密码，只需要将这个过滤器替换掉即可，自定义过滤器如下：  </p>
-<pre><code class="java"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CustomAuthenticationFilter</span> <span class="keyword">extends</span> <span class="title">UsernamePasswordAuthenticationFilter</span> </span>{
-    <span class="meta">@Override</span>
-    <span class="function"><span class="keyword">public</span> Authentication <span class="title">attemptAuthentication</span><span class="params">(HttpServletRequest request, HttpServletResponse response)</span> <span class="keyword">throws</span> AuthenticationException </span>{
-        <span class="keyword">if</span> (request.getContentType().equals(MediaType.APPLICATION_JSON_UTF8_VALUE)
-                || request.getContentType().equals(MediaType.APPLICATION_JSON_VALUE)) {
-            ObjectMapper mapper = <span class="keyword">new</span> ObjectMapper();
-            UsernamePasswordAuthenticationToken authRequest = <span class="keyword">null</span>;
-            <span class="keyword">try</span> (InputStream is = request.getInputStream()) {
-                Map&lt;String,String&gt; authenticationBean = mapper.readValue(is, Map.class);
-                authRequest = <span class="keyword">new</span> UsernamePasswordAuthenticationToken(
-                        authenticationBean.get(<span class="string">"username"</span>), authenticationBean.get(<span class="string">"password"</span>));
-            } <span class="keyword">catch</span> (IOException e) {
-                e.printStackTrace();
-                authRequest = <span class="keyword">new</span> UsernamePasswordAuthenticationToken(
-                        <span class="string">""</span>, <span class="string">""</span>);
-            } <span class="keyword">finally</span> {
-                setDetails(request, authRequest);
-                <span class="keyword">return</span> <span class="keyword">this</span>.getAuthenticationManager().authenticate(authRequest);
-            }
-        }
-        <span class="keyword">else</span> {
-            <span class="keyword">return</span> <span class="keyword">super</span>.attemptAuthentication(request, response);
-        }
-    }
-}
-</code></pre>
-<p>这里只是将用户名/密码的获取方案重新修正下，改为了从 JSON 中获取用户名密码，然后在 SecurityConfig 中作出如下修改：  </p>
-<pre><code class="java"><span class="meta">@Override</span>
-<span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">configure</span><span class="params">(HttpSecurity http)</span> <span class="keyword">throws</span> Exception </span>{
-    http.authorizeRequests().anyRequest().authenticated()
-            .and()
-            .formLogin()
-            .and().csrf().disable();
-    http.addFilterAt(customAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
-}
-<span class="meta">@Bean</span>
-<span class="function">CustomAuthenticationFilter <span class="title">customAuthenticationFilter</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>{
-    CustomAuthenticationFilter filter = <span class="keyword">new</span> CustomAuthenticationFilter();
-    filter.setAuthenticationSuccessHandler(<span class="keyword">new</span> AuthenticationSuccessHandler() {
-        <span class="meta">@Override</span>
-        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onAuthenticationSuccess</span><span class="params">(HttpServletRequest req, HttpServletResponse resp, Authentication authentication)</span> <span class="keyword">throws</span> IOException, ServletException </span>{
-            resp.setContentType(<span class="string">"application/json;charset=utf-8"</span>);
-            PrintWriter out = resp.getWriter();
-            RespBean respBean = RespBean.ok(<span class="string">"登录成功!"</span>);
-            out.write(<span class="keyword">new</span> ObjectMapper().writeValueAsString(respBean));
-            out.flush();
-            out.close();
-        }
-    });
-    filter.setAuthenticationFailureHandler(<span class="keyword">new</span> AuthenticationFailureHandler() {
-        <span class="meta">@Override</span>
-        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onAuthenticationFailure</span><span class="params">(HttpServletRequest req, HttpServletResponse resp, AuthenticationException e)</span> <span class="keyword">throws</span> IOException, ServletException </span>{
-            resp.setContentType(<span class="string">"application/json;charset=utf-8"</span>);
-            PrintWriter out = resp.getWriter();
-            RespBean respBean = RespBean.error(<span class="string">"登录失败!"</span>);
-            out.write(<span class="keyword">new</span> ObjectMapper().writeValueAsString(respBean));
-            out.flush();
-            out.close();
-        }
-    });
-    filter.setAuthenticationManager(authenticationManagerBean());
-    <span class="keyword">return</span> filter;
-}
-</code></pre>
-<p>将自定义的 CustomAuthenticationFilter 类加入进来即可，接下来就可以使用 JSON 进行登录了，如下：  </p>
-<p><img src="./img/35-3.png" alt>  </p>
-<p>本文案例，我已经上传到 GitHub ，欢迎大家 star：<a href="https://github.com/lenve/javaboy-code-samples" target="_blank" rel="noopener">https://github.com/lenve/javaboy-code-samples</a></p>
-<p>好了，本文就先介绍到这里，有问题欢迎留言讨论。  </p>
-</div>
-        
-        
-        
-        
-    </div>
-</div>
-
-
-
-
-
-
-
-
-    <div class="card">
-    
-    <div class="card-content article ">
-        
-        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
-            <div class="level-left">
-                <time class="level-item has-text-grey" datetime="2019-12-30T01:23:06.000Z">2019-12-30</time>
+                <time class="level-item has-text-grey" datetime="2019-12-18T01:24:54.000Z">2019-12-18</time>
                 
                 <div class="level-item">
-                <a class="has-link-grey -link" href="/categories/MyBatis/">MyBatis</a>
+                <a class="has-link-grey -link" href="/categories/SpringMVC/">SpringMVC</a>
                 </div>
                 
                 
                 <span class="level-item has-text-grey">
                     
                     
-                    4 分钟 读完 (大约 575 个字)
+                    3 分钟 读完 (大约 405 个字)
                 </span>
                 
                 
@@ -1214,18 +176,490 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                <a class="has-link-black-ter" href="/2019/1230/mybatis-guide.html">MyBatis 教程姗姗来迟，松哥手码的 SSM 教程总算齐活了，小伙伴们可以下载啦</a>
+                <a class="has-link-black-ter" href="/2019/1218/springmvc-guide.html">来了，松哥纯手工打造 80 多页的 SpringMVC 教程开放下载了</a>
             
         </h1>
         
-            <div class="content"> <p>上周末去了趟南京，昨晚到家都十二点多了，今天一大早起来整理 MyBatis 教程，现在总算搞好了，至此，松哥自制的 SSM 教程现在总算齐活了。</p></div>
+            <div class="content"> <p>是的，你没看错，在 Spring 和 Maven 教程刚刚发布不到一周，松哥又给大家带来了新的干货，超 80 页 SpringMVC 教程正式上线了。</p></div>
         
         
         
         <div class="level is-mobile">
             <div class="level-start">
                 <div class="level-item">
-                <a class="button is-size-7 is-light" href="/2019/1230/mybatis-guide.html#more">阅读更多</a>
+                <a class="button is-size-7 is-light" href="/2019/1218/springmvc-guide.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-12-17T01:20:43.000Z">2019-12-17</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    9 分钟 读完 (大约 1294 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/1217/springsecurity-passwordencoder.html">聊一聊 Spring Security 密码加密方案</a>
+            
+        </h1>
+        
+            <div class="content"> <h2 id="为什么要加密"><a href="#为什么要加密" class="headerlink" title="为什么要加密"></a>为什么要加密</h2><p>2011 年 12 月 21 日，有人在网络上公开了一个包含 600 万个 CSDN 用户资料的数据库，数据全部为明文储存，包含用户名、密码以及注册邮箱。事件发生后 CSDN 在微博、官方网站等渠道发出了声明，解释说此数据库系 2009 年备份所用，因不明原因泄露，已经向警方报案，后又在官网发出了公开道歉信。在接下来的十多天里，金山、网易、京东、当当、新浪等多家公司被卷入到这次事件中。整个事件中最触目惊心的莫过于 CSDN 把用户密码明文存储，由于很多用户是多个网站共用一个密码，因此一个网站密码泄露就会造成很大的安全隐患。由于有了这么多前车之鉴，我们现在做系统时，密码都要加密处理。</p></div>
+        
+        
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/1217/springsecurity-passwordencoder.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-12-09T01:24:36.000Z">2019-12-09</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Spring/">Spring</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    3 分钟 读完 (大约 403 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/1209/spring-guide.html">来了，松哥纯手工打造的超 50 页 Spring 教程开放下载了</a>
+            
+        </h1>
+        
+            <div class="content"> <p>是的，你没看错，在 Maven 教程刚刚发布不到一周，松哥又给大家带来了新的干货，超 50 页 Spring 入门教程正式上线了。</p></div>
+        
+        
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/1209/spring-guide.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-12-04T01:23:54.000Z">2019-12-04</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Maven/">Maven</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    3 分钟 读完 (大约 422 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/1204/maven-guide.html">Maven 入门，Maven + IDEA 创建多模块项目，松哥手敲了 30 多页教程给大家送来了</a>
+            
+        </h1>
+        
+            <div class="content"> <p>是的，你没看错，松哥又来给大家送干货了，这次是松哥纯手工打造的 30+ 页 Maven 入门教程，适合刚入门的小伙伴。</p></div>
+        
+        
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/1204/maven-guide.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-12-03T01:23:37.000Z">2019-12-03</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/life/">life</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    15 分钟 读完 (大约 2215 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/1203/coding-life.html">搬砖不易，和大家聊聊松哥经历过的两次裁员</a>
+            
+        </h1>
+        
+            <div class="content"> <p><img src="http://www.javaboy.org/images/other/91-1.png" alt></p>
+<blockquote>
+<p>长太息以掩涕兮，哀民生之多艰</p>
+</blockquote>
+<p>前两天网易暴力裁员的事情闹得沸沸扬扬，事情闹大之后，也总算有一个还过得去的结局。</p></div>
+        
+        
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/1203/coding-life.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-11-28T01:22:24.000Z">2019-11-28</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    7 分钟 读完 (大约 1037 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/1128/springboot-video.html">说起 Spring Boot + Vue，我觉得这是全网最干的干货</a>
+            
+        </h1>
+        
+            <div class="content"> <p>松哥自制的 Spring Boot + Vue 视频教程已经录制了 241 集共约 50 个小时，即将杀青，因此 199 这个优惠价格只剩这个月最后三天了（11.28-11.30）。需要的小伙伴赶紧扫码加松哥微信，发红包 199 领取视频：</p></div>
+        
+        
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/1128/springboot-video.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-11-20T01:52:13.000Z">2019-11-20</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习资源/">学习资源</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    7 分钟 读完 (大约 1110 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/1120/sprinkgboot-vue.html">给大家整理了几个开源免费的 Spring Boot + Vue 学习资料</a>
+            
+        </h1>
+        
+            <div class="content"> <p>最近抽空在整理前面的文章案例啥的，顺便把手上的几个 Spring Boot + Vue 的学习资料推荐给各位小伙伴。这些案例有知识点的讲解，也有项目实战，正在做这一块的小伙伴们可以收藏下。</p></div>
+        
+        
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/1120/sprinkgboot-vue.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-11-19T01:51:53.000Z">2019-11-19</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/生活/">生活</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    17 分钟 读完 (大约 2487 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/1119/springboot-vue-stack.html">前后端分离，我怎么就选择了 Spring Boot + Vue 技术栈？</a>
+            
+        </h1>
+        
+            <div class="content"> <p>前两天又有小伙伴私信松哥，问题还是职业规划，Java 技术栈路线这种，实际上对于这一类问题我经常不太敢回答，每个人的情况都不太一样，而小伙伴也很少详细介绍自己的情况，大都是一两句话就把问题抛出来了，啥情况都不了解，就要指出一个方向，这实在是太难了。</p></div>
+        
+        
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/1119/springboot-vue-stack.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-11-12T01:51:36.000Z">2019-11-12</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/学习资源/">学习资源</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    14 分钟 读完 (大约 2120 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/1112/java-video.html">快来，松哥的免费资源库更新啦</a>
+            
+        </h1>
+        
+            <div class="content"> <p>今年 5 月份的时候，松哥发了一个视频资源库，当时和大家说，这个资源库会定期更新，后来却迟迟未更新，其实不是我没资源了，是因为当时的关键字是我一个一个在微信后台配置的，配置到后面发现，后台配置关键字有数量上限，没法继续配置了，所以这事就搁置下来了。</p></div>
+        
+        
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/1112/java-video.html#more">阅读更多</a>
+                </div>
+            </div>
+        </div>
+        
+        
+    </div>
+</div>
+
+
+
+
+
+
+
+
+    <div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-11-07T02:33:35.000Z">2019-11-07</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    11 分钟 读完 (大约 1587 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                <a class="has-link-black-ter" href="/2019/1107/docker-springboot.html">还在用 Dockerfile 部署 Spring Boot？out 啦！试试谷歌的大杀器 Jib</a>
+            
+        </h1>
+        
+            <div class="content"> <p>之前松哥和大家分享过一篇将 Spring Boot 项目部署到远程 Docker 上的文章：</p></div>
+        
+        
+        
+        <div class="level is-mobile">
+            <div class="level-start">
+                <div class="level-item">
+                <a class="button is-size-7 is-light" href="/2019/1107/docker-springboot.html#more">阅读更多</a>
                 </div>
             </div>
         </div>
@@ -1261,7 +695,7 @@
             
             <li><span class="pagination-ellipsis has-text-black-ter">&hellip;</span></li>
             
-            <li><a class="pagination-link has-text-black-ter" href="/page/22/">22</a></li>
+            <li><a class="pagination-link has-text-black-ter" href="/page/17/">17</a></li>
             
         </ul>
     </nav>
@@ -1309,7 +743,7 @@
                         文章
                     </p>
                     <p class="title has-text-weight-normal">
-                        214
+                        166
                     </p>
                 </div>
             </div>
@@ -1501,7 +935,7 @@
                 <span class="level-item">Spring Boot</span>
             </span>
             <span class="level-end">
-                <span class="level-item tag">56</span>
+                <span class="level-item tag">55</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/SpringMVC/">
@@ -1694,19 +1128,6 @@
             
             <div class="media-content">
                 <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-12T01:22:24.000Z">2020-01-12</time></div>
-                    <a href="/2020/0112/java-ssm.html" class="has-link-black-ter is-size-6">Spring Boot2 系列教程(一)纯 Java 搭建 SSM 项目</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
-        <article class="media">
-            
-            <div class="media-content">
-                <div class="content">
                     <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-10T01:26:39.000Z">2020-01-10</time></div>
                     <a href="/2020/0110/free-domain.html" class="has-link-black-ter is-size-6">天呐，世界上还有免费的域名，赶紧抢注一个压压惊</a>
                     <p class="is-size-7 is-uppercase">
@@ -1755,6 +1176,19 @@
             </div>
         </article>
         
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-03T01:25:37.000Z">2020-01-03</time></div>
+                    <a href="/2020/0103/2019-article.html" class="has-link-black-ter is-size-6">2019 原创技术干货整理</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/2019/">2019</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
     </div>
 </div>
 
@@ -1773,7 +1207,7 @@
                     <span class="level-item">一月 2020</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">7</span>
+                    <span class="level-item tag">6</span>
                 </span>
             </a>
         </li>
@@ -1784,7 +1218,7 @@
                     <span class="level-item">十二月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">22</span>
+                    <span class="level-item tag">9</span>
                 </span>
             </a>
         </li>
@@ -1795,7 +1229,7 @@
                     <span class="level-item">十一月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">21</span>
+                    <span class="level-item tag">6</span>
                 </span>
             </a>
         </li>
@@ -1806,7 +1240,7 @@
                     <span class="level-item">十月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">24</span>
+                    <span class="level-item tag">11</span>
                 </span>
             </a>
         </li>
@@ -1817,7 +1251,7 @@
                     <span class="level-item">九月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">27</span>
+                    <span class="level-item tag">22</span>
                 </span>
             </a>
         </li>
@@ -1850,7 +1284,7 @@
                     <span class="level-item">六月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">44</span>
+                    <span class="level-item tag">43</span>
                 </span>
             </a>
         </li>
@@ -2087,19 +1521,6 @@
             
             <div class="media-content">
                 <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-12T01:22:24.000Z">2020-01-12</time></div>
-                    <a href="/2020/0112/java-ssm.html" class="has-link-black-ter is-size-6">Spring Boot2 系列教程(一)纯 Java 搭建 SSM 项目</a>
-                    <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
-                    </p>
-                </div>
-            </div>
-        </article>
-        
-        <article class="media">
-            
-            <div class="media-content">
-                <div class="content">
                     <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-10T01:26:39.000Z">2020-01-10</time></div>
                     <a href="/2020/0110/free-domain.html" class="has-link-black-ter is-size-6">天呐，世界上还有免费的域名，赶紧抢注一个压压惊</a>
                     <p class="is-size-7 is-uppercase">
@@ -2148,6 +1569,19 @@
             </div>
         </article>
         
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-01-03T01:25:37.000Z">2020-01-03</time></div>
+                    <a href="/2020/0103/2019-article.html" class="has-link-black-ter is-size-6">2019 原创技术干货整理</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/2019/">2019</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
     </div>
 </div>
 
@@ -2166,7 +1600,7 @@
                     <span class="level-item">一月 2020</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">7</span>
+                    <span class="level-item tag">6</span>
                 </span>
             </a>
         </li>
@@ -2177,7 +1611,7 @@
                     <span class="level-item">十二月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">22</span>
+                    <span class="level-item tag">9</span>
                 </span>
             </a>
         </li>
@@ -2188,7 +1622,7 @@
                     <span class="level-item">十一月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">21</span>
+                    <span class="level-item tag">6</span>
                 </span>
             </a>
         </li>
@@ -2199,7 +1633,7 @@
                     <span class="level-item">十月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">24</span>
+                    <span class="level-item tag">11</span>
                 </span>
             </a>
         </li>
@@ -2210,7 +1644,7 @@
                     <span class="level-item">九月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">27</span>
+                    <span class="level-item tag">22</span>
                 </span>
             </a>
         </li>
@@ -2243,7 +1677,7 @@
                     <span class="level-item">六月 2019</span>
                 </span>
                 <span class="level-end">
-                    <span class="level-item tag">44</span>
+                    <span class="level-item tag">43</span>
                 </span>
             </a>
         </li>
