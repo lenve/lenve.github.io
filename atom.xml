@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://www.javaboy.org/"/>
-  <updated>2020-03-12T08:53:10.682Z</updated>
+  <updated>2020-03-12T09:01:43.673Z</updated>
   <id>http://www.javaboy.org/</id>
   
   <author>
@@ -15,6 +15,30 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Redis 做分布式锁你会几种姿势？松哥来给大家介绍两种</title>
+    <link href="http://www.javaboy.org/2020/0312/redis-distribute.html"/>
+    <id>http://www.javaboy.org/2020/0312/redis-distribute.html</id>
+    <published>2020-03-12T08:55:29.000Z</published>
+    <updated>2020-03-12T09:01:43.673Z</updated>
+    
+    <content type="html"><![CDATA[<p>Redis 简简单单的几种数据类型，一个 key/value 数据库，现在又是分布式锁、又是限流工具、又是消息队列……，感觉都要被玩坏了。不过话说回来，Redis 在这么多场合被开发者们喜欢，还是得益于它极高的性能与使用的简洁性。</p><a id="more"></a><p>在面试的时候，说到 Redis ，很多人第一反应就是缓存，其实除了缓存，Redis 还有非常多丰富的使用场景，这些使用场景，松哥在未来都会和大家一一分享。</p><p>今天就先来看一个简单的，用 Redis 做分布式锁。</p><h2 id="1-什么是分布式锁"><a href="#1-什么是分布式锁" class="headerlink" title="1.什么是分布式锁"></a>1.什么是分布式锁</h2><p>首先我们来看一个问题场景：</p><blockquote><p>例如一个简单的用户操作，一个线程去修改用户的状态，首先从数据库中读出用户的状态，然后在内存中进行修改，修改完成后，再存回去。在单线程中，这个操作没有问题，但是在多线程中，由于读取、修改、存 这是三个操作，不是原子操作，所以在多线程中，这样会出问题。</p></blockquote><p>解决这个问题，我们就需要锁，对于锁，大家应该不会陌生，在 Java 中的 synchronized 以及 ReentrantLock 可重入锁都是我们比较常见的，但是这种锁都是本地锁，现在微服务、分布式系统思想大行其道，在这样的系统中，本地锁显然是不够用的，于是大家纷纷想办法，如何在分布式环境下解决锁的问题。想出来的办法很多，我们可以通过 MySQL、可以通过 ZK、也可以通过 Redis ，都可以用来解决分布式锁的问题，这里我们主要来看看如何通过 Redis 解决分布式锁问题。</p><h2 id="2-解决方案"><a href="#2-解决方案" class="headerlink" title="2.解决方案"></a>2.解决方案</h2><h3 id="2-1-整体思路"><a href="#2-1-整体思路" class="headerlink" title="2.1 整体思路"></a>2.1 整体思路</h3><p><strong>分布式锁实现的思路很简单，就是进来一个线城先占位，当别的线城进来操作时，发现已经有人占位了，就会放弃或者稍后再试。</strong></p><p>在 Redis 中，占位一般使用 setnx 指令，先进来的线程先占位，线程的操作执行完成后，再调用 del 指令释放位子。同时为了防止死锁，我们一般还要给锁加一个过期时间，到期了自动释放。</p><p>基于这样的思路，我们来看两种不同的实现方式：</p><h3 id="2-2-解决方案一"><a href="#2-2-解决方案一" class="headerlink" title="2.2 解决方案一"></a>2.2 解决方案一</h3><p>基于我们前面所说的思路，可以使用 setnx 和 expire 实现分布式锁，但是 setnx 和设置过期时间 expire 这是两个操作，这两个操作一起的话就不具备原子性（除非自己写 Lua 脚本），为了解决这个问题，从 Redis2.8 开始，setnx 和 expire 可以通过一个命令一起来执行了，这个命令就是 set，set 中多了一个参数:</p><p><img src="http://img.itboyhub.com/2020/03/dis-redis-1.png" alt></p><p>从图中大家可以看到，在 key/value 之后，还有一个 EX 5 表示以秒计的过期时间（PX 表示以毫秒计的过期时间），最后的 NX 就是说如果 k1 不存在，这条命令执行成功，否则执行失败，这就相当于 setnx 的效果了。</p><p>因此，我们封装的锁如下：</p><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">LockTest</span> </span>&#123;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Redis redis = <span class="hljs-keyword">new</span> Redis();</span><br><span class="line">        redis.execute(jedis-&gt;&#123;</span><br><span class="line">            String set = jedis.set(<span class="hljs-string">"k1"</span>, <span class="hljs-string">"v1"</span>, <span class="hljs-keyword">new</span> SetParams().nx().ex(<span class="hljs-number">5</span>));</span><br><span class="line">            <span class="hljs-keyword">if</span> (set !=<span class="hljs-keyword">null</span> &amp;&amp; <span class="hljs-string">"OK"</span>.equals(set)) &#123;</span><br><span class="line">                <span class="hljs-comment">//没人占位</span></span><br><span class="line">                jedis.set(<span class="hljs-string">"name"</span>, <span class="hljs-string">"javaboy"</span>);</span><br><span class="line">                String name = jedis.get(<span class="hljs-string">"name"</span>);</span><br><span class="line">                System.out.println(name);</span><br><span class="line">                jedis.del(<span class="hljs-string">"k1"</span>);<span class="hljs-comment">//释放资源</span></span><br><span class="line">            &#125;<span class="hljs-keyword">else</span>&#123;</span><br><span class="line">                <span class="hljs-comment">//有人占位，停止/暂缓 操作</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>对于上面这段代码，大家重点看思路，不必深究代码细节：</p><ol><li>首先构造一个 Redis 实例，然后调用 execute 方法，这个是我自己封装的方法，目的是为了配置 Jedis 连接池并及时回收使用过的资源。这一块小伙伴们测试的时候可以直接使用自己创建的 Jedis 实例，效果是一样的。</li><li>调用 jedis 中的 set 方法，注意第三个参数，我们设置了 nx 同时 设置了过期时间为 5 秒，这就相当于 setnx 和 expire 两个命令的结合体。</li><li>如果成功执行了 set 命令，在 if 中就可以去写自己的业务了。如果没能抢到锁，则可以进入到一个延迟消息队列中，停一会再去尝试（用 Redis 实现延迟消息队列，松哥会在后面的文章中向大家介绍）。</li></ol><p>但是这样的封装，又带来了一个新的问题，那就是超时问题，关于超时问题，松哥通过一个视频教程来和大家分享（本视频节选自松哥自制的 <a href="https://mp.weixin.qq.com/s/8FmgtWyz6HUIbF4smXQOwQ" target="_blank" rel="noopener">Spring Boot+Vue+Spring Cloud+Redis 系列视频教程</a>）：</p><p><img src="https://mp.weixin.qq.com/s/NKiLt2Ebofa1Wq1k5sFscA" alt="视频地址"></p><h3 id="2-3-解决方案二"><a href="#2-3-解决方案二" class="headerlink" title="2.3 解决方案二"></a>2.3 解决方案二</h3><p>上面的代码写着还是蛮长的，那么有没有简单一点的办法呢？当然是有的！那就是 Redisson。</p><p>相对于 Jedis 这种原生态的应用，Redisson 对 Redis 请求做了较多的封装，对于锁，也提供了对应的方法可以直接使用：</p><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">Config config = <span class="hljs-keyword">new</span> Config();</span><br><span class="line"><span class="hljs-comment">//配置 Redis 基本连接信息</span></span><br><span class="line">config.useSingleServer().setAddress(<span class="hljs-string">"redis://127.0.0.1:6379"</span>).setPassword(<span class="hljs-string">"123"</span>);</span><br><span class="line"><span class="hljs-comment">//获取一个 RedissonClient 对象</span></span><br><span class="line">RedissonClient redisson = Redisson.create(config);</span><br><span class="line"><span class="hljs-comment">//获取一个锁对象实例</span></span><br><span class="line">RLock lock = redisson.getLock(<span class="hljs-string">"lock"</span>); </span><br><span class="line"><span class="hljs-keyword">try</span> &#123;</span><br><span class="line">    <span class="hljs-comment">//获取锁</span></span><br><span class="line">    <span class="hljs-keyword">boolean</span> b = lock.tryLock(<span class="hljs-number">500</span>, <span class="hljs-number">1000</span>, TimeUnit.MILLISECONDS);</span><br><span class="line">    <span class="hljs-keyword">if</span> (b) &#123;</span><br><span class="line">        <span class="hljs-comment">//获取到锁了，开始写业务</span></span><br><span class="line">        RBucket&lt;Object&gt; bucket = redisson.getBucket(<span class="hljs-string">"javaboy"</span>);</span><br><span class="line">        bucket.set(<span class="hljs-string">"www.javaboy.org"</span>);</span><br><span class="line">        Object o = bucket.get();</span><br><span class="line">        System.out.println(o);</span><br><span class="line">    &#125;<span class="hljs-keyword">else</span>&#123;</span><br><span class="line">        System.out.println(<span class="hljs-string">"没拿到锁"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">    e.printStackTrace();</span><br><span class="line">&#125; <span class="hljs-keyword">finally</span> &#123;</span><br><span class="line">    <span class="hljs-comment">//释放锁</span></span><br><span class="line">    lock.unlock(); </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>在这段代码中，核心的就是 <code>lock.tryLock(500, 1000, TimeUnit.MILLISECONDS);</code>，第一个参数是尝试加锁的等待时间为 500 毫秒，第二个参数表示锁的超时时间为 1000 毫秒，也就是这个锁在 1000 毫秒后会自动失效。</p><p>小伙伴们发现，这和我们在方案一里边配置的参数是一样的，其实思路是不变的，Redisson 只不过是将我们写的和锁相关的方法封装起来了而已。</p><h2 id="3-小结"><a href="#3-小结" class="headerlink" title="3.小结"></a>3.小结</h2><p>当然，这里我只是先简单介绍下加锁的思路以及在 Redis 单机中如何加锁，后面松哥再和大家分享 Redis 集群中如何加锁。如果小伙伴们对于 Redis 的基本用法还不太熟悉的话，可以在松哥公众号后台回复 redis，获取松哥手敲的 Redis 入门教程。</p>]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;Redis 简简单单的几种数据类型，一个 key/value 数据库，现在又是分布式锁、又是限流工具、又是消息队列……，感觉都要被玩坏了。不过话说回来，Redis 在这么多场合被开发者们喜欢，还是得益于它极高的性能与使用的简洁性。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="Redis" scheme="http://www.javaboy.org/categories/Redis/"/>
+    
+    
+      <category term="Redis" scheme="http://www.javaboy.org/tags/Redis/"/>
+    
+      <category term="分布式锁" scheme="http://www.javaboy.org/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81/"/>
+    
+  </entry>
   
   <entry>
     <title>听说你 FastDFS 老安装失败，这能忍？松哥一定要帮你搞定！</title>
@@ -469,30 +493,6 @@
     
     
       <category term="Resume" scheme="http://www.javaboy.org/tags/Resume/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Redis 系列教程(一)Linux 上安装 Redis</title>
-    <link href="http://www.javaboy.org/2020/0203/redis-install.html"/>
-    <id>http://www.javaboy.org/2020/0203/redis-install.html</id>
-    <published>2020-02-03T02:10:55.000Z</published>
-    <updated>2020-03-05T03:04:06.080Z</updated>
-    
-    <content type="html"><![CDATA[<p>hello 各位小伙伴，最近打算出一个 Redis 的视频教程，想在视频正式开录之前，先把文字版的 Redis 教程过一遍。</p><a id="more"></a><p>那么从今天开始，就和各位小伙伴分享下 Redis 的用法，本文我们就先来看看什么是 Redis 以及如何安装 Redis。</p><h2 id="什么是-Redis"><a href="#什么是-Redis" class="headerlink" title="什么是 Redis"></a>什么是 Redis</h2><p>Redis 是一个使用 ANSI C 编写的开源、支持网络、基于内存、可选持久性的键值对存储数据库。从 2015 年 6 月开始，Redis 的开发由 Redis Labs 赞助，而 2013 年 5 月至 2015 年 6 月期间，其开发由 Pivotal 赞助。在 2013 年 5 月之前，其开发由 VMware 赞助。根据月度排行网站 DB-Engines.com 的数据显示，Redis 是最流行的键值对存储数据库。</p><h3 id="Redis-具有如下特点："><a href="#Redis-具有如下特点：" class="headerlink" title="Redis 具有如下特点："></a>Redis 具有如下特点：</h3><ol><li>Redis 支持数据的持久化，可以将内存中的数据保持在磁盘中，重启的时候可以再次加载进行使用，不会造成数据丢失</li><li>Redis 支持五种不同的数据结构类型之间的映射，包括简单的 key/value 类型的数据，同时还提供 list，set，zset，hash 等数据结构的存储</li><li>Redis 支持 master-slave 模式的数据备份</li></ol><h3 id="Redis-具有如下功能："><a href="#Redis-具有如下功能：" class="headerlink" title="Redis 具有如下功能："></a>Redis 具有如下功能：</h3><ol><li>内存存储和持久化：redis 支持异步将内存中的数据写到硬盘上，在持久化的同时不影响继续服务</li><li>取最新 N 个数据的操作，如：可以将最新的 10 条评论的 ID 放在 Redis 的 List 集合里面</li><li>数据可以设置过期时间</li><li>自带发布、订阅消息系统</li><li>定时器、计数器</li></ol><h2 id="Redis-安装"><a href="#Redis-安装" class="headerlink" title="Redis 安装"></a>Redis 安装</h2><p>Windows 版 Redis 的安装，整体来说还是非常简单的，网上也有很多教程，考虑到 Redis 的大部分使用场景都是在 Linux 上，因此这里我对 Windows 上的安装不做介绍，小伙伴们有兴趣可以自行搜索，下面我们主要来看下 Linux 上怎么安装 Redis。</p><p>环境：</p><ul><li>CentOS7</li><li>redis4.0.8</li></ul><p>1.首先下载 Redis，下载地址 <a href="https://redis.io/，下载获得" target="_blank" rel="noopener">https://redis.io/，下载获得</a> redis-4.0.8.tar.gz 后将它放入我们的 Linux 目录 /opt</p><p><img src="https://wx1.sinaimg.cn/mw690/6b239626gy1frisyth7tvj20g00520sq.jpg" alt="p285"></p><p>2./opt 目录下，对文件进行解压，解压命令: tar -zxvf redis-4.0.8.tar.gz，如下：</p><p><img src="https://wx2.sinaimg.cn/mw690/6b239626gy1frisyti7h8j20as02ydfn.jpg" alt="p286"></p><p>3.解压完成后出现文件夹：redis-4.0.8，进入到该目录中: cd redis-4.0.8</p><p><img src="https://wx1.sinaimg.cn/mw690/6b239626gy1frisytkgb1j207t013dfl.jpg" alt="p287"></p><p>4.在 redis-4.0.8 目录下执行 make 命令进行编译</p><p><img src="https://wx1.sinaimg.cn/mw690/6b239626gy1frisytk9w2j209702st8j.jpg" alt="p288"></p><p>5.如果 make 完成后继续执行 make install 进行安装</p><p><img src="https://wx3.sinaimg.cn/mw690/6b239626gy1frisytl93dj20au078t8p.jpg" alt="p289"></p><p>OK，至此，我们的 redis 就算安装成功了。</p><p>6.在我们启动之前，需要先做一个简单的配置：修改 redis.conf 文件，将里面的 daemonize no 改成 yes，让服务在后台启动，如下：</p><p><img src="https://wx4.sinaimg.cn/mw690/6b239626gy1frisytl23jj2096013gld.jpg" alt="p290"><br><img src="https://wx1.sinaimg.cn/mw690/6b239626gy1frisytl6xlj20im05gq2w.jpg" alt="p291"></p><p>7.启动，通过 <code>redis-server redis.conf</code> 命令启动 redis，如下：</p><p><img src="https://wx3.sinaimg.cn/mw690/6b239626gy1frisytl44jj20f20303yd.jpg" alt="p292"></p><p>8.测试</p><p>首先我们可以通过 <code>redis-cli</code> 命令进入到控制台，然后通过 <code>ping</code> 命令进行连通性测试，如果看到 pong，表示连接成功了，如下：</p><p><img src="https://wx4.sinaimg.cn/mw690/6b239626gy1frisytmhxej20830243ya.jpg" alt="p293"></p><p>9.关闭，通过 <code>shutdown</code> 命令我们可以关闭实例，如下：</p><p><img src="https://wx1.sinaimg.cn/mw690/6b239626gy1frit1lvl55j207d01g742.jpg" alt="p294"></p><p>OK，至此，我们的 Redis 就安装成功了，整体来说还是非常简单的，有问题欢迎留言讨论。</p>]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;hello 各位小伙伴，最近打算出一个 Redis 的视频教程，想在视频正式开录之前，先把文字版的 Redis 教程过一遍。&lt;/p&gt;
-    
-    </summary>
-    
-      <category term="Redis" scheme="http://www.javaboy.org/categories/Redis/"/>
-    
-    
-      <category term="Spring Boot" scheme="http://www.javaboy.org/tags/Spring-Boot/"/>
-    
-      <category term="Redis" scheme="http://www.javaboy.org/tags/Redis/"/>
     
   </entry>
   
