@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head><meta name="generator" content="Hexo 3.8.0">
+    <meta charset="utf-8">
+<title>Spring Boot+CAS 单点登录，如何对接数据库？ - 江南一点雨</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+
+
+    <meta name="description" content="松哥给最近连载的 Spring Security 系列也录制了视频教程，感兴趣的小伙伴请戳这里-&amp;gt;Spring Boot+Vue+微人事视频教程（Spring Boot 第十章就是 Spring Security）。">
+<meta name="keywords" content="Spring Boot,Spring Security,CAS">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring Boot+CAS 单点登录，如何对接数据库？">
+<meta property="og:url" content="http://www.javaboy.org/2020/0605/springsecurity-cas-mysql.html">
+<meta property="og:site_name" content="江南一点雨">
+<meta property="og:description" content="松哥给最近连载的 Spring Security 系列也录制了视频教程，感兴趣的小伙伴请戳这里-&amp;gt;Spring Boot+Vue+微人事视频教程（Spring Boot 第十章就是 Spring Security）。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="http://www.javaboy.org/images/og_image.png">
+<meta property="og:updated_time" content="2020-06-05T15:08:59.876Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Spring Boot+CAS 单点登录，如何对接数据库？">
+<meta name="twitter:description" content="松哥给最近连载的 Spring Security 系列也录制了视频教程，感兴趣的小伙伴请戳这里-&amp;gt;Spring Boot+Vue+微人事视频教程（Spring Boot 第十章就是 Spring Security）。">
+<meta name="twitter:image" content="http://www.javaboy.org/images/og_image.png">
+
+
+
+
+
+
+
+<link rel="icon" href="https://www.javaboy.org/favicon.ico">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-2-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+                
+                <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="Spring Boot+CAS 单点登录，如何对接数据库？" height="28">
+                
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item" href="/">江南一点雨</a>
+                
+                <a class="navbar-item" href="/archives">归档</a>
+                
+                <a class="navbar-item" href="/fronted-backend">前后端分离</a>
+                
+                <a class="navbar-item" href="http://spring.javaboy.org">Spring</a>
+                
+                <a class="navbar-item" href="http://springmvc.javaboy.org">SpringMVC</a>
+                
+                <a class="navbar-item" href="http://mybatis.javaboy.org">MyBatis</a>
+                
+                <a class="navbar-item" href="http://springboot.javaboy.org">Spring Boot</a>
+                
+                <a class="navbar-item" href="http://maven.javaboy.org">Maven</a>
+                
+                <a class="navbar-item" href="/redis">Redis</a>
+                
+                <a class="navbar-item" href="/mongodb">MongoDB</a>
+                
+                <a class="navbar-item" href="/mysql">MySQL</a>
+                
+                <a class="navbar-item" href="/docker">Docker</a>
+                
+                <a class="navbar-item" href="/git">Git</a>
+                
+                <a class="navbar-item" href="/about">About</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                
+                
+                <a class="navbar-item search" style="height: 40px;line-height: 60px;width: 180px;margin: 12px 15px;box-sizing: border-box;border: 1px solid #dedede;border-radius: 20px;display: flex;justify-content: space-between;padding-left: 12px;padding-right: 10px" title="搜索" href="javascript:;">
+                    <!--<div style="border: 1px solid #dedede;border-radius: 10px;">-->
+                    <div>搜索</div>
+                        <i class="fas fa-search"></i>
+                    <!--</div>-->
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2020-06-05T14:47:22.000Z">2020-06-05</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Spring-Security/">Spring Security</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    22 分钟 读完 (大约 3236 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Spring Boot+CAS 单点登录，如何对接数据库？
+            
+        </h1>
+        
+            <div class="content" id="content">
+                    <p>松哥给最近连载的 Spring Security 系列也录制了视频教程，感兴趣的小伙伴请戳这里-&gt;<a href="https://mp.weixin.qq.com/s/6GIZ6RmPWZzFe1jaroXcPQ" target="_blank" rel="noopener">Spring Boot+Vue+微人事视频教程</a>（Spring Boot 第十章就是 Spring Security）。</p>
+<a id="more"></a>
+<p>在前面的两篇文章中，松哥和大家分享了 CAS Server 的搭建以及如何使用 Spring Security 搭建 CAS Client。</p>
+<p>但是前面的案例有一个问题，就是登录用户是在 CAS Server 配置文件中写死的，没有对接数据库，实际项目中，这里肯定要对接数据库，所以今天，松哥就来和大家聊一聊 CAS Server 如何对接数据库。</p>
+<p>松哥最近和 Spring Security 杠上了，这是 Spring Security 系列的第 25 篇：</p>
+<ol>
+<li><a href="https://mp.weixin.qq.com/s/3O2yNnG56uAsMnJyrVptDg" target="_blank" rel="noopener">挖一个大坑，Spring Security 开搞！</a></li>
+<li><a href="https://mp.weixin.qq.com/s/Q0GkUb1Nt6ynV22LFHuQrQ" target="_blank" rel="noopener">松哥手把手带你入门 Spring Security，别再问密码怎么解密了</a></li>
+<li><a href="https://mp.weixin.qq.com/s/kHJRKwH-WUx-JEeaQMa7jw" target="_blank" rel="noopener">手把手教你定制 Spring Security 中的表单登录</a></li>
+<li><a href="https://mp.weixin.qq.com/s/Xzt9ymff0DCbAQbklHOxpQ" target="_blank" rel="noopener">Spring Security 做前后端分离，咱就别做页面跳转了！统统 JSON 交互</a></li>
+<li><a href="https://mp.weixin.qq.com/s/BKAYXMaBBs0VrKZtzorn-w" target="_blank" rel="noopener">Spring Security 中的授权操作原来这么简单</a></li>
+<li><a href="https://mp.weixin.qq.com/s/EurEXmU0M9AKuUs4Jh_V5g" target="_blank" rel="noopener">Spring Security 如何将用户数据存入数据库？</a></li>
+<li><a href="https://mp.weixin.qq.com/s/VWJvINbi1DB3fF-Mcx7mGg" target="_blank" rel="noopener">Spring Security+Spring Data Jpa 强强联手，安全管理只有更简单！</a></li>
+<li><a href="https://mp.weixin.qq.com/s/aSsGNBSWMTsAEXjn9wQnYQ" target="_blank" rel="noopener">Spring Boot + Spring Security 实现自动登录功能</a></li>
+<li><a href="https://mp.weixin.qq.com/s/T6_PBRzIADE71af3yoKB6g" target="_blank" rel="noopener">Spring Boot 自动登录，安全风险要怎么控制？</a></li>
+<li><a href="https://mp.weixin.qq.com/s/JucUstZoiTkRG2a2m1Vklg" target="_blank" rel="noopener">在微服务项目中，Spring Security 比 Shiro 强在哪？</a></li>
+<li><a href="https://mp.weixin.qq.com/s/LeiwIJVevaU5C1Fn5nNEeg" target="_blank" rel="noopener">SpringSecurity 自定义认证逻辑的两种方式(高级玩法)</a></li>
+<li><a href="https://mp.weixin.qq.com/s/pSX9XnPNQPyLWGc6oWR3hA" target="_blank" rel="noopener">Spring Security 中如何快速查看登录用户 IP 地址等信息？</a></li>
+<li><a href="https://mp.weixin.qq.com/s/9f2e4Ua2_fxEd-S9Y7DDtA" target="_blank" rel="noopener">Spring Security 自动踢掉前一个登录用户，一个配置搞定！</a></li>
+<li><a href="https://mp.weixin.qq.com/s/nfqFDaLDH8UJVx7mqqgHmQ" target="_blank" rel="noopener">Spring Boot + Vue 前后端分离项目，如何踢掉已登录用户？</a></li>
+<li><a href="https://mp.weixin.qq.com/s/Fuu9rKoOvSyuvCKSyh6dUQ" target="_blank" rel="noopener">Spring Security 自带防火墙！你都不知道自己的系统有多安全！</a></li>
+<li><a href="https://mp.weixin.qq.com/s/9SaNvVfiivWUIAe6OZgpZQ" target="_blank" rel="noopener">什么是会话固定攻击？Spring Boot 中要如何防御会话固定攻击？</a></li>
+<li><a href="https://mp.weixin.qq.com/s/EAacxjaNg8BJRkTkGFLLpQ" target="_blank" rel="noopener">集群化部署，Spring Security 要如何处理 session 共享？</a></li>
+<li><a href="https://mp.weixin.qq.com/s/TDm8ljxbHpMqteucfmeccA" target="_blank" rel="noopener">松哥手把手教你在 SpringBoot 中防御 CSRF 攻击！so easy！</a></li>
+<li><a href="https://mp.weixin.qq.com/s/evyI9wo30JI78_ZYGaKFRg" target="_blank" rel="noopener">要学就学透彻！Spring Security 中 CSRF 防御源码解析</a></li>
+<li><a href="https://mp.weixin.qq.com/s/jBoU5j4YChDVwyX22SbtgA" target="_blank" rel="noopener">Spring Boot 中密码加密的两种姿势！</a></li>
+<li><a href="https://mp.weixin.qq.com/s/6YgV5z3Bbd7wKP5TwI1TQg" target="_blank" rel="noopener">Spring Security 要怎么学？为什么一定要成体系的学习？</a></li>
+<li><a href="https://mp.weixin.qq.com/s/He_K-a-1JpQHZBPEUo2uZw" target="_blank" rel="noopener">Spring Security 两种资源放行策略，千万别用错了！</a></li>
+<li><a href="https://mp.weixin.qq.com/s/BzdCr_rgLttRlq_SWQuG0Q" target="_blank" rel="noopener">松哥手把手教你入门 Spring Boot + CAS 单点登录</a></li>
+<li><a href="https://mp.weixin.qq.com/s/YQMHms9BiVaTgYct4wk2cw" target="_blank" rel="noopener">Spring Boot 实现单点登录的第三种方案！</a></li>
+</ol>
+<h2 id="1-整体思路"><a href="#1-整体思路" class="headerlink" title="1.整体思路"></a>1.整体思路</h2><p>先来看整体思路。</p>
+<p>我们用 CAS Server 做单点登录，CAS Server 主要是负责认证的，也就是它主要解决登录问题。登录成功之后，还有一个权限处理的问题，权限的问题则交由各个 CAS Client 自行处理，并不在 CAS Server 中完成。</p>
+<p>在上篇文章中，松哥有教过大家定义 UserDetailsService，不知道大家是否还记得如下代码（忘记了可以参考上篇文章：<a href="https://mp.weixin.qq.com/s/YQMHms9BiVaTgYct4wk2cw" target="_blank" rel="noopener">Spring Boot 实现单点登录的第三种方案！</a>）：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Component</span></span><br><span class="line"><span class="hljs-meta">@Primary</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserDetailsServiceImpl</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">UserDetailsService</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> UserDetails <span class="hljs-title">loadUserByUsername</span><span class="hljs-params">(String s)</span> <span class="hljs-keyword">throws</span> UsernameNotFoundException </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> User(s, <span class="hljs-string">"123"</span>, <span class="hljs-keyword">true</span>, <span class="hljs-keyword">true</span>, <span class="hljs-keyword">true</span>, <span class="hljs-keyword">true</span>,</span><br><span class="line">                AuthorityUtils.createAuthorityList(<span class="hljs-string">"ROLE_user"</span>));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这段代码是在什么时候执行呢？</p>
+<p>如果我们没有使用 CAS 这一套的话，这段代码当然是在用户登录的时候执行，用户登录时，从数据库中查询用户的信息，然后做校验（参考本系列前面文章就懂）。</p>
+<p>如果我们使用 CAS 这一套，用户登录的校验将在 CAS Server 上执行，CAS Client 就不用做校验工作了，但是为什么我们还需要定义 UserDetailsService 呢？这是为了当用户在 CAS Server 上登录成功之后，拿着用户名回到 CAS Client，然后我们再去数据库中根据用户名获取用户的详细信息，包括用户的角色等，进而在后面的鉴权中用上角色。</p>
+<p>好了，这是我们一个大致的思路，接下来我们来看具体实现。</p>
+<h2 id="2-具体实现"><a href="#2-具体实现" class="headerlink" title="2.具体实现"></a>2.具体实现</h2><p>接下来的配置在 <a href="https://mp.weixin.qq.com/s/BzdCr_rgLttRlq_SWQuG0Q" target="_blank" rel="noopener">松哥手把手教你入门 Spring Boot + CAS 单点登录</a> 一文的基础上完成，所以还没看前面文章的小伙伴建议先看一下哦。</p>
+<h3 id="2-1-准备工作"><a href="#2-1-准备工作" class="headerlink" title="2.1 准备工作"></a>2.1 准备工作</h3><p>首先我们先在数据库中准备一下用户表、角色表以及用户角色关联表：</p>
+<figure class="highlight sql hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> <span class="hljs-string">`t_role`</span> (</span><br><span class="line">  <span class="hljs-string">`id`</span> <span class="hljs-built_in">bigint</span>(<span class="hljs-number">20</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span> AUTO_INCREMENT,</span><br><span class="line">  <span class="hljs-string">`name`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">255</span>) <span class="hljs-keyword">COLLATE</span> utf8mb4_unicode_ci <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span>,</span><br><span class="line">  <span class="hljs-string">`name_zh`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">255</span>) <span class="hljs-keyword">COLLATE</span> utf8mb4_unicode_ci <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span>,</span><br><span class="line">  PRIMARY <span class="hljs-keyword">KEY</span> (<span class="hljs-string">`id`</span>)</span><br><span class="line">) <span class="hljs-keyword">ENGINE</span>=<span class="hljs-keyword">InnoDB</span> <span class="hljs-keyword">DEFAULT</span> <span class="hljs-keyword">CHARSET</span>=utf8mb4 <span class="hljs-keyword">COLLATE</span>=utf8mb4_unicode_ci;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> <span class="hljs-string">`t_user`</span> (</span><br><span class="line">  <span class="hljs-string">`id`</span> <span class="hljs-built_in">bigint</span>(<span class="hljs-number">20</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span> AUTO_INCREMENT,</span><br><span class="line">  <span class="hljs-string">`account_non_expired`</span> <span class="hljs-built_in">bit</span>(<span class="hljs-number">1</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span>,</span><br><span class="line">  <span class="hljs-string">`account_non_locked`</span> <span class="hljs-built_in">bit</span>(<span class="hljs-number">1</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span>,</span><br><span class="line">  <span class="hljs-string">`credentials_non_expired`</span> <span class="hljs-built_in">bit</span>(<span class="hljs-number">1</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span>,</span><br><span class="line">  <span class="hljs-string">`enabled`</span> <span class="hljs-built_in">bit</span>(<span class="hljs-number">1</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span>,</span><br><span class="line">  <span class="hljs-string">`password`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">255</span>) <span class="hljs-keyword">COLLATE</span> utf8mb4_unicode_ci <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span>,</span><br><span class="line">  <span class="hljs-string">`username`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">255</span>) <span class="hljs-keyword">COLLATE</span> utf8mb4_unicode_ci <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span>,</span><br><span class="line">  PRIMARY <span class="hljs-keyword">KEY</span> (<span class="hljs-string">`id`</span>)</span><br><span class="line">) <span class="hljs-keyword">ENGINE</span>=<span class="hljs-keyword">InnoDB</span> <span class="hljs-keyword">DEFAULT</span> <span class="hljs-keyword">CHARSET</span>=utf8mb4 <span class="hljs-keyword">COLLATE</span>=utf8mb4_unicode_ci;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> <span class="hljs-string">`t_user_roles`</span> (</span><br><span class="line">  <span class="hljs-string">`t_user_id`</span> <span class="hljs-built_in">bigint</span>(<span class="hljs-number">20</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span>,</span><br><span class="line">  <span class="hljs-string">`roles_id`</span> <span class="hljs-built_in">bigint</span>(<span class="hljs-number">20</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span>,</span><br><span class="line">  <span class="hljs-keyword">KEY</span> <span class="hljs-string">`FKj47yp3hhtsoajht9793tbdrp4`</span> (<span class="hljs-string">`roles_id`</span>),</span><br><span class="line">  <span class="hljs-keyword">KEY</span> <span class="hljs-string">`FK7l00c7jb4804xlpmk1k26texy`</span> (<span class="hljs-string">`t_user_id`</span>),</span><br><span class="line">  <span class="hljs-keyword">CONSTRAINT</span> <span class="hljs-string">`FK7l00c7jb4804xlpmk1k26texy`</span> <span class="hljs-keyword">FOREIGN</span> <span class="hljs-keyword">KEY</span> (<span class="hljs-string">`t_user_id`</span>) <span class="hljs-keyword">REFERENCES</span> <span class="hljs-string">`t_user`</span> (<span class="hljs-string">`id`</span>),</span><br><span class="line">  <span class="hljs-keyword">CONSTRAINT</span> <span class="hljs-string">`FKj47yp3hhtsoajht9793tbdrp4`</span> <span class="hljs-keyword">FOREIGN</span> <span class="hljs-keyword">KEY</span> (<span class="hljs-string">`roles_id`</span>) <span class="hljs-keyword">REFERENCES</span> <span class="hljs-string">`t_role`</span> (<span class="hljs-string">`id`</span>)</span><br><span class="line">) <span class="hljs-keyword">ENGINE</span>=<span class="hljs-keyword">InnoDB</span> <span class="hljs-keyword">DEFAULT</span> <span class="hljs-keyword">CHARSET</span>=utf8mb4 <span class="hljs-keyword">COLLATE</span>=utf8mb4_unicode_ci;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">INSERT</span> <span class="hljs-keyword">INTO</span> <span class="hljs-string">`t_role`</span> (<span class="hljs-string">`id`</span>, <span class="hljs-string">`name`</span>, <span class="hljs-string">`name_zh`</span>) <span class="hljs-keyword">VALUES</span> (<span class="hljs-number">1</span>,<span class="hljs-string">'ROLE_admin'</span>,<span class="hljs-string">'管理员'</span>),(<span class="hljs-number">2</span>,<span class="hljs-string">'ROLE_user'</span>,<span class="hljs-string">'普通用户'</span>);</span><br><span class="line"><span class="hljs-keyword">INSERT</span> <span class="hljs-keyword">INTO</span> <span class="hljs-string">`t_user`</span> (<span class="hljs-string">`id`</span>, <span class="hljs-string">`account_non_expired`</span>, <span class="hljs-string">`account_non_locked`</span>, <span class="hljs-string">`credentials_non_expired`</span>, <span class="hljs-string">`enabled`</span>, <span class="hljs-string">`password`</span>, <span class="hljs-string">`username`</span>) <span class="hljs-keyword">VALUES</span> (<span class="hljs-number">1</span>,b<span class="hljs-string">'1'</span>,b<span class="hljs-string">'1'</span>,b<span class="hljs-string">'1'</span>,b<span class="hljs-string">'1'</span>,<span class="hljs-string">'123'</span>,<span class="hljs-string">'javaboy'</span>),(<span class="hljs-number">2</span>,b<span class="hljs-string">'1'</span>,b<span class="hljs-string">'1'</span>,b<span class="hljs-string">'1'</span>,b<span class="hljs-string">'1'</span>,<span class="hljs-string">'123'</span>,<span class="hljs-string">'江南一点雨'</span>);</span><br><span class="line"><span class="hljs-keyword">INSERT</span> <span class="hljs-keyword">INTO</span> <span class="hljs-string">`t_user_roles`</span> (<span class="hljs-string">`t_user_id`</span>, <span class="hljs-string">`roles_id`</span>) <span class="hljs-keyword">VALUES</span> (<span class="hljs-number">1</span>,<span class="hljs-number">1</span>),(<span class="hljs-number">2</span>,<span class="hljs-number">2</span>);</span><br></pre></td></tr></table></figure>
+<h3 id="2-2-CAS-Server"><a href="#2-2-CAS-Server" class="headerlink" title="2.2 CAS Server"></a>2.2 CAS Server</h3><p>然后我们要在 CAS Server 的 pom.xml 文件中添加两个依赖：</p>
+<figure class="highlight hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;org.apereo.cas&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;cas-server-support-jdbc-drivers&lt;/artifactId&gt;</span><br><span class="line">    &lt;version&gt;$&#123;cas.version&#125;&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;org.apereo.cas&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;cas-server-support-jdbc&lt;/artifactId&gt;</span><br><span class="line">    &lt;version&gt;$&#123;cas.version&#125;&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br></pre></td></tr></table></figure>
+<p>注意这里不用添加数据库驱动，系统会自动解决。</p>
+<p>添加完成之后，再在 src/main/resources/application.properties 文件中添加如下配置：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">cas.authn.jdbc.query[0].url=jdbc:mysql://127.0.0.1:3306/withjpa?useUnicode=true&amp;characterEncoding=UTF-8&amp;autoReconnect=true&amp;useSSL=false</span><br><span class="line">cas.authn.jdbc.query[0].user=root</span><br><span class="line">cas.authn.jdbc.query[0].password=123</span><br><span class="line">cas.authn.jdbc.query[0].sql=select * from t_user where username=?</span><br><span class="line">cas.authn.jdbc.query[0].fieldPassword=password</span><br><span class="line">cas.authn.jdbc.query[0].driverClass=com.mysql.cj.jdbc.Driver</span><br></pre></td></tr></table></figure>
+<ul>
+<li>前三行配置是数据库基本连接配置，这个无需我多说。</li>
+<li>第四行表示配置用户查询 sql，根据用户名查询出用户的所有信息。</li>
+<li>第五行表示数据库中密码的字段名字是什么。</li>
+<li>第六行是数据库驱动。</li>
+</ul>
+<p>OK，配置完成后，接下来我们就来重启 CAS Server：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./build.sh run</span><br></pre></td></tr></table></figure>
+<p>启动成功后，浏览器输入 <a href="https://cas.javaboy.org:8443/cas/login" target="_blank" rel="noopener">https://cas.javaboy.org:8443/cas/login</a> 就可以进入登录页面了（注意是 https 哦）：</p>
+<p><img src="http://img.itboyhub.com/2020/05/20200523220157.png" alt></p>
+<p>此时登录用户名就是 javaboy，密码是 123。</p>
+<h3 id="2-3-CAS-Client"><a href="#2-3-CAS-Client" class="headerlink" title="2.3 CAS Client"></a>2.3 CAS Client</h3><p>接下来我们再来看看 CAS Client 要做哪些完善。</p>
+<p>接下来的配置在 <a href="https://mp.weixin.qq.com/s/YQMHms9BiVaTgYct4wk2cw" target="_blank" rel="noopener">Spring Boot 实现单点登录的第三种方案！</a> 一文的基础上完成，所以还没看前面文章的小伙伴建议先看一下哦。</p>
+<p>同时，为了案例简洁，我这里使用 JPA 来操作数据库，要是大家不熟悉这块的操作，可以参考本系列之前的文章：<a href="https://mp.weixin.qq.com/s/VWJvINbi1DB3fF-Mcx7mGg" target="_blank" rel="noopener">Spring Security+Spring Data Jpa 强强联手，安全管理只有更简单！</a>。</p>
+<p>CAS Client 中的对接主要是实现 UserDetailsService 接口。这里要用到数据库查询，所以我们首先添加数据库相关依赖：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>mysql<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>mysql-connector-java<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-data-jpa<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>然后在 application.properties 中配置数据库连接信息：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">spring.datasource.username=root</span><br><span class="line">spring.datasource.password=<span class="hljs-number">123</span></span><br><span class="line">spring.datasource.url=jdbc:mysql:<span class="hljs-comment">///withjpa?useUnicode=true&amp;characterEncoding=UTF-8&amp;serverTimezone=Asia/Shanghai</span></span><br><span class="line"></span><br><span class="line">spring.jpa.database=mysql</span><br><span class="line">spring.jpa.database-platform=mysql</span><br><span class="line">spring.jpa.hibernate.ddl-auto=update</span><br><span class="line">spring.jpa.show-sql=<span class="hljs-keyword">true</span></span><br><span class="line">spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect</span><br></pre></td></tr></table></figure>
+<p>都是常规配置，我们就不再重复解释了。</p>
+<p>接下来我们创建两个实体类，分别表示用户角色了用户类：</p>
+<p>用户角色：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Entity</span>(name = <span class="hljs-string">"t_role"</span>)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Role</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Id</span></span><br><span class="line">    <span class="hljs-meta">@GeneratedValue</span>(strategy = GenerationType.IDENTITY)</span><br><span class="line">    <span class="hljs-keyword">private</span> Long id;</span><br><span class="line">    <span class="hljs-keyword">private</span> String name;</span><br><span class="line">    <span class="hljs-keyword">private</span> String nameZh;</span><br><span class="line">    <span class="hljs-comment">//省略 getter/setter</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个实体类用来描述用户角色信息，有角色 id、角色名称（英文、中文），@Entity 表示这是一个实体类，项目启动后，将会根据实体类的属性在数据库中自动创建一个角色表。</p>
+<p>用户实体类：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Entity</span>(name = <span class="hljs-string">"t_user"</span>)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">User</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">UserDetails</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Id</span></span><br><span class="line">    <span class="hljs-meta">@GeneratedValue</span>(strategy = GenerationType.IDENTITY)</span><br><span class="line">    <span class="hljs-keyword">private</span> Long id;</span><br><span class="line">    <span class="hljs-keyword">private</span> String username;</span><br><span class="line">    <span class="hljs-keyword">private</span> String password;</span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">boolean</span> accountNonExpired;</span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">boolean</span> accountNonLocked;</span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">boolean</span> credentialsNonExpired;</span><br><span class="line">    <span class="hljs-keyword">private</span> <span class="hljs-keyword">boolean</span> enabled;</span><br><span class="line">    <span class="hljs-meta">@ManyToMany</span>(fetch = FetchType.EAGER,cascade = CascadeType.PERSIST)</span><br><span class="line">    <span class="hljs-keyword">private</span> List&lt;Role&gt; roles;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-keyword">public</span> Collection&lt;? extends GrantedAuthority&gt; getAuthorities() &#123;</span><br><span class="line">        List&lt;SimpleGrantedAuthority&gt; authorities = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">        <span class="hljs-keyword">for</span> (Role role : getRoles()) &#123;</span><br><span class="line">            authorities.add(<span class="hljs-keyword">new</span> SimpleGrantedAuthority(role.getName()));</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="hljs-keyword">return</span> authorities;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">getPassword</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> password;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">getUsername</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> username;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">isAccountNonExpired</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> accountNonExpired;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">isAccountNonLocked</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> accountNonLocked;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">isCredentialsNonExpired</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> credentialsNonExpired;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">isEnabled</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> enabled;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-comment">//省略其他 get/set 方法</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>用户实体类主要需要实现  UserDetails 接口，并实现接口中的方法。</p>
+<p>这里的字段基本都好理解，几个特殊的我来稍微说一下：</p>
+<ol>
+<li>accountNonExpired、accountNonLocked、credentialsNonExpired、enabled 这四个属性分别用来描述用户的状态，表示账户是否没有过期、账户是否没有被锁定、密码是否没有过期、以及账户是否可用。</li>
+<li>roles 属性表示用户的角色，User 和 Role 是多对多关系，用一个 @ManyToMany 注解来描述。</li>
+<li>getAuthorities 方法返回用户的角色信息，我们在这个方法中把自己的 Role 稍微转化一下即可。</li>
+</ol>
+<p>数据模型准备好之后，我们再来定义一个 UserDao：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">UserDao</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">JpaRepository</span>&lt;<span class="hljs-title">User</span>,<span class="hljs-title">Long</span>&gt; </span>&#123;</span><br><span class="line">    <span class="hljs-function">User <span class="hljs-title">findUserByUsername</span><span class="hljs-params">(String username)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里的东西很简单，我们只需要继承 JpaRepository 然后提供一个根据 username 查询 user 的方法即可。如果小伙伴们不熟悉 Spring Data Jpa 的操作，可以在公众号后台回复 springboot 获取松哥手敲的 Spring Boot 教程，里边有 jpa 相关操作，也可以看看松哥录制的视频教程：<a href="https://mp.weixin.qq.com/s/1k4CZ6_re11fQM_6_00jCw" target="_blank" rel="noopener">Spring Boot + Vue 系列视频教程</a>。</p>
+<p>在接下来定义 UserService ，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Component</span></span><br><span class="line"><span class="hljs-meta">@Primary</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserDetailsServiceImpl</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">UserDetailsService</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Autowired</span></span><br><span class="line">    UserDao userDao;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> UserDetails <span class="hljs-title">loadUserByUsername</span><span class="hljs-params">(String username)</span> <span class="hljs-keyword">throws</span> UsernameNotFoundException </span>&#123;</span><br><span class="line">        User user = userDao.findUserByUsername(username);</span><br><span class="line">        <span class="hljs-keyword">if</span> (user == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> UsernameNotFoundException(<span class="hljs-string">"用户不存在"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="hljs-keyword">return</span> user;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们自己定义的 UserDetailsServiceImpl 需要实现 UserDetailsService 接口，实现该接口，就要实现接口中的方法，也就是 loadUserByUsername。</p>
+<p>OK ，如此之后，我们的 CAS Client 现在就开发完成了，接下来启动 CAS Client，启动成功后，浏览器输入 <code>http://client1.cas.javaboy.org:8080/user/hello</code> 访问 hello 接口，此时会自动跳转到 CAS Server 上登录，登录的用户名密码就是我们存储在数据库中的用户名密码。登录成功之后，经过两个重定向，会重新回到 hello 接口。</p>
+<p>hello 接口访问成功之后，再去访问 <code>/user/hello</code> 接口，就会发现权限配置也生效了。</p>
+<p>这里比较简单，我就不给大家截图了。</p>
+<h2 id="3-小结"><a href="#3-小结" class="headerlink" title="3.小结"></a>3.小结</h2><p>好啦，今天主要和小伙伴们分享了一下 Spring Security + CAS 单点登录中，如何使用本地数据库。一个核心的思路是，认证由 CAS Server 来做，权限相关的操作，则还是由 Spring Security 来完成。</p>
+<p>好了 ，本文就说到这里，本文相关案例我已经上传到 GitHub ，大家可以自行下载:<a href="https://github.com/lenve/spring-security-samples" target="_blank" rel="noopener">https://github.com/lenve/spring-security-samples</a></p>
+<p>好啦，小伙伴们如果觉得有收获，记得点个在看鼓励下松哥哦～</p>
+
+                    <div class="asb-post-01">
+                        <div class="mask"></div>
+                        <div class="info" style="display: flex;justify-content:center;flex-direction:column;align-items:center">
+                                <div>扫码关注微信公众号：<span style="color: #E9405A; font-weight: bold;">江南一点雨</span></div>
+                                <div>
+                                    <span>发送 </span><span class="token" style="color: #e9415a; font-weight: bold; font-size: 17px; margin-bottom: 45px;">290992</span>
+                                </div>
+                                <div>
+                                    即可<span style="color: #e9415a; font-weight: bold;">立即永久</span>解锁本站全部文章（注意区分大小写哦）
+                                </div>
+                            <div>
+                                <img class="code-img" style="width: 300px;display:unset" src="https://www.javaboy.org/images/sb/javaboy.jpg">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/CAS/">CAS</a>, <a class="has-link-grey -link" href="/tags/Spring-Boot/">Spring Boot</a>, <a class="has-link-grey -link" href="/tags/Spring-Security/">Spring Security</a>
+                </div>
+            </div>
+        </div>
+		<div class="level is-size-6">
+						<p>喜欢这篇文章吗？扫码关注公众号<b>【江南一点雨】</b>，<b>【江南一点雨】</b>专注于 SPRING BOOT+微服务以及前后端分离技术，每天推送原创技术干货，关注后回复 JAVA，领取松哥为你精心准备的 JAVA 干货!
+</p>
+		</div>
+		<div class="level is-size-7 is-uppercase">
+<img class="menu-label has-text-centered" src="http://www.javaboy.org/images/sb/javaboy.jpg" alt>
+		</div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">觉得不错，可以给小编加个鸡腿</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="https://www.javaboy.org/images/sb/weixin_pay.png" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2020/0604/springsecurity-cas.html">
+                <span class="level-item">Spring Boot 实现单点登录的第三种方案！</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+	<section id="comments"></section>
+	<script src="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/gitment.browser.js"></script>
+	<!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/default.css"/>-->
+	<link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+	<script>
+		if (document.getElementById('comments')) {
+			var gitment = new Gitment({
+				id: '2020/0605/springsecurity-cas-mysql.html'.length>50?'2020/0605/springsecurity-cas-mysql.html'.substring(0,50):'2020/0605/springsecurity-cas-mysql.html',
+				owner: 'lenve',
+				repo: 'javaboy_comment',
+				oauth: {
+					client_id: 'ecc1a65d7b7baf6a495c',
+					client_secret: '427ecd90ada169afa77fc164509449905dd37f67',
+				},
+			})
+			gitment.render('comments')
+		}
+	</script>
+	
+    </div>
+</div>
+<style>
+.lock {
+    position: relative;
+    overflow: hidden;
+    padding-bottom: 30px;
+}
+.asb-post-01 {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    display: block;
+    z-index: 10000;
+    margin-bottom: 0;
+}
+.asb-post-01 .info {
+    background: white;
+    height: 370px;
+}
+.asb-post-01 .mask {
+    height: 240px;
+    width: 100%;
+    background: -webkit-gradient(linear, 0 top, 0 bottom, from(rgba(255, 255, 255, 0)), to(#fff));
+}
+</style>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script>
+function getCookie(name) {
+	var value = "; " + document.cookie;
+	var parts = value.split("; " + name + "=");
+	if (parts.length == 2)
+		return parts.pop().split(";").shift();
+}
+
+function getToken() {
+	let value = getCookie('UM_distinctid');
+	if (!value) {
+		return defaultToken;
+	}
+	return value.substring(value.length - 6).toUpperCase();
+}
+
+
+
+// 文章所在容器的选择器
+// var articleSelector = 'article.article-content';
+
+// DOM 完全就绪时执行
+$(function() {
+    // 找到文章所在的容器
+    var $article = $("#content");
+    console.log($article)
+	if ($article.length > 0) {
+		// 文章的实际高度
+		var article = $article[0], height = article.clientHeight;
+		// 文章隐藏后的高度
+		var halfHeight = height * 0.3;
+		
+		// 篇幅短一点的文章就不需要解锁了
+		if (halfHeight > 800) {
+			
+            // 获取口令
+            var mytoken = window.localStorage.getItem("javaboytoken")
+            var token;
+            if(mytoken){
+                token=mytoken
+            }else{
+                token = 'B'+getToken();
+                window.localStorage.setItem("javaboytoken",token)
+            }
+			$('.asb-post-01').find('.token').text(token);
+			
+var _lock = function() {
+	$article.css('height', halfHeight + 'px');
+	$article.addClass('lock');
+	$('.asb-post-01').css('display', 'block');
+}
+
+var _unlock = function() {
+	$article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+
+// 查询后端的结果
+var _detect = function() {
+	$.ajax({
+		url : 'http://blog-wx.itboyhub.com/wx/checktoken',
+		method : 'GET',
+		data : {
+			token : token
+		},
+		success : function(data) {
+			if (data.locked === true) {
+				_lock();
+			} else {
+				_unlock();
+			}
+		},
+		error : function(data) {
+			_unlock();
+		}
+	})
+}
+
+_detect();
+setInterval(function() {
+    _detect();
+}, 5000);
+}else{
+    $article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+    }
+});
+</script>
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="江南一点雨">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>China· ShenZhen</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        314
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        49
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        88
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/lenve" target="_blank">
+                扫码关注微信公众号</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="Github" href="https://github.com/lenve">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="envelope" href="mailto:wangsong0210@gmail.com">
+                
+                <i class="fa fa-envelope"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="RSS" href="/atom.xml">
+                
+                <i class="fas fa-rss"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/2019/">
+            <span class="level-start">
+                <span class="level-item">2019</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Blog/">
+            <span class="level-start">
+                <span class="level-item">Blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Chrome/">
+            <span class="level-start">
+                <span class="level-item">Chrome</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/FastDFS/">
+            <span class="level-start">
+                <span class="level-item">FastDFS</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Git/">
+            <span class="level-start">
+                <span class="level-item">Git</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/GitHub/">
+            <span class="level-start">
+                <span class="level-item">GitHub</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IDEA/">
+            <span class="level-start">
+                <span class="level-item">IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IntelliJ-IDEA/">
+            <span class="level-start">
+                <span class="level-item">IntelliJ IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Java/">
+            <span class="level-start">
+                <span class="level-item">Java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/JavaWeb/">
+            <span class="level-start">
+                <span class="level-item">JavaWeb</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MacBookPro/">
+            <span class="level-start">
+                <span class="level-item">MacBookPro</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Maven/">
+            <span class="level-start">
+                <span class="level-item">Maven</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MongoDB/">
+            <span class="level-start">
+                <span class="level-item">MongoDB</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MyBatis/">
+            <span class="level-start">
+                <span class="level-item">MyBatis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MySQL/">
+            <span class="level-start">
+                <span class="level-item">MySQL</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">10</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Nginx/">
+            <span class="level-start">
+                <span class="level-item">Nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/OAuth2/">
+            <span class="level-start">
+                <span class="level-item">OAuth2</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">10</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Redis/">
+            <span class="level-start">
+                <span class="level-item">Redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Resume/">
+            <span class="level-start">
+                <span class="level-item">Resume</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring/">
+            <span class="level-start">
+                <span class="level-item">Spring</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Boot/">
+            <span class="level-start">
+                <span class="level-item">Spring Boot</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">117</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Cloud/">
+            <span class="level-start">
+                <span class="level-item">Spring Cloud</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Security/">
+            <span class="level-start">
+                <span class="level-item">Spring Security</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">29</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringMVC/">
+            <span class="level-start">
+                <span class="level-item">SpringMVC</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringSecurity/">
+            <span class="level-start">
+                <span class="level-item">SpringSecurity</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Transaction/">
+            <span class="level-start">
+                <span class="level-item">Transaction</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/blog/">
+            <span class="level-start">
+                <span class="level-item">blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/docker/">
+            <span class="level-start">
+                <span class="level-item">docker</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/domain/">
+            <span class="level-start">
+                <span class="level-item">domain</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/hexo/">
+            <span class="level-start">
+                <span class="level-item">hexo</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/idea/">
+            <span class="level-start">
+                <span class="level-item">idea</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/java/">
+            <span class="level-start">
+                <span class="level-item">java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/life/">
+            <span class="level-start">
+                <span class="level-item">life</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/mail/">
+            <span class="level-start">
+                <span class="level-item">mail</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/nginx/">
+            <span class="level-start">
+                <span class="level-item">nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/redis/">
+            <span class="level-start">
+                <span class="level-item">redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/transaction/">
+            <span class="level-start">
+                <span class="level-item">transaction</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vhr/">
+            <span class="level-start">
+                <span class="level-item">vhr</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vue/">
+            <span class="level-start">
+                <span class="level-item">vue</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/侃侃而谈/">
+            <span class="level-start">
+                <span class="level-item">侃侃而谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">9</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/前后端分离/">
+            <span class="level-start">
+                <span class="level-item">前后端分离</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/外包/">
+            <span class="level-start">
+                <span class="level-item">外包</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/学习资源/">
+            <span class="level-start">
+                <span class="level-item">学习资源</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">7</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/工具/">
+            <span class="level-start">
+                <span class="level-item">工具</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微人事/">
+            <span class="level-start">
+                <span class="level-item">微人事</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微服务/">
+            <span class="level-start">
+                <span class="level-item">微服务</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/杂谈/">
+            <span class="level-start">
+                <span class="level-item">杂谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/生活/">
+            <span class="level-start">
+                <span class="level-item">生活</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/面试/">
+            <span class="level-start">
+                <span class="level-item">面试</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/2019-article/" style="font-size: 10px;">2019-article</a> <a href="/tags/Blog/" style="font-size: 10px;">Blog</a> <a href="/tags/CAS/" style="font-size: 11.54px;">CAS</a> <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 10.77px;">Chrome</a> <a href="/tags/Docker/" style="font-size: 11.54px;">Docker</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/Eureka/" style="font-size: 10px;">Eureka</a> <a href="/tags/FastDFS/" style="font-size: 11.54px;">FastDFS</a> <a href="/tags/Flyway/" style="font-size: 10px;">Flyway</a> <a href="/tags/Freemarker/" style="font-size: 10px;">Freemarker</a> <a href="/tags/Git/" style="font-size: 15.38px;">Git</a> <a href="/tags/GitHub/" style="font-size: 10.77px;">GitHub</a> <a href="/tags/Https/" style="font-size: 10px;">Https</a> <a href="/tags/IDEA/" style="font-size: 14.62px;">IDEA</a> <a href="/tags/IDEA，EasyCode/" style="font-size: 10px;">IDEA，EasyCode</a> <a href="/tags/IntelliJ-IDEA/" style="font-size: 11.54px;">IntelliJ IDEA</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/Java/" style="font-size: 10.77px;">Java</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 10.77px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 11.54px;">Jpa</a> <a href="/tags/LiveReload/" style="font-size: 10px;">LiveReload</a> <a href="/tags/MacBookPro/" style="font-size: 10px;">MacBookPro</a> <a href="/tags/Mail/" style="font-size: 10px;">Mail</a> <a href="/tags/Maven/" style="font-size: 12.31px;">Maven</a> <a href="/tags/MongoDB/" style="font-size: 17.69px;">MongoDB</a> <a href="/tags/MyBatis/" style="font-size: 13.08px;">MyBatis</a> <a href="/tags/MyCat/" style="font-size: 12.31px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 16.15px;">MySQL</a> <a href="/tags/Nacos/" style="font-size: 10px;">Nacos</a> <a href="/tags/Nginx/" style="font-size: 10.77px;">Nginx</a> <a href="/tags/OAuth2/" style="font-size: 16.15px;">OAuth2</a> <a href="/tags/PicGo/" style="font-size: 10px;">PicGo</a> <a href="/tags/RabbitMQ/" style="font-size: 10.77px;">RabbitMQ</a> <a href="/tags/Redis/" style="font-size: 18.46px;">Redis</a> <a href="/tags/Resume/" style="font-size: 10px;">Resume</a> <a href="/tags/SSM/" style="font-size: 10px;">SSM</a> <a href="/tags/Shiro/" style="font-size: 10px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 12.31px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Cloud/" style="font-size: 12.31px;">Spring Cloud</a> <a href="/tags/Spring-Data/" style="font-size: 10.77px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 19.23px;">Spring Security</a> <a href="/tags/SpringBoot/" style="font-size: 11.54px;">SpringBoot</a> <a href="/tags/SpringMVC/" style="font-size: 12.31px;">SpringMVC</a> <a href="/tags/SpringSecurity/" style="font-size: 10px;">SpringSecurity</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Thymeleaf/" style="font-size: 10px;">Thymeleaf</a> <a href="/tags/Transaction/" style="font-size: 10px;">Transaction</a> <a href="/tags/Video/" style="font-size: 10px;">Video</a> <a href="/tags/Vue/" style="font-size: 16.92px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/blog/" style="font-size: 10px;">blog</a> <a href="/tags/docker/" style="font-size: 15.38px;">docker</a> <a href="/tags/domain/" style="font-size: 10px;">domain</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/i18n/" style="font-size: 10px;">i18n</a> <a href="/tags/idea/" style="font-size: 10px;">idea</a> <a href="/tags/java/" style="font-size: 10px;">java</a> <a href="/tags/life/" style="font-size: 13.85px;">life</a> <a href="/tags/mail/" style="font-size: 10px;">mail</a> <a href="/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/router/" style="font-size: 10px;">router</a> <a href="/tags/transaction/" style="font-size: 10.77px;">transaction</a> <a href="/tags/vhr/" style="font-size: 13.85px;">vhr</a> <a href="/tags/vue/" style="font-size: 10px;">vue</a> <a href="/tags/weixin/" style="font-size: 10.77px;">weixin</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/七牛云/" style="font-size: 10px;">七牛云</a> <a href="/tags/中间件/" style="font-size: 10px;">中间件</a> <a href="/tags/侃侃而谈/" style="font-size: 13.85px;">侃侃而谈</a> <a href="/tags/分布式锁/" style="font-size: 10px;">分布式锁</a> <a href="/tags/前后端分离/" style="font-size: 13.08px;">前后端分离</a> <a href="/tags/单体应用/" style="font-size: 10px;">单体应用</a> <a href="/tags/外包/" style="font-size: 10px;">外包</a> <a href="/tags/学习资源/" style="font-size: 13.08px;">学习资源</a> <a href="/tags/工具/" style="font-size: 10.77px;">工具</a> <a href="/tags/微人事/" style="font-size: 10.77px;">微人事</a> <a href="/tags/微服务/" style="font-size: 10.77px;">微服务</a> <a href="/tags/杂谈/" style="font-size: 13.85px;">杂谈</a> <a href="/tags/条件注解/" style="font-size: 10px;">条件注解</a> <a href="/tags/生活/" style="font-size: 10.77px;">生活</a> <a href="/tags/程序人生/" style="font-size: 10.77px;">程序人生</a> <a href="/tags/程序员/" style="font-size: 10px;">程序员</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow  ">
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-06-05T14:47:22.000Z">2020-06-05</time></div>
+                    <a href="/2020/0605/springsecurity-cas-mysql.html" class="has-link-black-ter is-size-6">Spring Boot+CAS 单点登录，如何对接数据库？</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring-Security/">Spring Security</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-06-04T14:47:12.000Z">2020-06-04</time></div>
+                    <a href="/2020/0604/springsecurity-cas.html" class="has-link-black-ter is-size-6">Spring Boot 实现单点登录的第三种方案！</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring-Security/">Spring Security</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-06-02T14:47:59.000Z">2020-06-02</time></div>
+                    <a href="/2020/0602/springcloud-maven-version.html" class="has-link-black-ter is-size-6">来一个简单的，微服务项目中如何管理依赖版本号？</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring-Cloud/">Spring Cloud</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-06-01T14:47:02.000Z">2020-06-01</time></div>
+                    <a href="/2020/0601/springsecurity-casserver.html" class="has-link-black-ter is-size-6">松哥手把手教你入门 Spring Boot + CAS 单点登录</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring-Security/">Spring Security</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-05-28T14:46:51.000Z">2020-05-28</time></div>
+                    <a href="/2020/0528/springsecurity-ignoring.html" class="has-link-black-ter is-size-6">Spring Security 两种资源放行策略，千万别用错了！</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring-Security/">Spring Security</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">4</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">23</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">25</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">25</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">20</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">40</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">17</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">22</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">12</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">43</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">16</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">26</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+            
+
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            友链
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itboyhub.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">江南一点雨-国内站</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itboyhub.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.ityouknow.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">纯洁的微笑</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.ityouknow.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.itechyou.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">I Tech You, 我教你！</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itechyou.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itwanger.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">沉默王二</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itwanger.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://bugstack.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">bugstack虫洞栈</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">bugstack.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.cxyxiaowu.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">五分钟学算法</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.cxyxiaowu.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.justdojava.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 极客技术</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.justdojava.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cxytiandi.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">猿天地</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cxytiandi.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://vimjc.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Vim教程网</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">vimjc.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://muggle.javaboy.org/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">muggle</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">muggle.javaboy.org</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://crossoverjie.top/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">crossoverJie&#39;s Blog</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">crossoverjie.top</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cmsblogs.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 技术驿站</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cmsblogs.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://maizitoday.github.io/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">麦子的博客</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">maizitoday.github.io</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.haoservice.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">码农code之路</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.haoservice.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.jitwxs.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Jitwxs</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.jitwxs.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.gameboys.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 烂笔头</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.gameboys.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.a2data.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">A2Data</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.a2data.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="Spring Boot+CAS 单点登录，如何对接数据库？" height="28">
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 江南一点雨&nbsp;
+				<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><!--
+PV <span id="busuanzi_value_site_pv"></span>&nbsp;|&nbsp;<i class="fa fa-user-md"></i>  UV <span id="busuanzi_value_site_uv"></span>&nbsp;-->
+				<script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? "https://" : "http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1276890692'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s96.cnzz.com/z_stat.php%3Fid%3D1276890692%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+				<a href="http://www.beian.miit.gov.cn/" style="color: black;">粤ICP备19111220号</a>
+                <!--Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么...">
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>
