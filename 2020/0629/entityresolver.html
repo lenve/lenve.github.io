@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head><meta name="generator" content="Hexo 3.8.0">
+    <meta charset="utf-8">
+<title>Spring 源码第三弹！EntityResolver 是个什么鬼？ - 江南一点雨</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+
+
+    <meta name="description" content="上篇文章和小伙伴们说了 Spring 源码中 XML 文件的解析流程，本来可以继续往下走看加载核心类了，但是松哥还是希望能够慢一点，既然要学就学懂，在 XML 文件解析的过程中还涉及到一些其他的类和概念，因此我就先用几篇文章介绍一下这些涉及到的概念或者类，然后我们再继续往下看。">
+<meta name="keywords" content="Spring,源码解读">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring 源码第三弹！EntityResolver 是个什么鬼？">
+<meta property="og:url" content="http://www.javaboy.org/2020/0629/entityresolver.html">
+<meta property="og:site_name" content="江南一点雨">
+<meta property="og:description" content="上篇文章和小伙伴们说了 Spring 源码中 XML 文件的解析流程，本来可以继续往下走看加载核心类了，但是松哥还是希望能够慢一点，既然要学就学懂，在 XML 文件解析的过程中还涉及到一些其他的类和概念，因此我就先用几篇文章介绍一下这些涉及到的概念或者类，然后我们再继续往下看。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="http://www.javaboy.org/images/og_image.png">
+<meta property="og:updated_time" content="2020-06-30T01:46:24.986Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Spring 源码第三弹！EntityResolver 是个什么鬼？">
+<meta name="twitter:description" content="上篇文章和小伙伴们说了 Spring 源码中 XML 文件的解析流程，本来可以继续往下走看加载核心类了，但是松哥还是希望能够慢一点，既然要学就学懂，在 XML 文件解析的过程中还涉及到一些其他的类和概念，因此我就先用几篇文章介绍一下这些涉及到的概念或者类，然后我们再继续往下看。">
+<meta name="twitter:image" content="http://www.javaboy.org/images/og_image.png">
+
+
+
+
+
+
+
+<link rel="icon" href="https://www.javaboy.org/favicon.ico">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-2-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+                
+                <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="Spring 源码第三弹！EntityResolver 是个什么鬼？" height="28">
+                
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item" href="/">江南一点雨</a>
+                
+                <a class="navbar-item" href="/archives">归档</a>
+                
+                <a class="navbar-item" href="/fronted-backend">前后端分离</a>
+                
+                <a class="navbar-item" href="http://spring.javaboy.org">Spring</a>
+                
+                <a class="navbar-item" href="http://springmvc.javaboy.org">SpringMVC</a>
+                
+                <a class="navbar-item" href="http://mybatis.javaboy.org">MyBatis</a>
+                
+                <a class="navbar-item" href="http://springboot.javaboy.org">Spring Boot</a>
+                
+                <a class="navbar-item" href="http://maven.javaboy.org">Maven</a>
+                
+                <a class="navbar-item" href="/redis">Redis</a>
+                
+                <a class="navbar-item" href="/mongodb">MongoDB</a>
+                
+                <a class="navbar-item" href="/mysql">MySQL</a>
+                
+                <a class="navbar-item" href="/docker">Docker</a>
+                
+                <a class="navbar-item" href="/git">Git</a>
+                
+                <a class="navbar-item" href="/about">About</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                
+                
+                <a class="navbar-item search" style="height: 40px;line-height: 60px;width: 180px;margin: 12px 15px;box-sizing: border-box;border: 1px solid #dedede;border-radius: 20px;display: flex;justify-content: space-between;padding-left: 12px;padding-right: 10px" title="搜索" href="javascript:;">
+                    <!--<div style="border: 1px solid #dedede;border-radius: 10px;">-->
+                    <div>搜索</div>
+                        <i class="fas fa-search"></i>
+                    <!--</div>-->
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2020-06-29T01:28:21.000Z">2020-06-29</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Spring/">Spring</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    19 分钟 读完 (大约 2891 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Spring 源码第三弹！EntityResolver 是个什么鬼？
+            
+        </h1>
+        
+            <div class="content" id="content">
+                    <p><a href="https://mp.weixin.qq.com/s/Rr7FBgau8hT0t4X9XtXdGQ" target="_blank" rel="noopener">上篇文章</a>和小伙伴们说了 Spring 源码中 XML 文件的解析流程，本来可以继续往下走看加载核心类了，但是松哥还是希望能够慢一点，既然要学就学懂，在 XML 文件解析的过程中还涉及到一些其他的类和概念，因此我就先用几篇文章介绍一下这些涉及到的概念或者类，然后我们再继续往下看。</p>
+<a id="more"></a>
+<p>本文要和大家介绍的是<a href="https://mp.weixin.qq.com/s/Rr7FBgau8hT0t4X9XtXdGQ" target="_blank" rel="noopener">上篇文章</a>中涉及到的 EntityResolver 类，看看这个类到底是干嘛用的。</p>
+<p>本文是 Spring 源码系列第四篇，阅读前面文章有助于更好理解本文：</p>
+<ol>
+<li><a href="https://mp.weixin.qq.com/s/1ImVkjdmcllArzPOSksNoA" target="_blank" rel="noopener">Spring 源码解读计划</a></li>
+<li><a href="https://mp.weixin.qq.com/s/OVcBCs7rluNXdKI2bNshQw" target="_blank" rel="noopener">Spring 源码第一篇开整！配置文件是怎么加载的？</a></li>
+<li><a href="https://mp.weixin.qq.com/s/Rr7FBgau8hT0t4X9XtXdGQ" target="_blank" rel="noopener">Spring 源码第二弹！XML 文件解析流程</a></li>
+</ol>
+<p>先来回顾下，在 EntityResolver 这个类在<a href="https://mp.weixin.qq.com/s/Rr7FBgau8hT0t4X9XtXdGQ" target="_blank" rel="noopener">上篇文章</a>哪里出现了。</p>
+<p>我们在讲到 doLoadDocument 方法时，在该方法中调用 loadDocument 方法时，传递的第二个参数就是一个 EntityResolver 实例，当时我们说这个是用来处理文件的验证方式的，但是到底是怎么处理的，今天我们就来看下。</p>
+<h2 id="1-XML-验证模式"><a href="#1-XML-验证模式" class="headerlink" title="1.XML 验证模式"></a>1.XML 验证模式</h2><p>要了解 EntityResolver，就得先来看看 XML 文件验证模式。</p>
+<p>现在我们大多数情况下可能都是使用 JSON 传递数据，XML 使用较少，可能有的小伙伴对 XML 文件的一些规则还不太熟悉，我这里稍微说一下。</p>
+<p>XML 是指可扩展标记语言(eXtensible Markup Language)，它是一种标记语言，类似 HTML；XML 标签没有被预定义，需要用户自行定义标签，也就是 XML 文件中的节点都是用户自定义的。XML 文件从设计之初就是为了传输数据，而非显示数据。</p>
+<p>一般来说，一个 XML 文件由六个部分组成：</p>
+<ul>
+<li>文档生命</li>
+<li>元素</li>
+<li>属性</li>
+<li>注释</li>
+<li>CDATA 区</li>
+<li>处理指令</li>
+</ul>
+<p>虽然说 XML 文件本身是没有预定义 XML 标签，但是当 XML 文件作为框架的配置时，对于 XML 标签还是要有一定的约束，否则每个人都按照自己的喜好定义 XML 标签，框架就没法读取这样的 XML 文件了。</p>
+<p>在 XML 技术中，开发者可以通过一个文档来约束一个 XML 的文档中的标签，这个文档称之为约束。遵循 XML 语法的 XML 我们称之为格式良好的 XML，而遵循 XML 约束的 XML 我们称之为有效的 XML。XML 约束文档主要定义了在 XML 中允许出现的元素名称、属性及元素出现的顺序等等。</p>
+<p>要想约束 XML 标签，有两种方式：</p>
+<ol>
+<li>DTD</li>
+<li>Schema</li>
+</ol>
+<p>DTD(Document Type Definition)，全称为文档类型定义，一个 DTD 约束文件我们既可以定义在 XML 文件内部，也可以定义一个本地文件，也可以引用一个网络上的公共的 DTD。</p>
+<p>XML Schema 也是一种用于定义和描述 XML 文档结构与内容的模式语言，相比于 DTD，Schema 对于名称空间的支持更加友好，同时也支持更多的数据类型，而且它的约束能力也比较强大，另外还有非常重要的一点是，Schema 文档本身也是 XML 文档，而不是像 DTD 一样使用自成一体的语法。</p>
+<p>所以，Schema 目前在 XML 约束这块更具备优势，也在逐渐替代 DTD。</p>
+<p>大家在日常开发中，这两种约束可能都见过，但是有的人可能没注意。我给大家简单举一个例子。</p>
+<p>早期的 Spring 配置头部是这样的(Spring2.x)，这就是 DTD 约束：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>  </span><br><span class="line"><span class="hljs-meta">&lt;!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN 2.0//EN"  </span></span><br><span class="line"><span class="hljs-meta">"http://www.springframework.org/dtd/spring-beans-2.0.dtd"&gt;</span>  </span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">beans</span>&gt;</span>  </span><br><span class="line">  </span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">beans</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>现在大家看到的 Spring 配置头部一般都是这样，这就是 Schema 约束：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">beans</span> <span class="hljs-attr">xmlns</span>=<span class="hljs-string">"http://www.springframework.org/schema/beans"</span></span></span><br><span class="line"><span class="hljs-tag">       <span class="hljs-attr">xmlns:xsi</span>=<span class="hljs-string">"http://www.w3.org/2001/XMLSchema-instance"</span></span></span><br><span class="line"><span class="hljs-tag">       <span class="hljs-attr">xmlns:context</span>=<span class="hljs-string">"http://www.springframework.org/schema/context"</span></span></span><br><span class="line"><span class="hljs-tag">       <span class="hljs-attr">xsi:schemaLocation</span>=<span class="hljs-string">"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd"</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">beans</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>schema 约束对命名空间有着很好的支持，命名空间可以防止命名冲突，schema 中的名称空间和约束文件都是成对出现的。</p>
+<p>有了约束，XML 文件中该写什么不该写什么就固定下来了，这样框架才能成功解析出 XML 文件。</p>
+<p>但是大家同时也发现了一个新的问题，无论是 DTD 还是 Schema 约束，给出的约束文件地址都是一个在线地址，这就意味着项目启动时必须能够访问到该在线地址，才能加载到约束文件，如果访问在线约束文件失败，那么项目启动也会失败。</p>
+<p>为了解决这个问题，框架一般都是将约束文件放在本地的，在本地哪里呢？实际上就在你下载的 jar 包里。以 spring-beans 为例，在下载的 jar 包里有如下两个文件：</p>
+<p><img src="http://img.itboyhub.com/2020/06/20200624103413.png" alt></p>
+<p>spring.handlers 文件内容如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">http\://www.springframework.org/schema/c=org.springframework.beans.factory.xml.SimpleConstructorNamespaceHandler</span><br><span class="line">http\://www.springframework.org/schema/p=org.springframework.beans.factory.xml.SimplePropertyNamespaceHandler</span><br><span class="line">http\://www.springframework.org/schema/util=org.springframework.beans.factory.xml.UtilNamespaceHandler</span><br></pre></td></tr></table></figure>
+<p>这其实一个映射配置，每一个名称空间对应的处理类在这里进行配置。</p>
+<p>spring.schemas 文件内容如下（部分）：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">http\://www.springframework.org/schema/beans/spring-beans-2.0.xsd=org/springframework/beans/factory/xml/spring-beans.xsd</span><br><span class="line">http\://www.springframework.org/schema/beans/spring-beans-2.5.xsd=org/springframework/beans/factory/xml/spring-beans.xsd</span><br><span class="line">http\://www.springframework.org/schema/beans/spring-beans-3.0.xsd=org/springframework/beans/factory/xml/spring-beans.xsd</span><br><span class="line">http\://www.springframework.org/schema/beans/spring-beans-3.1.xsd=org/springframework/beans/factory/xml/spring-beans.xsd</span><br><span class="line">http\://www.springframework.org/schema/beans/spring-beans-3.2.xsd=org/springframework/beans/factory/xml/spring-beans.xsd</span><br><span class="line">http\://www.springframework.org/schema/beans/spring-beans-4.0.xsd=org/springframework/beans/factory/xml/spring-beans.xsd</span><br><span class="line">http\://www.springframework.org/schema/beans/spring-beans-4.1.xsd=org/springframework/beans/factory/xml/spring-beans.xsd</span><br><span class="line">http\://www.springframework.org/schema/beans/spring-beans-4.2.xsd=org/springframework/beans/factory/xml/spring-beans.xsd</span><br><span class="line">http\://www.springframework.org/schema/beans/spring-beans-4.3.xsd=org/springframework/beans/factory/xml/spring-beans.xsd</span><br><span class="line">http\://www.springframework.org/schema/beans/spring-beans.xsd=org/springframework/beans/factory/xml/spring-beans.xsd</span><br></pre></td></tr></table></figure>
+<p>可以看到，各种版本以及没有版本号的约束文件，都对应了同一个文件，就是 org/springframework/beans/factory/xml/spring-beans.xsd，打开这个文件目录，我们就可以看到约束文件：</p>
+<p><img src="http://img.itboyhub.com/2020/06/20200624104130.png" alt></p>
+<p><strong>所以我们虽然在 Spring 的 XML 配置中看到的约束文件是一个在线地址，实际上约束文件是从本地 jar 中读取的。</strong></p>
+<h2 id="2-两种解析器"><a href="#2-两种解析器" class="headerlink" title="2.两种解析器"></a>2.两种解析器</h2><p>EntityResolver 就是用来处理 XML 验证的。我们先来看下 EntityResolver 接口的定义：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">EntityResolver</span> </span>&#123;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">abstract</span> InputSource <span class="hljs-title">resolveEntity</span> <span class="hljs-params">(String publicId,</span></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-params">                                               String systemId)</span></span></span><br><span class="line"><span class="hljs-function">        <span class="hljs-keyword">throws</span> SAXException, IOException</span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>接口中就只有一个方法，就是加载约束文件。在 Spring 中，EntityResolver 的实现类是 DelegatingEntityResolver：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">DelegatingEntityResolver</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">EntityResolver</span> </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String DTD_SUFFIX = <span class="hljs-string">".dtd"</span>;</span><br><span class="line">	<span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String XSD_SUFFIX = <span class="hljs-string">".xsd"</span>;</span><br><span class="line">	<span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> EntityResolver dtdResolver;</span><br><span class="line">	<span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> EntityResolver schemaResolver;</span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">DelegatingEntityResolver</span><span class="hljs-params">(@Nullable ClassLoader classLoader)</span> </span>&#123;</span><br><span class="line">		<span class="hljs-keyword">this</span>.dtdResolver = <span class="hljs-keyword">new</span> BeansDtdResolver();</span><br><span class="line">		<span class="hljs-keyword">this</span>.schemaResolver = <span class="hljs-keyword">new</span> PluggableSchemaResolver(classLoader);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">DelegatingEntityResolver</span><span class="hljs-params">(EntityResolver dtdResolver, EntityResolver schemaResolver)</span> </span>&#123;</span><br><span class="line">		<span class="hljs-keyword">this</span>.dtdResolver = dtdResolver;</span><br><span class="line">		<span class="hljs-keyword">this</span>.schemaResolver = schemaResolver;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-meta">@Override</span></span><br><span class="line">	<span class="hljs-meta">@Nullable</span></span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">public</span> InputSource <span class="hljs-title">resolveEntity</span><span class="hljs-params">(@Nullable String publicId, @Nullable String systemId)</span></span></span><br><span class="line"><span class="hljs-function">			<span class="hljs-keyword">throws</span> SAXException, IOException </span>&#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> (systemId != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> (systemId.endsWith(DTD_SUFFIX)) &#123;</span><br><span class="line">				<span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.dtdResolver.resolveEntity(publicId, systemId);</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (systemId.endsWith(XSD_SUFFIX)) &#123;</span><br><span class="line">				<span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.schemaResolver.resolveEntity(publicId, systemId);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-meta">@Override</span></span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">toString</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-string">"EntityResolver delegating "</span> + XSD_SUFFIX + <span class="hljs-string">" to "</span> + <span class="hljs-keyword">this</span>.schemaResolver +</span><br><span class="line">				<span class="hljs-string">" and "</span> + DTD_SUFFIX + <span class="hljs-string">" to "</span> + <span class="hljs-keyword">this</span>.dtdResolver;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在 DelegatingEntityResolver 类中：</p>
+<ol>
+<li>首先通过两种不同的后缀来区分不同的约束。</li>
+<li>然后定义了 dtdResolver 和 schemaResolver 两个不同的变量，对应的类型分别是 BeansDtdResolver 和 PluggableSchemaResolver，也就是 dtd 和 schema 的约束验证分别由这两个类来处理。</li>
+<li>在 resolveEntity 方法中，根据解析出来不同的后缀，分别交由不同的 EntityResolver 来处理。resolveEntity 解析中有两个参数，如果是 dtd 解析的话，publicId 是有值的，如果是 schema 解析，publicId 为 null，而 systemId 则始终指向具体的约束文件。</li>
+</ol>
+<p>由于现在大部分都是 schema 约束，所以这里我们就来重点看下 PluggableSchemaResolver 类的实现：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">PluggableSchemaResolver</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">EntityResolver</span> </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String DEFAULT_SCHEMA_MAPPINGS_LOCATION = <span class="hljs-string">"META-INF/spring.schemas"</span>;</span><br><span class="line">	<span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> Log logger = LogFactory.getLog(PluggableSchemaResolver.class);</span><br><span class="line">	<span class="hljs-meta">@Nullable</span></span><br><span class="line">	<span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> ClassLoader classLoader;</span><br><span class="line">	<span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> String schemaMappingsLocation;</span><br><span class="line">	<span class="hljs-meta">@Nullable</span></span><br><span class="line">	<span class="hljs-keyword">private</span> <span class="hljs-keyword">volatile</span> Map&lt;String, String&gt; schemaMappings;</span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">PluggableSchemaResolver</span><span class="hljs-params">(@Nullable ClassLoader classLoader)</span> </span>&#123;</span><br><span class="line">		<span class="hljs-keyword">this</span>.classLoader = classLoader;</span><br><span class="line">		<span class="hljs-keyword">this</span>.schemaMappingsLocation = DEFAULT_SCHEMA_MAPPINGS_LOCATION;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">PluggableSchemaResolver</span><span class="hljs-params">(@Nullable ClassLoader classLoader, String schemaMappingsLocation)</span> </span>&#123;</span><br><span class="line">		Assert.hasText(schemaMappingsLocation, <span class="hljs-string">"'schemaMappingsLocation' must not be empty"</span>);</span><br><span class="line">		<span class="hljs-keyword">this</span>.classLoader = classLoader;</span><br><span class="line">		<span class="hljs-keyword">this</span>.schemaMappingsLocation = schemaMappingsLocation;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-meta">@Override</span></span><br><span class="line">	<span class="hljs-meta">@Nullable</span></span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">public</span> InputSource <span class="hljs-title">resolveEntity</span><span class="hljs-params">(@Nullable String publicId, @Nullable String systemId)</span> <span class="hljs-keyword">throws</span> IOException </span>&#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;</span><br><span class="line">			logger.trace(<span class="hljs-string">"Trying to resolve XML entity with public id ["</span> + publicId +</span><br><span class="line">					<span class="hljs-string">"] and system id ["</span> + systemId + <span class="hljs-string">"]"</span>);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> (systemId != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			String resourceLocation = getSchemaMappings().get(systemId);</span><br><span class="line">			<span class="hljs-keyword">if</span> (resourceLocation == <span class="hljs-keyword">null</span> &amp;&amp; systemId.startsWith(<span class="hljs-string">"https:"</span>)) &#123;</span><br><span class="line">				resourceLocation = getSchemaMappings().get(<span class="hljs-string">"http:"</span> + systemId.substring(<span class="hljs-number">6</span>));</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">if</span> (resourceLocation != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">				Resource resource = <span class="hljs-keyword">new</span> ClassPathResource(resourceLocation, <span class="hljs-keyword">this</span>.classLoader);</span><br><span class="line">				<span class="hljs-keyword">try</span> &#123;</span><br><span class="line">					InputSource source = <span class="hljs-keyword">new</span> InputSource(resource.getInputStream());</span><br><span class="line">					source.setPublicId(publicId);</span><br><span class="line">					source.setSystemId(systemId);</span><br><span class="line">					<span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;</span><br><span class="line">						logger.trace(<span class="hljs-string">"Found XML schema ["</span> + systemId + <span class="hljs-string">"] in classpath: "</span> + resourceLocation);</span><br><span class="line">					&#125;</span><br><span class="line">					<span class="hljs-keyword">return</span> source;</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="hljs-keyword">catch</span> (FileNotFoundException ex) &#123;</span><br><span class="line">					<span class="hljs-keyword">if</span> (logger.isDebugEnabled()) &#123;</span><br><span class="line">						logger.debug(<span class="hljs-string">"Could not find XML schema ["</span> + systemId + <span class="hljs-string">"]: "</span> + resource, ex);</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">private</span> Map&lt;String, String&gt; <span class="hljs-title">getSchemaMappings</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">		Map&lt;String, String&gt; schemaMappings = <span class="hljs-keyword">this</span>.schemaMappings;</span><br><span class="line">		<span class="hljs-keyword">if</span> (schemaMappings == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			<span class="hljs-keyword">synchronized</span> (<span class="hljs-keyword">this</span>) &#123;</span><br><span class="line">				schemaMappings = <span class="hljs-keyword">this</span>.schemaMappings;</span><br><span class="line">				<span class="hljs-keyword">if</span> (schemaMappings == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">					<span class="hljs-keyword">try</span> &#123;</span><br><span class="line">						Properties mappings =</span><br><span class="line">								PropertiesLoaderUtils.loadAllProperties(<span class="hljs-keyword">this</span>.schemaMappingsLocation, <span class="hljs-keyword">this</span>.classLoader);</span><br><span class="line">						schemaMappings = <span class="hljs-keyword">new</span> ConcurrentHashMap&lt;&gt;(mappings.size());</span><br><span class="line">						CollectionUtils.mergePropertiesIntoMap(mappings, schemaMappings);</span><br><span class="line">						<span class="hljs-keyword">this</span>.schemaMappings = schemaMappings;</span><br><span class="line">					&#125;</span><br><span class="line">					<span class="hljs-keyword">catch</span> (IOException ex) &#123;</span><br><span class="line">						<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(</span><br><span class="line">								<span class="hljs-string">"Unable to load schema mappings from location ["</span> + <span class="hljs-keyword">this</span>.schemaMappingsLocation + <span class="hljs-string">"]"</span>, ex);</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">return</span> schemaMappings;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-meta">@Override</span></span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">toString</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-string">"EntityResolver using schema mappings "</span> + getSchemaMappings();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>在这个类中，一上来先通过 DEFAULT_SCHEMA_MAPPINGS_LOCATION 变量定义了 spring.schemas 文件的位置。</li>
+<li>getSchemaMappings 方法则是将 spring.schemas 文件中的内容读取成一个 Map 加载进来。</li>
+<li>在 resolveEntity 方法中，根据 systemId 找到文件路径，systemId 是 <code>http\://www.springframework.org/schema/beans/spring-beans.xsd</code> 格式，文件路径则是 <code>org/springframework/beans/factory/xml/spring-beans.xsd</code>，如果第一次没有加载到，就把用户的 <code>https:</code> 替换成 <code>http:</code> 再去加载。</li>
+<li>有了文件路径，接下来调用 ClassPathResource 去获取一个 Resource 对象，这块可以参考本系列<a href="https://mp.weixin.qq.com/s/OVcBCs7rluNXdKI2bNshQw" target="_blank" rel="noopener">第二篇</a>，这里我就不再赘述。</li>
+<li>最后构造一个 InputSource 返回即可。</li>
+</ol>
+<p>在<a href="https://mp.weixin.qq.com/s/Rr7FBgau8hT0t4X9XtXdGQ" target="_blank" rel="noopener">上篇文章</a>中，我们获取 EntityResolver 是通过 getEntityResolver 方法来获取的：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> EntityResolver <span class="hljs-title">getEntityResolver</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.entityResolver == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		<span class="hljs-comment">// Determine default EntityResolver to use.</span></span><br><span class="line">		ResourceLoader resourceLoader = getResourceLoader();</span><br><span class="line">		<span class="hljs-keyword">if</span> (resourceLoader != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			<span class="hljs-keyword">this</span>.entityResolver = <span class="hljs-keyword">new</span> ResourceEntityResolver(resourceLoader);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">this</span>.entityResolver = <span class="hljs-keyword">new</span> DelegatingEntityResolver(getBeanClassLoader());</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.entityResolver;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里最终返回的是 ResourceEntityResolver，ResourceEntityResolver 继承自 DelegatingEntityResolver，当调用 resolveEntity 方法时，也是先调用父类的该方法，进行处理，如果父类方法处理成功了，就直接返回父类方法给出的结果，如果父类方法处理失败了，则在 ResourceEntityResolver 中通过资源的相对路径再次尝试加载。</p>
+<h2 id="3-小结"><a href="#3-小结" class="headerlink" title="3.小结"></a>3.小结</h2><p>好啦，经过上面的介绍，相信大家对于 XMl 约束和 EntityResolver 都有一定的了解啦。</p>
+<p><strong>后记</strong></p>
+<p>本文刚写完，微信群里就有小伙伴问了一个一模一样的问题：</p>
+<p><img src="http://img.itboyhub.com/2020/06/20200628201502.png" alt></p>
+<p>松哥不禁感叹，<strong>源码并非离我们很远的东西，阅读源码可以有效解决我们日常开发中一些实实在在的问题！</strong></p>
+<p>如果觉得有收获，记得点个在看鼓励下松哥哦～</p>
+
+                    <div class="asb-post-01">
+                        <div class="mask"></div>
+                        <div class="info" style="display: flex;justify-content:center;flex-direction:column;align-items:center">
+                                <div>扫码关注微信公众号：<span style="color: #E9405A; font-weight: bold;">江南一点雨</span></div>
+                                <div>
+                                    <span>发送 </span><span class="token" style="color: #e9415a; font-weight: bold; font-size: 17px; margin-bottom: 45px;">290992</span>
+                                </div>
+                                <div>
+                                    即可<span style="color: #e9415a; font-weight: bold;">立即永久</span>解锁本站全部文章（注意区分大小写哦）
+                                </div>
+                            <div>
+                                <img class="code-img" style="width: 300px;display:unset" src="https://www.javaboy.org/images/sb/javaboy.jpg">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Spring/">Spring</a>, <a class="has-link-grey -link" href="/tags/源码解读/">源码解读</a>
+                </div>
+            </div>
+        </div>
+		<div class="level is-size-6">
+						<p>喜欢这篇文章吗？扫码关注公众号<b>【江南一点雨】</b>，<b>【江南一点雨】</b>专注于 SPRING BOOT+微服务以及前后端分离技术，每天推送原创技术干货，关注后回复 JAVA，领取松哥为你精心准备的 JAVA 干货!
+</p>
+		</div>
+		<div class="level is-size-7 is-uppercase">
+<img class="menu-label has-text-centered" src="http://www.javaboy.org/images/sb/javaboy.jpg" alt>
+		</div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">觉得不错，可以给小编加个鸡腿</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="https://www.javaboy.org/images/sb/weixin_pay.png" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2020/0630/springsecurity-exception.html">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">一文搞定 Spring Security 异常处理机制！</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2020/0628/life.html">
+                <span class="level-item">写代码靠天赋还是靠苦功夫？</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+	<section id="comments"></section>
+	<script src="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/gitment.browser.js"></script>
+	<!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/default.css"/>-->
+	<link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+	<script>
+		if (document.getElementById('comments')) {
+			var gitment = new Gitment({
+				id: '2020/0629/entityresolver.html'.length>50?'2020/0629/entityresolver.html'.substring(0,50):'2020/0629/entityresolver.html',
+				owner: 'lenve',
+				repo: 'javaboy_comment',
+				oauth: {
+					client_id: 'ecc1a65d7b7baf6a495c',
+					client_secret: '427ecd90ada169afa77fc164509449905dd37f67',
+				},
+			})
+			gitment.render('comments')
+		}
+	</script>
+	
+    </div>
+</div>
+<style>
+.lock {
+    position: relative;
+    overflow: hidden;
+    padding-bottom: 30px;
+}
+.asb-post-01 {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    display: block;
+    z-index: 10000;
+    margin-bottom: 0;
+}
+.asb-post-01 .info {
+    background: white;
+    height: 370px;
+}
+.asb-post-01 .mask {
+    height: 240px;
+    width: 100%;
+    background: -webkit-gradient(linear, 0 top, 0 bottom, from(rgba(255, 255, 255, 0)), to(#fff));
+}
+</style>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script>
+function getCookie(name) {
+	var value = "; " + document.cookie;
+	var parts = value.split("; " + name + "=");
+	if (parts.length == 2)
+		return parts.pop().split(";").shift();
+}
+
+function getToken() {
+	let value = getCookie('UM_distinctid');
+	if (!value) {
+		return defaultToken;
+	}
+	return value.substring(value.length - 6).toUpperCase();
+}
+
+
+
+// 文章所在容器的选择器
+// var articleSelector = 'article.article-content';
+
+// DOM 完全就绪时执行
+$(function() {
+    // 找到文章所在的容器
+    var $article = $("#content");
+    console.log($article)
+	if ($article.length > 0) {
+		// 文章的实际高度
+		var article = $article[0], height = article.clientHeight;
+		// 文章隐藏后的高度
+		var halfHeight = height * 0.3;
+		
+		// 篇幅短一点的文章就不需要解锁了
+		if (halfHeight > 800) {
+			
+            // 获取口令
+            var mytoken = window.localStorage.getItem("javaboytoken")
+            var token;
+            if(mytoken){
+                token=mytoken
+            }else{
+                token = 'B'+getToken();
+                window.localStorage.setItem("javaboytoken",token)
+            }
+			$('.asb-post-01').find('.token').text(token);
+			
+var _lock = function() {
+	$article.css('height', halfHeight + 'px');
+	$article.addClass('lock');
+	$('.asb-post-01').css('display', 'block');
+}
+
+var _unlock = function() {
+	$article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+
+// 查询后端的结果
+var _detect = function() {
+	$.ajax({
+		url : 'http://blog-wx.itboyhub.com/wx/checktoken',
+		method : 'GET',
+		data : {
+			token : token
+		},
+		success : function(data) {
+			if (data.locked === true) {
+				_lock();
+			} else {
+				_unlock();
+			}
+		},
+		error : function(data) {
+			_unlock();
+		}
+	})
+}
+
+_detect();
+setInterval(function() {
+    _detect();
+}, 5000);
+}else{
+    $article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+    }
+});
+</script>
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="江南一点雨">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>China· ShenZhen</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        331
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        50
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        90
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/lenve" target="_blank">
+                扫码关注微信公众号</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="Github" href="https://github.com/lenve">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="envelope" href="mailto:wangsong0210@gmail.com">
+                
+                <i class="fa fa-envelope"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="RSS" href="/atom.xml">
+                
+                <i class="fas fa-rss"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/2019/">
+            <span class="level-start">
+                <span class="level-item">2019</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Blog/">
+            <span class="level-start">
+                <span class="level-item">Blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Chrome/">
+            <span class="level-start">
+                <span class="level-item">Chrome</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/FastDFS/">
+            <span class="level-start">
+                <span class="level-item">FastDFS</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Git/">
+            <span class="level-start">
+                <span class="level-item">Git</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/GitHub/">
+            <span class="level-start">
+                <span class="level-item">GitHub</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IDEA/">
+            <span class="level-start">
+                <span class="level-item">IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IntelliJ-IDEA/">
+            <span class="level-start">
+                <span class="level-item">IntelliJ IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Java/">
+            <span class="level-start">
+                <span class="level-item">Java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/JavaWeb/">
+            <span class="level-start">
+                <span class="level-item">JavaWeb</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MacBookPro/">
+            <span class="level-start">
+                <span class="level-item">MacBookPro</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Maven/">
+            <span class="level-start">
+                <span class="level-item">Maven</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MongoDB/">
+            <span class="level-start">
+                <span class="level-item">MongoDB</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MyBatis/">
+            <span class="level-start">
+                <span class="level-item">MyBatis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MySQL/">
+            <span class="level-start">
+                <span class="level-item">MySQL</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">10</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Nginx/">
+            <span class="level-start">
+                <span class="level-item">Nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/OAuth2/">
+            <span class="level-start">
+                <span class="level-item">OAuth2</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">10</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Redis/">
+            <span class="level-start">
+                <span class="level-item">Redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Resume/">
+            <span class="level-start">
+                <span class="level-item">Resume</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SSM/">
+            <span class="level-start">
+                <span class="level-item">SSM</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring/">
+            <span class="level-start">
+                <span class="level-item">Spring</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Boot/">
+            <span class="level-start">
+                <span class="level-item">Spring Boot</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">126</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Cloud/">
+            <span class="level-start">
+                <span class="level-item">Spring Cloud</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Security/">
+            <span class="level-start">
+                <span class="level-item">Spring Security</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">30</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringMVC/">
+            <span class="level-start">
+                <span class="level-item">SpringMVC</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringSecurity/">
+            <span class="level-start">
+                <span class="level-item">SpringSecurity</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Transaction/">
+            <span class="level-start">
+                <span class="level-item">Transaction</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/blog/">
+            <span class="level-start">
+                <span class="level-item">blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/docker/">
+            <span class="level-start">
+                <span class="level-item">docker</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/domain/">
+            <span class="level-start">
+                <span class="level-item">domain</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/hexo/">
+            <span class="level-start">
+                <span class="level-item">hexo</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/idea/">
+            <span class="level-start">
+                <span class="level-item">idea</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/java/">
+            <span class="level-start">
+                <span class="level-item">java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/life/">
+            <span class="level-start">
+                <span class="level-item">life</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/mail/">
+            <span class="level-start">
+                <span class="level-item">mail</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/nginx/">
+            <span class="level-start">
+                <span class="level-item">nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/redis/">
+            <span class="level-start">
+                <span class="level-item">redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/transaction/">
+            <span class="level-start">
+                <span class="level-item">transaction</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vhr/">
+            <span class="level-start">
+                <span class="level-item">vhr</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vue/">
+            <span class="level-start">
+                <span class="level-item">vue</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/侃侃而谈/">
+            <span class="level-start">
+                <span class="level-item">侃侃而谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">11</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/前后端分离/">
+            <span class="level-start">
+                <span class="level-item">前后端分离</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/外包/">
+            <span class="level-start">
+                <span class="level-item">外包</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/学习资源/">
+            <span class="level-start">
+                <span class="level-item">学习资源</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">7</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/工具/">
+            <span class="level-start">
+                <span class="level-item">工具</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微人事/">
+            <span class="level-start">
+                <span class="level-item">微人事</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微服务/">
+            <span class="level-start">
+                <span class="level-item">微服务</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/杂谈/">
+            <span class="level-start">
+                <span class="level-item">杂谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/生活/">
+            <span class="level-start">
+                <span class="level-item">生活</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/面试/">
+            <span class="level-start">
+                <span class="level-item">面试</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/2019-article/" style="font-size: 10px;">2019-article</a> <a href="/tags/Blog/" style="font-size: 10px;">Blog</a> <a href="/tags/CAS/" style="font-size: 12.31px;">CAS</a> <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 10.77px;">Chrome</a> <a href="/tags/Docker/" style="font-size: 11.54px;">Docker</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/Eureka/" style="font-size: 10px;">Eureka</a> <a href="/tags/FastDFS/" style="font-size: 11.54px;">FastDFS</a> <a href="/tags/Flyway/" style="font-size: 10px;">Flyway</a> <a href="/tags/Freemarker/" style="font-size: 10px;">Freemarker</a> <a href="/tags/Git/" style="font-size: 15.38px;">Git</a> <a href="/tags/GitHub/" style="font-size: 10.77px;">GitHub</a> <a href="/tags/Https/" style="font-size: 10px;">Https</a> <a href="/tags/IDEA/" style="font-size: 14.62px;">IDEA</a> <a href="/tags/IDEA，EasyCode/" style="font-size: 10px;">IDEA，EasyCode</a> <a href="/tags/IntelliJ-IDEA/" style="font-size: 11.54px;">IntelliJ IDEA</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/Java/" style="font-size: 10.77px;">Java</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 10.77px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 11.54px;">Jpa</a> <a href="/tags/LiveReload/" style="font-size: 10px;">LiveReload</a> <a href="/tags/MacBookPro/" style="font-size: 10px;">MacBookPro</a> <a href="/tags/Mail/" style="font-size: 10px;">Mail</a> <a href="/tags/Maven/" style="font-size: 12.31px;">Maven</a> <a href="/tags/MongoDB/" style="font-size: 17.69px;">MongoDB</a> <a href="/tags/MyBatis/" style="font-size: 13.08px;">MyBatis</a> <a href="/tags/MyCat/" style="font-size: 12.31px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 16.15px;">MySQL</a> <a href="/tags/Nacos/" style="font-size: 10px;">Nacos</a> <a href="/tags/Nginx/" style="font-size: 10.77px;">Nginx</a> <a href="/tags/OAuth2/" style="font-size: 16.15px;">OAuth2</a> <a href="/tags/PicGo/" style="font-size: 10px;">PicGo</a> <a href="/tags/RabbitMQ/" style="font-size: 10.77px;">RabbitMQ</a> <a href="/tags/Redis/" style="font-size: 18.46px;">Redis</a> <a href="/tags/Resume/" style="font-size: 10px;">Resume</a> <a href="/tags/SSM/" style="font-size: 10.77px;">SSM</a> <a href="/tags/Shiro/" style="font-size: 10px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 15.38px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Cloud/" style="font-size: 12.31px;">Spring Cloud</a> <a href="/tags/Spring-Data/" style="font-size: 10.77px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 19.23px;">Spring Security</a> <a href="/tags/SpringBoot/" style="font-size: 11.54px;">SpringBoot</a> <a href="/tags/SpringMVC/" style="font-size: 12.31px;">SpringMVC</a> <a href="/tags/SpringSecurity/" style="font-size: 10px;">SpringSecurity</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Thymeleaf/" style="font-size: 10px;">Thymeleaf</a> <a href="/tags/Transaction/" style="font-size: 10px;">Transaction</a> <a href="/tags/Video/" style="font-size: 10px;">Video</a> <a href="/tags/Vue/" style="font-size: 16.92px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/blog/" style="font-size: 10px;">blog</a> <a href="/tags/docker/" style="font-size: 15.38px;">docker</a> <a href="/tags/domain/" style="font-size: 10px;">domain</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/i18n/" style="font-size: 10px;">i18n</a> <a href="/tags/idea/" style="font-size: 10px;">idea</a> <a href="/tags/java/" style="font-size: 10px;">java</a> <a href="/tags/life/" style="font-size: 15.38px;">life</a> <a href="/tags/mail/" style="font-size: 10px;">mail</a> <a href="/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/router/" style="font-size: 10px;">router</a> <a href="/tags/transaction/" style="font-size: 10.77px;">transaction</a> <a href="/tags/vhr/" style="font-size: 13.85px;">vhr</a> <a href="/tags/vue/" style="font-size: 10px;">vue</a> <a href="/tags/weixin/" style="font-size: 10.77px;">weixin</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/七牛云/" style="font-size: 10px;">七牛云</a> <a href="/tags/中间件/" style="font-size: 10px;">中间件</a> <a href="/tags/侃侃而谈/" style="font-size: 13.85px;">侃侃而谈</a> <a href="/tags/分布式锁/" style="font-size: 10px;">分布式锁</a> <a href="/tags/前后端分离/" style="font-size: 13.08px;">前后端分离</a> <a href="/tags/单体应用/" style="font-size: 10px;">单体应用</a> <a href="/tags/外包/" style="font-size: 10px;">外包</a> <a href="/tags/学习资源/" style="font-size: 13.08px;">学习资源</a> <a href="/tags/工具/" style="font-size: 10.77px;">工具</a> <a href="/tags/微人事/" style="font-size: 10.77px;">微人事</a> <a href="/tags/微服务/" style="font-size: 10.77px;">微服务</a> <a href="/tags/杂谈/" style="font-size: 13.85px;">杂谈</a> <a href="/tags/条件注解/" style="font-size: 10px;">条件注解</a> <a href="/tags/源码解读/" style="font-size: 12.31px;">源码解读</a> <a href="/tags/生活/" style="font-size: 10.77px;">生活</a> <a href="/tags/程序人生/" style="font-size: 10.77px;">程序人生</a> <a href="/tags/程序员/" style="font-size: 10px;">程序员</a> <a href="/tags/视频/" style="font-size: 10px;">视频</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow  ">
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-06-30T01:28:36.000Z">2020-06-30</time></div>
+                    <a href="/2020/0630/springsecurity-exception.html" class="has-link-black-ter is-size-6">一文搞定 Spring Security 异常处理机制！</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-06-29T01:28:21.000Z">2020-06-29</time></div>
+                    <a href="/2020/0629/entityresolver.html" class="has-link-black-ter is-size-6">Spring 源码第三弹！EntityResolver 是个什么鬼？</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring/">Spring</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-06-28T01:28:06.000Z">2020-06-28</time></div>
+                    <a href="/2020/0628/life.html" class="has-link-black-ter is-size-6">写代码靠天赋还是靠苦功夫？</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/侃侃而谈/">侃侃而谈</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-06-24T01:27:49.000Z">2020-06-24</time></div>
+                    <a href="/2020/0624/httpsecurity-and.html" class="has-link-black-ter is-size-6">Spring Security 配置中的 and 到底该怎么理解？</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-06-23T01:27:38.000Z">2020-06-23</time></div>
+                    <a href="/2020/0623/objectpostprocess.html" class="has-link-black-ter is-size-6">神奇！自己 new 出来的对象一样也可以被 Spring 容器管理！</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">21</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">23</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">25</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">25</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">20</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">40</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">17</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">22</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">12</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">43</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">16</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">26</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+            
+
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            友链
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itboyhub.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">江南一点雨-国内站</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itboyhub.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.ityouknow.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">纯洁的微笑</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.ityouknow.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.itechyou.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">I Tech You, 我教你！</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itechyou.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itwanger.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">沉默王二</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itwanger.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://bugstack.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">bugstack虫洞栈</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">bugstack.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.cxyxiaowu.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">五分钟学算法</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.cxyxiaowu.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.justdojava.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 极客技术</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.justdojava.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cxytiandi.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">猿天地</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cxytiandi.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://vimjc.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Vim教程网</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">vimjc.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://muggle.javaboy.org/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">muggle</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">muggle.javaboy.org</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://crossoverjie.top/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">crossoverJie&#39;s Blog</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">crossoverjie.top</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cmsblogs.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 技术驿站</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cmsblogs.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://maizitoday.github.io/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">麦子的博客</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">maizitoday.github.io</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.haoservice.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">码农code之路</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.haoservice.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.jitwxs.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Jitwxs</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.jitwxs.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.gameboys.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 烂笔头</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.gameboys.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.a2data.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">A2Data</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.a2data.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="Spring 源码第三弹！EntityResolver 是个什么鬼？" height="28">
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 江南一点雨&nbsp;
+				<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><!--
+PV <span id="busuanzi_value_site_pv"></span>&nbsp;|&nbsp;<i class="fa fa-user-md"></i>  UV <span id="busuanzi_value_site_uv"></span>&nbsp;-->
+				<script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? "https://" : "http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1276890692'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s96.cnzz.com/z_stat.php%3Fid%3D1276890692%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+				<a href="http://www.beian.miit.gov.cn/" style="color: black;">粤ICP备19111220号</a>
+                <!--Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么...">
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>
