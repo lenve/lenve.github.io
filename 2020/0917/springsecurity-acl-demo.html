@@ -1,0 +1,1709 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head><meta name="generator" content="Hexo 3.8.0">
+    <meta charset="utf-8">
+<title>一个案例演示 Spring Security 中粒度超细的权限控制！ - 江南一点雨</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+
+
+    <meta name="description" content="想要细化权限控制粒度，办法很多。本文接着上文（Spring Security 中如何细化权限粒度？），通过一个具体的案例来向小伙伴们展示基于 Acl 的权限控制。其他的权限控制模型后面也会一一介绍。">
+<meta name="keywords" content="Spring Security">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一个案例演示 Spring Security 中粒度超细的权限控制！">
+<meta property="og:url" content="http://www.javaboy.org/2020/0917/springsecurity-acl-demo.html">
+<meta property="og:site_name" content="江南一点雨">
+<meta property="og:description" content="想要细化权限控制粒度，办法很多。本文接着上文（Spring Security 中如何细化权限粒度？），通过一个具体的案例来向小伙伴们展示基于 Acl 的权限控制。其他的权限控制模型后面也会一一介绍。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="http://www.javaboy.org/images/og_image.png">
+<meta property="og:updated_time" content="2020-10-09T00:45:16.978Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="一个案例演示 Spring Security 中粒度超细的权限控制！">
+<meta name="twitter:description" content="想要细化权限控制粒度，办法很多。本文接着上文（Spring Security 中如何细化权限粒度？），通过一个具体的案例来向小伙伴们展示基于 Acl 的权限控制。其他的权限控制模型后面也会一一介绍。">
+<meta name="twitter:image" content="http://www.javaboy.org/images/og_image.png">
+
+
+
+
+
+
+
+<link rel="icon" href="https://www.javaboy.org/favicon.ico">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-2-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+                
+                <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="一个案例演示 Spring Security 中粒度超细的权限控制！" height="28">
+                
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item" href="/">江南一点雨</a>
+                
+                <a class="navbar-item" href="/archives">归档</a>
+                
+                <a class="navbar-item" href="/fronted-backend">前后端分离</a>
+                
+                <a class="navbar-item" href="http://spring.javaboy.org">Spring</a>
+                
+                <a class="navbar-item" href="http://springmvc.javaboy.org">SpringMVC</a>
+                
+                <a class="navbar-item" href="http://mybatis.javaboy.org">MyBatis</a>
+                
+                <a class="navbar-item" href="http://springboot.javaboy.org">Spring Boot</a>
+                
+                <a class="navbar-item" href="http://maven.javaboy.org">Maven</a>
+                
+                <a class="navbar-item" href="/redis">Redis</a>
+                
+                <a class="navbar-item" href="/mongodb">MongoDB</a>
+                
+                <a class="navbar-item" href="/mysql">MySQL</a>
+                
+                <a class="navbar-item" href="/docker">Docker</a>
+                
+                <a class="navbar-item" href="/git">Git</a>
+                
+                <a class="navbar-item" href="/about">About</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                
+                
+                <a class="navbar-item search" style="height: 40px;line-height: 60px;width: 180px;margin: 12px 15px;box-sizing: border-box;border: 1px solid #dedede;border-radius: 20px;display: flex;justify-content: space-between;padding-left: 12px;padding-right: 10px" title="搜索" href="javascript:;">
+                    <!--<div style="border: 1px solid #dedede;border-radius: 10px;">-->
+                    <div>搜索</div>
+                        <i class="fas fa-search"></i>
+                    <!--</div>-->
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2020-09-17T01:55:57.000Z">2020-09-17</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Spring-Security/">Spring Security</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    19 分钟 读完 (大约 2831 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                一个案例演示 Spring Security 中粒度超细的权限控制！
+            
+        </h1>
+        
+            <div class="content" id="content">
+                    <p>想要细化权限控制粒度，办法很多。本文接着上文（<a href="https://mp.weixin.qq.com/s/Q9lfrJ3iioUpYEO9elCtsw" target="_blank" rel="noopener">Spring Security 中如何细化权限粒度？</a>），通过一个具体的案例来向小伙伴们展示基于 Acl 的权限控制。其他的权限控制模型后面也会一一介绍。</p>
+<a id="more"></a>
+<h2 id="1-准备工作"><a href="#1-准备工作" class="headerlink" title="1.准备工作"></a>1.准备工作</h2><p>首先创建一个 Spring Boot 项目，由于我们这里涉及到数据库操作，所以除了 Spring Security 依赖之外，还需要加入数据库驱动以及 MyBatis 依赖。</p>
+<p>由于没有 acl 相关的 starter，所以需要我们手动添加 acl 依赖，另外 acl 还依赖于 ehcache 缓存，所以还需要加上缓存依赖。</p>
+<p>最终的 pom.xml 文件如下：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-security<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-web<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.security<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-security-acl<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>5.3.4.RELEASE<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.mybatis.spring.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>mybatis-spring-boot-starter<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>2.1.3<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>mysql<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>mysql-connector-java<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>net.sf.ehcache<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>ehcache<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>2.10.4<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>com.alibaba<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>druid-spring-boot-starter<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>1.1.23<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-context-support<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>项目创建成功之后，我们在 acl 的 jar 包中可以找到数据库脚本文件：</p>
+<p><img src="http://img.itboyhub.com/2020/07/20200913155708.png" alt></p>
+<p>根据自己的数据库选择合适的脚本执行，执行后一共创建了四张表，如下：</p>
+<p><img src="http://img.itboyhub.com/2020/07/20200913173811.png" alt></p>
+<p>表的含义我就不做过多解释了，不清楚的小伙伴可以参考上篇文章：<a href="https://mp.weixin.qq.com/s/Q9lfrJ3iioUpYEO9elCtsw" target="_blank" rel="noopener">Spring Security 中如何细化权限粒度？</a></p>
+<p>最后，再在项目的 application.properties 文件中配置数据库信息，如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">spring.datasource.url=jdbc:mysql:///acls?useUnicode=true&amp;characterEncoding=UTF-8&amp;serverTimezone=Asia/Shanghai</span><br><span class="line">spring.datasource.username=root</span><br><span class="line">spring.datasource.password=123</span><br><span class="line">spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver</span><br></pre></td></tr></table></figure>
+<p>至此，准备工作就算完成了。接下来我们来看配置。</p>
+<h2 id="2-ACL-配置"><a href="#2-ACL-配置" class="headerlink" title="2.ACL 配置"></a>2.ACL 配置</h2><p>这块配置代码量比较大，我先把代码摆上来，我们再逐个分析：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-meta">@EnableGlobalMethodSecurity</span>(prePostEnabled = <span class="hljs-keyword">true</span>, securedEnabled = <span class="hljs-keyword">true</span>)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AclConfig</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Autowired</span></span><br><span class="line">    DataSource dataSource;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> AclAuthorizationStrategy <span class="hljs-title">aclAuthorizationStrategy</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> AclAuthorizationStrategyImpl(<span class="hljs-keyword">new</span> SimpleGrantedAuthority(<span class="hljs-string">"ROLE_ADMIN"</span>));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> PermissionGrantingStrategy <span class="hljs-title">permissionGrantingStrategy</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> DefaultPermissionGrantingStrategy(<span class="hljs-keyword">new</span> ConsoleAuditLogger());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> AclCache <span class="hljs-title">aclCache</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> EhCacheBasedAclCache(aclEhCacheFactoryBean().getObject(), permissionGrantingStrategy(), aclAuthorizationStrategy());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> EhCacheFactoryBean <span class="hljs-title">aclEhCacheFactoryBean</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        EhCacheFactoryBean ehCacheFactoryBean = <span class="hljs-keyword">new</span> EhCacheFactoryBean();</span><br><span class="line">        ehCacheFactoryBean.setCacheManager(aclCacheManager().getObject());</span><br><span class="line">        ehCacheFactoryBean.setCacheName(<span class="hljs-string">"aclCache"</span>);</span><br><span class="line">        <span class="hljs-keyword">return</span> ehCacheFactoryBean;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> EhCacheManagerFactoryBean <span class="hljs-title">aclCacheManager</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> EhCacheManagerFactoryBean();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> LookupStrategy <span class="hljs-title">lookupStrategy</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> BasicLookupStrategy(dataSource, aclCache(), aclAuthorizationStrategy(), <span class="hljs-keyword">new</span> ConsoleAuditLogger()</span><br><span class="line">        );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> AclService <span class="hljs-title">aclService</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> JdbcMutableAclService(dataSource, lookupStrategy(), aclCache());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function">PermissionEvaluator <span class="hljs-title">permissionEvaluator</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        AclPermissionEvaluator permissionEvaluator = <span class="hljs-keyword">new</span> AclPermissionEvaluator(aclService());</span><br><span class="line">        <span class="hljs-keyword">return</span> permissionEvaluator;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>@EnableGlobalMethodSecurity 注解的配置表示开启项目中 @PreAuthorize、@PostAuthorize 以及 @Secured 注解的使用，一会我们要通过这些注解配置权限。</li>
+<li>由于引入了数据库的一整套东西，并且配置了数据库连接信息，所以这里可以注入 DataSource 实例以备后续使用。</li>
+<li>AclAuthorizationStrategy 实例用来判断当前的认证主体是否有修改 Acl 的权限，准确来说是三种权限：修改 Acl 的 owner；修改 Acl 的审计信息以及修改 ACE 本身。这个接口只有一个实现类就是 AclAuthorizationStrategyImpl，我们在创建实例时，可以传入三个参数，分别对应了这三种权限，也可以传入一个参数，表示这一个角色可以干三件事。</li>
+<li>PermissionGrantingStrategy 接口提供了一个 isGranted 方法，这个方法就是最终真正进行权限比对的方法，该接口只有一个实现类 DefaultPermissionGrantingStrategy，直接 new 就行了。</li>
+<li>在 ACL 体系中，由于权限比对总是要查询数据库，造成了性能问题，因此引入了 Ehcache 做缓存。AclCache 共有两个实现类：SpringCacheBasedAclCache 和 EhCacheBasedAclCache。我们前面已经引入了 ehcache 实例，所以这里配置 EhCacheBasedAclCache 实例即可。</li>
+<li>LookupStrategy 可以通过 ObjectIdentity 解析出对应的 Acl。LookupStrategy 只有一个实现类就是 BasicLookupStrategy，直接 new 即可。</li>
+<li>AclService 这个我们在上文已经介绍过了，这里不再赘述。</li>
+<li>PermissionEvaluator 是为表达式 hasPermission 提供支持的。由于本案例后面使用类似于 <code>@PreAuthorize(&quot;hasPermission(#noticeMessage, &#39;WRITE&#39;)&quot;)</code> 这样的注解进行权限控制，因此之类需要配置一个 PermissionEvaluator 实例。</li>
+</ol>
+<p>至此，这里的配置类就和大家介绍完了。</p>
+<h2 id="3-情节设定"><a href="#3-情节设定" class="headerlink" title="3.情节设定"></a>3.情节设定</h2><p>假设我现在有一个通知消息类 NoticeMessage，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">NoticeMessage</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">private</span> Integer id;</span><br><span class="line">    <span class="hljs-keyword">private</span> String content;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">toString</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-string">"NoticeMessage&#123;"</span> +</span><br><span class="line">                <span class="hljs-string">"id="</span> + id +</span><br><span class="line">                <span class="hljs-string">", content='"</span> + content + <span class="hljs-string">'\''</span> +</span><br><span class="line">                <span class="hljs-string">'&#125;'</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> Integer <span class="hljs-title">getId</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> id;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setId</span><span class="hljs-params">(Integer id)</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">this</span>.id = id;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">getContent</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> content;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setContent</span><span class="hljs-params">(String content)</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">this</span>.content = content;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后根据该类创建了数据表：</p>
+<figure class="highlight sql hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> <span class="hljs-string">`system_message`</span> (</span><br><span class="line">  <span class="hljs-string">`id`</span> <span class="hljs-built_in">int</span>(<span class="hljs-number">11</span>) <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span> AUTO_INCREMENT,</span><br><span class="line">  <span class="hljs-string">`content`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">255</span>) <span class="hljs-keyword">COLLATE</span> utf8mb4_unicode_ci <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span>,</span><br><span class="line">  PRIMARY <span class="hljs-keyword">KEY</span> (<span class="hljs-string">`id`</span>)</span><br><span class="line">) <span class="hljs-keyword">ENGINE</span>=<span class="hljs-keyword">InnoDB</span> <span class="hljs-keyword">DEFAULT</span> <span class="hljs-keyword">CHARSET</span>=utf8mb4 <span class="hljs-keyword">COLLATE</span>=utf8mb4_unicode_ci;</span><br></pre></td></tr></table></figure>
+<p>那么接下来的权限控制就是针对这个 NoticeMessage 的。</p>
+<p>创建 NoticeMessageMapper，并添加几个测试方法：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Mapper</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">NoticeMessageMapper</span> </span>&#123;</span><br><span class="line">    <span class="hljs-function">List&lt;NoticeMessage&gt; <span class="hljs-title">findAll</span><span class="hljs-params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-function">NoticeMessage <span class="hljs-title">findById</span><span class="hljs-params">(Integer id)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">save</span><span class="hljs-params">(NoticeMessage noticeMessage)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">update</span><span class="hljs-params">(NoticeMessage noticeMessage)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>NoticeMessageMapper.xml 内容如下：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">&lt;!DOCTYPE mapper</span></span><br><span class="line"><span class="hljs-meta">        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"</span></span><br><span class="line"><span class="hljs-meta">        "http://mybatis.org/dtd/mybatis-3-mapper.dtd"&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">mapper</span> <span class="hljs-attr">namespace</span>=<span class="hljs-string">"org.javaboy.acls.mapper.NoticeMessageMapper"</span>&gt;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">select</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"findAll"</span> <span class="hljs-attr">resultType</span>=<span class="hljs-string">"org.javaboy.acls.model.NoticeMessage"</span>&gt;</span></span><br><span class="line">        select * from system_message;</span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">select</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">select</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"findById"</span> <span class="hljs-attr">resultType</span>=<span class="hljs-string">"org.javaboy.acls.model.NoticeMessage"</span>&gt;</span></span><br><span class="line">        select * from system_message where id=#&#123;id&#125;;</span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">select</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">insert</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"save"</span> <span class="hljs-attr">parameterType</span>=<span class="hljs-string">"org.javaboy.acls.model.NoticeMessage"</span>&gt;</span></span><br><span class="line">        insert into system_message (id,content) values (#&#123;id&#125;,#&#123;content&#125;);</span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">insert</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">update</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"update"</span> <span class="hljs-attr">parameterType</span>=<span class="hljs-string">"org.javaboy.acls.model.NoticeMessage"</span>&gt;</span></span><br><span class="line">        update system_message set content = #&#123;content&#125; where id=#&#123;id&#125;;</span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">update</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">mapper</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>这些应该都好理解，没啥好说的。</p>
+<p>接下来创建 NoticeMessageService，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Service</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">NoticeMessageService</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Autowired</span></span><br><span class="line">    NoticeMessageMapper noticeMessageMapper;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@PostFilter</span>(<span class="hljs-string">"hasPermission(filterObject, 'READ')"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> List&lt;NoticeMessage&gt; <span class="hljs-title">findAll</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        List&lt;NoticeMessage&gt; all = noticeMessageMapper.findAll();</span><br><span class="line">        <span class="hljs-keyword">return</span> all;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@PostAuthorize</span>(<span class="hljs-string">"hasPermission(returnObject, 'READ')"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> NoticeMessage <span class="hljs-title">findById</span><span class="hljs-params">(Integer id)</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> noticeMessageMapper.findById(id);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@PreAuthorize</span>(<span class="hljs-string">"hasPermission(#noticeMessage, 'CREATE')"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> NoticeMessage <span class="hljs-title">save</span><span class="hljs-params">(NoticeMessage noticeMessage)</span> </span>&#123;</span><br><span class="line">        noticeMessageMapper.save(noticeMessage);</span><br><span class="line">        <span class="hljs-keyword">return</span> noticeMessage;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="hljs-meta">@PreAuthorize</span>(<span class="hljs-string">"hasPermission(#noticeMessage, 'WRITE')"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">update</span><span class="hljs-params">(NoticeMessage noticeMessage)</span> </span>&#123;</span><br><span class="line">        noticeMessageMapper.update(noticeMessage);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>涉及到了两个新注解，稍微说下：</p>
+<ul>
+<li>@PostFilter：在执行方法后过滤返回的集合或数组（筛选出当前用户具有 READ 权限的数据），returnObject 就表示方法的返回值。有一个和它对应的注解 @PreFilter，这个注解允许方法调用，但必须在进入方法之前对参数进行过滤。</li>
+<li>@PostAuthorize：允许方法调用，但是如果表达式计算结果为false，将抛出一个安全性异常，<code>#noticeMessage</code> 对应了方法的参数。</li>
+<li>@PreAuthorize：在方法调用之前，基于表达式的计算结果来限制对方法的访问。</li>
+</ul>
+<p>明白了注解的含义，那么上面的方法应该就不用多做解释了吧。</p>
+<p>配置完成，接下来我们进行测试。</p>
+<h2 id="4-测试"><a href="#4-测试" class="headerlink" title="4.测试"></a>4.测试</h2><p>为了方便测试，我们首先准备几条测试数据，如下：</p>
+<figure class="highlight sql hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">INSERT</span> <span class="hljs-keyword">INTO</span> <span class="hljs-string">`acl_class`</span> (<span class="hljs-string">`id`</span>, <span class="hljs-string">`class`</span>)</span><br><span class="line"><span class="hljs-keyword">VALUES</span></span><br><span class="line">	(<span class="hljs-number">1</span>,<span class="hljs-string">'org.javaboy.acls.model.NoticeMessage'</span>);</span><br><span class="line"><span class="hljs-keyword">INSERT</span> <span class="hljs-keyword">INTO</span> <span class="hljs-string">`acl_sid`</span> (<span class="hljs-string">`id`</span>, <span class="hljs-string">`principal`</span>, <span class="hljs-string">`sid`</span>)</span><br><span class="line"><span class="hljs-keyword">VALUES</span></span><br><span class="line">	(<span class="hljs-number">2</span>,<span class="hljs-number">1</span>,<span class="hljs-string">'hr'</span>),</span><br><span class="line">	(<span class="hljs-number">1</span>,<span class="hljs-number">1</span>,<span class="hljs-string">'manager'</span>),</span><br><span class="line">	(<span class="hljs-number">3</span>,<span class="hljs-number">0</span>,<span class="hljs-string">'ROLE_EDITOR'</span>);</span><br><span class="line"><span class="hljs-keyword">INSERT</span> <span class="hljs-keyword">INTO</span> <span class="hljs-string">`system_message`</span> (<span class="hljs-string">`id`</span>, <span class="hljs-string">`content`</span>)</span><br><span class="line"><span class="hljs-keyword">VALUES</span></span><br><span class="line">	(<span class="hljs-number">1</span>,<span class="hljs-string">'111'</span>),</span><br><span class="line">	(<span class="hljs-number">2</span>,<span class="hljs-string">'222'</span>),</span><br><span class="line">	(<span class="hljs-number">3</span>,<span class="hljs-string">'333'</span>);</span><br></pre></td></tr></table></figure>
+<p>首先添加了 acl_class，然后添加了三个 Sid，两个是用户，一个是角色，最后添加了三个 NoticeMessage 实例。</p>
+<p>目前没有任何用户/角色能够访问到 system_message 中的三条数据。例如执行如下代码获取不到任何数据：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Test</span></span><br><span class="line"><span class="hljs-meta">@WithMockUser</span>(roles = <span class="hljs-string">"EDITOR"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">test01</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    List&lt;NoticeMessage&gt; all = noticeMessageService.findAll();</span><br><span class="line">    System.out.println(<span class="hljs-string">"all = "</span> + all);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>@WithMockUser(roles = “EDITOR”) 表示使用 EDITOR 角色访问。松哥这里是为了方便。小伙伴们也可以自己给 Spring Security 配置用户，设置相关接口，然后 Controller 中添加接口进行测试，我这里就不那么麻烦了。</p>
+</blockquote>
+<p>现在我们对其进行配置。</p>
+<p>首先我想设置让 hr 这个用户可以读取 system_message 表中 id 为 1 的记录，方式如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Autowired</span></span><br><span class="line">NoticeMessageService noticeMessageService;</span><br><span class="line"><span class="hljs-meta">@Autowired</span></span><br><span class="line">JdbcMutableAclService jdbcMutableAclService;</span><br><span class="line"><span class="hljs-meta">@Test</span></span><br><span class="line"><span class="hljs-meta">@WithMockUser</span>(username = <span class="hljs-string">"javaboy"</span>)</span><br><span class="line"><span class="hljs-meta">@Transactional</span></span><br><span class="line"><span class="hljs-meta">@Rollback</span>(value = <span class="hljs-keyword">false</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">test02</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    ObjectIdentity objectIdentity = <span class="hljs-keyword">new</span> ObjectIdentityImpl(NoticeMessage.class, <span class="hljs-number">1</span>);</span><br><span class="line">    Permission p = BasePermission.READ;</span><br><span class="line">    MutableAcl acl = jdbcMutableAclService.createAcl(objectIdentity);</span><br><span class="line">    acl.insertAce(acl.getEntries().size(), p, <span class="hljs-keyword">new</span> PrincipalSid(<span class="hljs-string">"hr"</span>), <span class="hljs-keyword">true</span>);</span><br><span class="line">    jdbcMutableAclService.updateAcl(acl);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们设置了 mock user 是 javaboy，也就是这个 acl 创建好之后，它的 owner 是 javaboy，但是我们前面预设数据中 Sid 没有 javaboy，所以会自动向 acl_sid 表中添加一条记录，值为 javaboy。</p>
+<p>在这个过程中，会分别向 acl_entry、acl_object_identity 以及 acl_sid 三张表中添加记录，因此需要添加事务，同时因为我们是在单元测试中执行，为了确保能够看到数据库中数据的变化，所以需要添加 @Rollback(value = false) 注解让事务不要自动回滚。</p>
+<p>在方法内部，首先分别创建 ObjectIdentity 和 Permission 对象，然后创建一个 acl 对象出来，这个过程中会将 javaboy 添加到 acl_sid 表中。</p>
+<p>接下来调用 acl_insertAce 方法，将 ace 存入 acl 中，最后调用 updateAcl 方法去更新 acl 对象即可。</p>
+<p>配置完成后，执行该方法，执行完成后，数据库中就会有相应的记录了。</p>
+<p>接下来，使用 hr 这个用户就可以读取到 id 为 1 的记录了。如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Test</span></span><br><span class="line"><span class="hljs-meta">@WithMockUser</span>(username = <span class="hljs-string">"hr"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">test03</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    List&lt;NoticeMessage&gt; all = noticeMessageService.findAll();</span><br><span class="line">    assertNotNull(all);</span><br><span class="line">    assertEquals(<span class="hljs-number">1</span>, all.size());</span><br><span class="line">    assertEquals(<span class="hljs-number">1</span>, all.get(<span class="hljs-number">0</span>).getId());</span><br><span class="line">    NoticeMessage byId = noticeMessageService.findById(<span class="hljs-number">1</span>);</span><br><span class="line">    assertNotNull(byId);</span><br><span class="line">    assertEquals(<span class="hljs-number">1</span>, byId.getId());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>松哥这里用了两个方法来和大家演示。首先我们调用了 findAll，这个方法会查询出所有的数据，然后返回结果会被自动过滤，只剩下 hr 用户具有读取权限的数据，即 id 为 1 的数据；另一个调用的就是 findById 方法，传入参数为 1，这个好理解。</p>
+<p>如果此时想利用 hr 这个用户修改对象，则是不可以的。我们可以继续使用上面的代码，让 hr 这个用户可以修改 id 为 1 的记录，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Test</span></span><br><span class="line"><span class="hljs-meta">@WithMockUser</span>(username = <span class="hljs-string">"javaboy"</span>)</span><br><span class="line"><span class="hljs-meta">@Transactional</span></span><br><span class="line"><span class="hljs-meta">@Rollback</span>(value = <span class="hljs-keyword">false</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">test02</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    ObjectIdentity objectIdentity = <span class="hljs-keyword">new</span> ObjectIdentityImpl(NoticeMessage.class, <span class="hljs-number">1</span>);</span><br><span class="line">    Permission p = BasePermission.WRITE;</span><br><span class="line">    MutableAcl acl = (MutableAcl) jdbcMutableAclService.readAclById(objectIdentity);</span><br><span class="line">    acl.insertAce(acl.getEntries().size(), p, <span class="hljs-keyword">new</span> PrincipalSid(<span class="hljs-string">"hr"</span>), <span class="hljs-keyword">true</span>);</span><br><span class="line">    jdbcMutableAclService.updateAcl(acl);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意这里权限改为 WRITE 权限。由于 acl 中已经存在这个 ObjectIdentity 了，所以这里通过 readAclById 方法直接读取已有的 acl 即可。方法执行完毕后，我们再进行 hr 用户写权限的测试：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Test</span></span><br><span class="line"><span class="hljs-meta">@WithMockUser</span>(username = <span class="hljs-string">"hr"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">test04</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    NoticeMessage msg = noticeMessageService.findById(<span class="hljs-number">1</span>);</span><br><span class="line">    assertNotNull(msg);</span><br><span class="line">    assertEquals(<span class="hljs-number">1</span>, msg.getId());</span><br><span class="line">    msg.setContent(<span class="hljs-string">"javaboy-1111"</span>);</span><br><span class="line">    noticeMessageService.update(msg);</span><br><span class="line">    msg = noticeMessageService.findById(<span class="hljs-number">1</span>);</span><br><span class="line">    assertNotNull(msg);</span><br><span class="line">    assertEquals(<span class="hljs-string">"javaboy-1111"</span>, msg.getContent());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>此时，hr 就可以使用 WRITE 权限去修改对象了。</p>
+<p>假设我现在想让 manager 这个用户去创建一个 id 为 99 的 NoticeMessage，默认情况下，manager 是没有这个权限的。我们现在可以给他赋权：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Test</span></span><br><span class="line"><span class="hljs-meta">@WithMockUser</span>(username = <span class="hljs-string">"javaboy"</span>)</span><br><span class="line"><span class="hljs-meta">@Transactional</span></span><br><span class="line"><span class="hljs-meta">@Rollback</span>(value = <span class="hljs-keyword">false</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">test02</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    ObjectIdentity objectIdentity = <span class="hljs-keyword">new</span> ObjectIdentityImpl(NoticeMessage.class, <span class="hljs-number">99</span>);</span><br><span class="line">    Permission p = BasePermission.CREATE;</span><br><span class="line">    MutableAcl acl = jdbcMutableAclService.createAcl(objectIdentity);</span><br><span class="line">    acl.insertAce(acl.getEntries().size(), p, <span class="hljs-keyword">new</span> PrincipalSid(<span class="hljs-string">"manager"</span>), <span class="hljs-keyword">true</span>);</span><br><span class="line">    jdbcMutableAclService.updateAcl(acl);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意，这里的权限是 CREATE。</p>
+<p>接下来使用 manager 用户就可以添加数据了：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Test</span></span><br><span class="line"><span class="hljs-meta">@WithMockUser</span>(username = <span class="hljs-string">"manager"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">test05</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    NoticeMessage noticeMessage = <span class="hljs-keyword">new</span> NoticeMessage();</span><br><span class="line">    noticeMessage.setId(<span class="hljs-number">99</span>);</span><br><span class="line">    noticeMessage.setContent(<span class="hljs-string">"999"</span>);</span><br><span class="line">    noticeMessageService.save(noticeMessage);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>此时就可以添加成功了。添加成功后，manager 这个用户没有读 id 为 99 的数据的权限，可以参考前面案例自行添加。</p>
+<h2 id="5-小结"><a href="#5-小结" class="headerlink" title="5.小结"></a>5.小结</h2><p>从上面的案例中大家可以看到，ACL 权限模型中的权限控制真的是非常非常细，细到每一个对象的 CURD。</p>
+<p>优点就不用说了，够细！同时将业务和权限成功分离。缺点也很明显，权限数据量庞大，扩展性弱。</p>
+<p>最后，公号后台回复 acl 获取本文案例下载链接。</p>
+
+                    <!--<div class="asb-post-01">
+                        <div class="mask"></div>
+                        <div class="info" style="display: flex;justify-content:center;flex-direction:column;align-items:center">
+                                <div>扫码关注微信公众号：<span style="color: #E9405A; font-weight: bold;">江南一点雨</span></div>
+                                <div>
+                                    <span>发送 </span><span class="token" style="color: #e9415a; font-weight: bold; font-size: 17px; margin-bottom: 45px;">290992</span>
+                                </div>
+                                <div>
+                                    即可<span style="color: #e9415a; font-weight: bold;">立即永久</span>解锁本站全部文章（注意区分大小写哦）
+                                </div>
+                            <div>
+                                <img class="code-img" style="width: 300px;display:unset" src="https://www.javaboy.org/images/sb/javaboy.jpg">
+                            </div>
+                        </div>
+                    </div>-->
+                </div>
+        
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Spring-Security/">Spring Security</a>
+                </div>
+            </div>
+        </div>
+		<div class="level is-size-6">
+						<p>喜欢这篇文章吗？扫码关注公众号<b>【江南一点雨】</b>，<b>【江南一点雨】</b>专注于 SPRING BOOT+微服务以及前后端分离技术，每天推送原创技术干货，关注后回复 JAVA，领取松哥为你精心准备的 JAVA 干货!
+</p>
+		</div>
+		<div class="level is-size-7 is-uppercase">
+<img class="menu-label has-text-centered" src="http://www.javaboy.org/images/sb/javaboy.jpg" alt>
+		</div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">觉得不错，可以给小编加个鸡腿</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="https://www.javaboy.org/images/sb/weixin_pay.png" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2020/0921/springsecurity-rbac.html">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Spring Security 中最流行的权限管理模型！</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2020/0916/springsecurity-acl.html">
+                <span class="level-item">Spring Security 中如何细化权限粒度？</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+	<section id="comments"></section>
+	<script src="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/gitment.browser.js"></script>
+	<!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/default.css"/>-->
+	<link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+	<script>
+		if (document.getElementById('comments')) {
+			var gitment = new Gitment({
+				id: '2020/0917/springsecurity-acl-demo.html'.length>50?'2020/0917/springsecurity-acl-demo.html'.substring(0,50):'2020/0917/springsecurity-acl-demo.html',
+				owner: 'lenve',
+				repo: 'javaboy_comment',
+				oauth: {
+					client_id: 'ecc1a65d7b7baf6a495c',
+					client_secret: '427ecd90ada169afa77fc164509449905dd37f67',
+				},
+			})
+			gitment.render('comments')
+		}
+	</script>
+	
+    </div>
+</div>
+<style>
+.lock {
+    position: relative;
+    overflow: hidden;
+    padding-bottom: 30px;
+}
+.asb-post-01 {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    display: block;
+    z-index: 10000;
+    margin-bottom: 0;
+}
+.asb-post-01 .info {
+    background: white;
+    height: 370px;
+}
+.asb-post-01 .mask {
+    height: 240px;
+    width: 100%;
+    background: -webkit-gradient(linear, 0 top, 0 bottom, from(rgba(255, 255, 255, 0)), to(#fff));
+}
+</style>
+<!--<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script>
+function getCookie(name) {
+	var value = "; " + document.cookie;
+	var parts = value.split("; " + name + "=");
+	if (parts.length == 2)
+		return parts.pop().split(";").shift();
+}
+
+function getToken() {
+	let value = getCookie('UM_distinctid');
+	if (!value) {
+		return defaultToken;
+	}
+	return value.substring(value.length - 6).toUpperCase();
+}
+
+
+
+// 文章所在容器的选择器
+// var articleSelector = 'article.article-content';
+
+// DOM 完全就绪时执行
+$(function() {
+    // 找到文章所在的容器
+    var $article = $("#content");
+    console.log($article)
+	if ($article.length > 0) {
+		// 文章的实际高度
+		var article = $article[0], height = article.clientHeight;
+		// 文章隐藏后的高度
+		var halfHeight = height * 0.3;
+		
+		// 篇幅短一点的文章就不需要解锁了
+		if (halfHeight > 800) {
+			
+            // 获取口令
+            var mytoken = window.localStorage.getItem("javaboytoken")
+            var token;
+            if(mytoken){
+                token=mytoken
+            }else{
+                token = 'B'+getToken();
+                window.localStorage.setItem("javaboytoken",token)
+            }
+			$('.asb-post-01').find('.token').text(token);
+			
+var _lock = function() {
+	$article.css('height', halfHeight + 'px');
+	$article.addClass('lock');
+	$('.asb-post-01').css('display', 'block');
+}
+
+var _unlock = function() {
+	$article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+
+// 查询后端的结果
+var _detect = function() {
+	$.ajax({
+		url : 'http://blog-wx.itboyhub.com/wx/checktoken',
+		method : 'GET',
+		data : {
+			token : token
+		},
+		success : function(data) {
+			if (data.locked === true) {
+				_lock();
+			} else {
+				_unlock();
+			}
+		},
+		error : function(data) {
+			_unlock();
+		}
+	})
+}
+
+_detect();
+setInterval(function() {
+    _detect();
+}, 5000);
+}else{
+    $article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+    }
+});
+</script>-->
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="江南一点雨">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>China· ShenZhen</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        373
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        54
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        95
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/lenve" target="_blank">
+                扫码关注微信公众号</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="Github" href="https://github.com/lenve">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="envelope" href="mailto:wangsong0210@gmail.com">
+                
+                <i class="fa fa-envelope"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="RSS" href="/atom.xml">
+                
+                <i class="fas fa-rss"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/2019/">
+            <span class="level-start">
+                <span class="level-item">2019</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Blog/">
+            <span class="level-start">
+                <span class="level-item">Blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Chrome/">
+            <span class="level-start">
+                <span class="level-item">Chrome</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/FastDFS/">
+            <span class="level-start">
+                <span class="level-item">FastDFS</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Git/">
+            <span class="level-start">
+                <span class="level-item">Git</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/GitHub/">
+            <span class="level-start">
+                <span class="level-item">GitHub</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/HUAWEI/">
+            <span class="level-start">
+                <span class="level-item">HUAWEI</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IDEA/">
+            <span class="level-start">
+                <span class="level-item">IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IntelliJ-IDEA/">
+            <span class="level-start">
+                <span class="level-item">IntelliJ IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Java/">
+            <span class="level-start">
+                <span class="level-item">Java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/JavaWeb/">
+            <span class="level-start">
+                <span class="level-item">JavaWeb</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MacBookPro/">
+            <span class="level-start">
+                <span class="level-item">MacBookPro</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Maven/">
+            <span class="level-start">
+                <span class="level-item">Maven</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MongoDB/">
+            <span class="level-start">
+                <span class="level-item">MongoDB</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MyBatis/">
+            <span class="level-start">
+                <span class="level-item">MyBatis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MySQL/">
+            <span class="level-start">
+                <span class="level-item">MySQL</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">10</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Nginx/">
+            <span class="level-start">
+                <span class="level-item">Nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/OAuth2/">
+            <span class="level-start">
+                <span class="level-item">OAuth2</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">10</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Redis/">
+            <span class="level-start">
+                <span class="level-item">Redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Resume/">
+            <span class="level-start">
+                <span class="level-item">Resume</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SSM/">
+            <span class="level-start">
+                <span class="level-item">SSM</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring/">
+            <span class="level-start">
+                <span class="level-item">Spring</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">13</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Boot/">
+            <span class="level-start">
+                <span class="level-item">Spring Boot</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">127</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Cloud/">
+            <span class="level-start">
+                <span class="level-item">Spring Cloud</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Security/">
+            <span class="level-start">
+                <span class="level-item">Spring Security</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">53</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringMVC/">
+            <span class="level-start">
+                <span class="level-item">SpringMVC</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringSecurity/">
+            <span class="level-start">
+                <span class="level-item">SpringSecurity</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Transaction/">
+            <span class="level-start">
+                <span class="level-item">Transaction</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/blog/">
+            <span class="level-start">
+                <span class="level-item">blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/docker/">
+            <span class="level-start">
+                <span class="level-item">docker</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/domain/">
+            <span class="level-start">
+                <span class="level-item">domain</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/hexo/">
+            <span class="level-start">
+                <span class="level-item">hexo</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/idea/">
+            <span class="level-start">
+                <span class="level-item">idea</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/java/">
+            <span class="level-start">
+                <span class="level-item">java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/life/">
+            <span class="level-start">
+                <span class="level-item">life</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/mail/">
+            <span class="level-start">
+                <span class="level-item">mail</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/nginx/">
+            <span class="level-start">
+                <span class="level-item">nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/redis/">
+            <span class="level-start">
+                <span class="level-item">redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/transaction/">
+            <span class="level-start">
+                <span class="level-item">transaction</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vhr/">
+            <span class="level-start">
+                <span class="level-item">vhr</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vue/">
+            <span class="level-start">
+                <span class="level-item">vue</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/weixin/">
+            <span class="level-start">
+                <span class="level-item">weixin</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/侃侃而谈/">
+            <span class="level-start">
+                <span class="level-item">侃侃而谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">12</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/前后端分离/">
+            <span class="level-start">
+                <span class="level-item">前后端分离</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/外包/">
+            <span class="level-start">
+                <span class="level-item">外包</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/学习资源/">
+            <span class="level-start">
+                <span class="level-item">学习资源</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">7</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/工具/">
+            <span class="level-start">
+                <span class="level-item">工具</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微人事/">
+            <span class="level-start">
+                <span class="level-item">微人事</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微服务/">
+            <span class="level-start">
+                <span class="level-item">微服务</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/杂谈/">
+            <span class="level-start">
+                <span class="level-item">杂谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/生活/">
+            <span class="level-start">
+                <span class="level-item">生活</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/程序人生/">
+            <span class="level-start">
+                <span class="level-item">程序人生</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/面试/">
+            <span class="level-start">
+                <span class="level-item">面试</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/项目实战/">
+            <span class="level-start">
+                <span class="level-item">项目实战</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/2019-article/" style="font-size: 10px;">2019-article</a> <a href="/tags/Blog/" style="font-size: 10px;">Blog</a> <a href="/tags/CAS/" style="font-size: 11.88px;">CAS</a> <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 10.63px;">Chrome</a> <a href="/tags/Docker/" style="font-size: 11.25px;">Docker</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/Eureka/" style="font-size: 10px;">Eureka</a> <a href="/tags/FastDFS/" style="font-size: 11.25px;">FastDFS</a> <a href="/tags/Flyway/" style="font-size: 10px;">Flyway</a> <a href="/tags/Freemarker/" style="font-size: 10.63px;">Freemarker</a> <a href="/tags/Git/" style="font-size: 14.38px;">Git</a> <a href="/tags/GitHub/" style="font-size: 10.63px;">GitHub</a> <a href="/tags/Https/" style="font-size: 10px;">Https</a> <a href="/tags/IDEA/" style="font-size: 13.75px;">IDEA</a> <a href="/tags/IDEA，EasyCode/" style="font-size: 10px;">IDEA，EasyCode</a> <a href="/tags/IntelliJ-IDEA/" style="font-size: 11.25px;">IntelliJ IDEA</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/Java/" style="font-size: 10.63px;">Java</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 10.63px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 11.25px;">Jpa</a> <a href="/tags/LiveReload/" style="font-size: 10px;">LiveReload</a> <a href="/tags/MacBookPro/" style="font-size: 10px;">MacBookPro</a> <a href="/tags/Mail/" style="font-size: 10px;">Mail</a> <a href="/tags/Maven/" style="font-size: 11.88px;">Maven</a> <a href="/tags/MongoDB/" style="font-size: 18.13px;">MongoDB</a> <a href="/tags/MyBatis/" style="font-size: 12.5px;">MyBatis</a> <a href="/tags/MyCat/" style="font-size: 11.88px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 15px;">MySQL</a> <a href="/tags/Nacos/" style="font-size: 10px;">Nacos</a> <a href="/tags/Nginx/" style="font-size: 10.63px;">Nginx</a> <a href="/tags/OAuth2/" style="font-size: 15px;">OAuth2</a> <a href="/tags/PicGo/" style="font-size: 10px;">PicGo</a> <a href="/tags/RabbitMQ/" style="font-size: 10.63px;">RabbitMQ</a> <a href="/tags/Redis/" style="font-size: 18.75px;">Redis</a> <a href="/tags/Resume/" style="font-size: 10px;">Resume</a> <a href="/tags/SSM/" style="font-size: 10.63px;">SSM</a> <a href="/tags/Shiro/" style="font-size: 10px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 17.5px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Cloud/" style="font-size: 11.88px;">Spring Cloud</a> <a href="/tags/Spring-Data/" style="font-size: 10.63px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 19.38px;">Spring Security</a> <a href="/tags/SpringBoot/" style="font-size: 11.25px;">SpringBoot</a> <a href="/tags/SpringMVC/" style="font-size: 11.88px;">SpringMVC</a> <a href="/tags/SpringSecurity/" style="font-size: 10px;">SpringSecurity</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Thymeleaf/" style="font-size: 10px;">Thymeleaf</a> <a href="/tags/Transaction/" style="font-size: 10px;">Transaction</a> <a href="/tags/Video/" style="font-size: 10px;">Video</a> <a href="/tags/Vue/" style="font-size: 16.88px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/blog/" style="font-size: 10.63px;">blog</a> <a href="/tags/docker/" style="font-size: 14.38px;">docker</a> <a href="/tags/domain/" style="font-size: 10px;">domain</a> <a href="/tags/hdz/" style="font-size: 10px;">hdz</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/huawei/" style="font-size: 10px;">huawei</a> <a href="/tags/i18n/" style="font-size: 10px;">i18n</a> <a href="/tags/idea/" style="font-size: 10px;">idea</a> <a href="/tags/java/" style="font-size: 10px;">java</a> <a href="/tags/life/" style="font-size: 16.25px;">life</a> <a href="/tags/mail/" style="font-size: 10px;">mail</a> <a href="/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/router/" style="font-size: 10px;">router</a> <a href="/tags/transaction/" style="font-size: 10.63px;">transaction</a> <a href="/tags/vhr/" style="font-size: 13.13px;">vhr</a> <a href="/tags/vue/" style="font-size: 10px;">vue</a> <a href="/tags/vuepress/" style="font-size: 10px;">vuepress</a> <a href="/tags/weixin/" style="font-size: 11.25px;">weixin</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/七牛云/" style="font-size: 10px;">七牛云</a> <a href="/tags/中间件/" style="font-size: 10px;">中间件</a> <a href="/tags/侃侃而谈/" style="font-size: 15.63px;">侃侃而谈</a> <a href="/tags/分布式锁/" style="font-size: 10px;">分布式锁</a> <a href="/tags/前后端分离/" style="font-size: 12.5px;">前后端分离</a> <a href="/tags/单体应用/" style="font-size: 10px;">单体应用</a> <a href="/tags/外包/" style="font-size: 10px;">外包</a> <a href="/tags/学习资源/" style="font-size: 12.5px;">学习资源</a> <a href="/tags/工具/" style="font-size: 10.63px;">工具</a> <a href="/tags/微人事/" style="font-size: 10.63px;">微人事</a> <a href="/tags/微服务/" style="font-size: 10.63px;">微服务</a> <a href="/tags/杂谈/" style="font-size: 13.13px;">杂谈</a> <a href="/tags/条件注解/" style="font-size: 10px;">条件注解</a> <a href="/tags/源码解析/" style="font-size: 11.88px;">源码解析</a> <a href="/tags/源码解读/" style="font-size: 13.75px;">源码解读</a> <a href="/tags/生活/" style="font-size: 10.63px;">生活</a> <a href="/tags/程序人生/" style="font-size: 10.63px;">程序人生</a> <a href="/tags/程序员/" style="font-size: 10px;">程序员</a> <a href="/tags/自学/" style="font-size: 10px;">自学</a> <a href="/tags/视频/" style="font-size: 10px;">视频</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow  ">
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-09-28T01:57:32.000Z">2020-09-28</time></div>
+                    <a href="/2020/0928/huawei-connect.html" class="has-link-black-ter is-size-6">为了避免“内卷”，松哥跑去上海见世面了</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/HUAWEI/">HUAWEI</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-09-25T01:57:17.000Z">2020-09-25</time></div>
+                    <a href="/2020/0925/springsecurity-rbac.html" class="has-link-black-ter is-size-6">聊一个 GitHub 上开源的 RBAC 权限管理系统，很6！</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring-Security/">Spring Security</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-09-23T01:56:29.000Z">2020-09-23</time></div>
+                    <a href="/2020/0923/spring-expressionurlauthorizationconfigurer-urlauthorizationconfigurer.html" class="has-link-black-ter is-size-6">我又发现 Spring Security 中一个小秘密！</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring-Security/">Spring Security</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-09-21T01:56:14.000Z">2020-09-21</time></div>
+                    <a href="/2020/0921/springsecurity-rbac.html" class="has-link-black-ter is-size-6">Spring Security 中最流行的权限管理模型！</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring-Security/">Spring Security</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-09-17T01:55:57.000Z">2020-09-17</time></div>
+                    <a href="/2020/0917/springsecurity-acl-demo.html" class="has-link-black-ter is-size-6">一个案例演示 Spring Security 中粒度超细的权限控制！</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring-Security/">Spring Security</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">9</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">22</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">21</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">23</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">25</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">25</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">20</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">40</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">17</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">22</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">12</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">43</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">16</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">26</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+            
+
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            友链
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itboyhub.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">江南一点雨-国内站</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itboyhub.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.ityouknow.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">纯洁的微笑</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.ityouknow.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.itechyou.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">I Tech You, 我教你！</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itechyou.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itwanger.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">沉默王二</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itwanger.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://bugstack.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">bugstack虫洞栈</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">bugstack.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.cxyxiaowu.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">五分钟学算法</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.cxyxiaowu.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.justdojava.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 极客技术</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.justdojava.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cxytiandi.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">猿天地</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cxytiandi.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://vimjc.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Vim教程网</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">vimjc.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://muggle.javaboy.org/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">muggle</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">muggle.javaboy.org</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://crossoverjie.top/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">crossoverJie&#39;s Blog</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">crossoverjie.top</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cmsblogs.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 技术驿站</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cmsblogs.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://maizitoday.github.io/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">麦子的博客</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">maizitoday.github.io</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.haoservice.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">码农code之路</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.haoservice.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.jitwxs.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Jitwxs</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.jitwxs.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.gameboys.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 烂笔头</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.gameboys.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.a2data.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">A2Data</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.a2data.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="一个案例演示 Spring Security 中粒度超细的权限控制！" height="28">
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 江南一点雨&nbsp;
+				<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><!--
+PV <span id="busuanzi_value_site_pv"></span>&nbsp;|&nbsp;<i class="fa fa-user-md"></i>  UV <span id="busuanzi_value_site_uv"></span>&nbsp;-->
+				<script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? "https://" : "http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1276890692'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s96.cnzz.com/z_stat.php%3Fid%3D1276890692%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+				<a href="http://www.beian.miit.gov.cn/" style="color: black;">粤ICP备19111220号</a>
+                <!--Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么...">
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>

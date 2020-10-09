@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head><meta name="generator" content="Hexo 3.8.0">
+    <meta charset="utf-8">
+<title>Spring 源码第 9 篇，深入分析 FactoryBean - 江南一点雨</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+
+
+    <meta name="description" content="小伙伴们在面试的时候，有一个经典的问题：">
+<meta name="keywords" content="Spring,源码解析">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring 源码第 9 篇，深入分析 FactoryBean">
+<meta property="og:url" content="http://www.javaboy.org/2020/0824/spring-factorybean.html">
+<meta property="og:site_name" content="江南一点雨">
+<meta property="og:description" content="小伙伴们在面试的时候，有一个经典的问题：">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="http://www.javaboy.org/images/og_image.png">
+<meta property="og:updated_time" content="2020-10-09T00:44:07.432Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Spring 源码第 9 篇，深入分析 FactoryBean">
+<meta name="twitter:description" content="小伙伴们在面试的时候，有一个经典的问题：">
+<meta name="twitter:image" content="http://www.javaboy.org/images/og_image.png">
+
+
+
+
+
+
+
+<link rel="icon" href="https://www.javaboy.org/favicon.ico">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-2-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+                
+                <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="Spring 源码第 9 篇，深入分析 FactoryBean" height="28">
+                
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item" href="/">江南一点雨</a>
+                
+                <a class="navbar-item" href="/archives">归档</a>
+                
+                <a class="navbar-item" href="/fronted-backend">前后端分离</a>
+                
+                <a class="navbar-item" href="http://spring.javaboy.org">Spring</a>
+                
+                <a class="navbar-item" href="http://springmvc.javaboy.org">SpringMVC</a>
+                
+                <a class="navbar-item" href="http://mybatis.javaboy.org">MyBatis</a>
+                
+                <a class="navbar-item" href="http://springboot.javaboy.org">Spring Boot</a>
+                
+                <a class="navbar-item" href="http://maven.javaboy.org">Maven</a>
+                
+                <a class="navbar-item" href="/redis">Redis</a>
+                
+                <a class="navbar-item" href="/mongodb">MongoDB</a>
+                
+                <a class="navbar-item" href="/mysql">MySQL</a>
+                
+                <a class="navbar-item" href="/docker">Docker</a>
+                
+                <a class="navbar-item" href="/git">Git</a>
+                
+                <a class="navbar-item" href="/about">About</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                
+                
+                <a class="navbar-item search" style="height: 40px;line-height: 60px;width: 180px;margin: 12px 15px;box-sizing: border-box;border: 1px solid #dedede;border-radius: 20px;display: flex;justify-content: space-between;padding-left: 12px;padding-right: 10px" title="搜索" href="javascript:;">
+                    <!--<div style="border: 1px solid #dedede;border-radius: 10px;">-->
+                    <div>搜索</div>
+                        <i class="fas fa-search"></i>
+                    <!--</div>-->
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2020-08-24T01:52:24.000Z">2020-08-24</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Spring/">Spring</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    23 分钟 读完 (大约 3404 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Spring 源码第 9 篇，深入分析 FactoryBean
+            
+        </h1>
+        
+            <div class="content" id="content">
+                    <p>小伙伴们在面试的时候，有一个经典的问题：</p>
+<a id="more"></a>
+<ul>
+<li>Spring 中 FactoryBean 和 BeanFactory 有什么区别？</li>
+</ul>
+<p>原本是风马牛不相及的两个东西，只是因为单词前后颠倒了一下，就变成了一个高频面试题！</p>
+<p>在本系列前面文章中松哥在和大家分析 DefaultListableBeanFactory 容器的时候涉及到了一点点 BeanFactory 的知识，不过在那篇文章中 BeanFactory 毕竟不是主角，以后的文章松哥还会和大家再去探讨 BeanFactory 的功能。</p>
+<p>今天我们就先来看看 FactoryBean 是什么？</p>
+<p>只要我们分别将 FactoryBean 和 BeanFactory 的功能搞清楚，上面的那道面试题自然不在话下。</p>
+<p>阅读本系列前面文章，有助于更好的理解本文：</p>
+<ol>
+<li><a href="https://mp.weixin.qq.com/s/1ImVkjdmcllArzPOSksNoA" target="_blank" rel="noopener">Spring 源码解读计划</a></li>
+<li><a href="https://mp.weixin.qq.com/s/OVcBCs7rluNXdKI2bNshQw" target="_blank" rel="noopener">Spring 源码第一篇开整！配置文件是怎么加载的？</a></li>
+<li><a href="https://mp.weixin.qq.com/s/Rr7FBgau8hT0t4X9XtXdGQ" target="_blank" rel="noopener">Spring 源码第二弹！XML 文件解析流程</a></li>
+<li><a href="https://mp.weixin.qq.com/s/vXD79ucsRjbQWbogrzdq9g" target="_blank" rel="noopener">Spring 源码第三弹！EntityResolver 是个什么鬼？</a></li>
+<li><a href="https://mp.weixin.qq.com/s/X36YBS9WRyScYO9ZtH5v_A" target="_blank" rel="noopener">Spring 源码第四弹！深入理解 BeanDefinition</a></li>
+<li><a href="https://mp.weixin.qq.com/s/8WnRZtHmstum23Ut5EXAug" target="_blank" rel="noopener">手把手教你搭建 Spring 源码分析环境</a></li>
+<li><a href="https://mp.weixin.qq.com/s/vQatn3w9BvdSdOY05yQa0Q" target="_blank" rel="noopener">Spring 源码第六弹！松哥和大家聊聊容器的始祖 DefaultListableBeanFactory</a></li>
+<li><a href="https://mp.weixin.qq.com/s/dDX7ijnhkrMwlkUcCqOlnw" target="_blank" rel="noopener">Spring 源码解读第七弹！bean 标签的解析</a></li>
+<li><a href="https://mp.weixin.qq.com/s/_FG7qePUVO42Vh2Pfhj-rg" target="_blank" rel="noopener">Spring 源码第 8 篇，各种属性的解析</a></li>
+</ol>
+<h2 id="1-一个-Demo"><a href="#1-一个-Demo" class="headerlink" title="1.一个 Demo"></a>1.一个 Demo</h2><p>我们先从一个简单的 Demo 开始。</p>
+<p>新建一个 Maven 项目，引入 Spring 依赖，然后创建一个 HelloService，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HelloService</span> </span>&#123;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">hello</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-string">"hello javaboy"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后再创建一个 HelloService 的工厂类：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HelloServiceFactoryBean</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">FactoryBean</span>&lt;<span class="hljs-title">HelloService</span>&gt; </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> HelloService <span class="hljs-title">getObject</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> HelloService();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-keyword">public</span> Class&lt;?&gt; getObjectType() &#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> HelloService.class;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">isSingleton</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们新建的 HelloServiceFactoryBean 类实现了 FactoryBean 接口，并指定了 HelloService 泛型。</p>
+<p>接下来我们在 beans.xml 文件中配置 HelloServiceFactoryBean 实例：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">beans</span> <span class="hljs-attr">xmlns</span>=<span class="hljs-string">"http://www.springframework.org/schema/beans"</span></span></span><br><span class="line"><span class="hljs-tag">       <span class="hljs-attr">xmlns:xsi</span>=<span class="hljs-string">"http://www.w3.org/2001/XMLSchema-instance"</span></span></span><br><span class="line"><span class="hljs-tag">       <span class="hljs-attr">xsi:schemaLocation</span>=<span class="hljs-string">"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd"</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"org.javaboy.springdemo03.HelloServiceFactoryBean"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"helloService"</span>/&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">beans</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>加载该配置文件：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Test</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">contextLoads</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    ClassPathXmlApplicationContext ctx = <span class="hljs-keyword">new</span> ClassPathXmlApplicationContext(<span class="hljs-string">"beans.xml"</span>);</span><br><span class="line">    Object helloService = ctx.getBean(<span class="hljs-string">"helloService"</span>);</span><br><span class="line">    System.out.println(helloService.getClass().toString());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>加载 XML 配置文件，并获取 Bean 实例，然后将 Bean 实例的类型打印出来。</p>
+<p>按照我们之前的理解，这里获取到的 Bean 应该是 HelloServiceFactoryBean 的实例，但是实际打印结果如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">class org.javaboy.springdemo03.HelloService</span><br></pre></td></tr></table></figure>
+<p>竟然是 HelloService！</p>
+<p>到底怎么回事？我们得从 FactoryBean 接口开始讲起。</p>
+<h2 id="2-FactoryBean-接口"><a href="#2-FactoryBean-接口" class="headerlink" title="2.FactoryBean 接口"></a>2.FactoryBean 接口</h2><p>FactoryBean 在 Spring 框架中具有重要地位，Spring 框架本身也为此提供了多种不同的实现类：</p>
+<p><img src="http://img.itboyhub.com/2020/07/20200822112454.png" alt></p>
+<p>按理说我们配置一个 Bean，直接在 XML 文件中进行配置即可。但是有的时候一个类的属性非常多，在 XML 中配置起来反而非常不方便，这个时候 Java 代码配置的优势就体现出来了，使用 FactoryBean 就可以通过 Java 代码配置 Bean 的相关属性。</p>
+<p>从 Spring3.0 开始，FactoryBean 开始支持泛型，就是大家所看到的 FactoryBean<t> 形式，FactoryBean<t> 接口中一共有三个方法：</t></t></p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">FactoryBean</span>&lt;<span class="hljs-title">T</span>&gt; </span>&#123;</span><br><span class="line">	<span class="hljs-meta">@Nullable</span></span><br><span class="line">	<span class="hljs-function">T <span class="hljs-title">getObject</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception</span>;</span><br><span class="line">	<span class="hljs-meta">@Nullable</span></span><br><span class="line">	Class&lt;?&gt; getObjectType();</span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">default</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">isSingleton</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>getObject：该方法返回 FactoryBean 所创建的实例，如果在 XML 配置文件中，我们提供的 class 是一个 FactoryBean 的话，那么当我们调用 getBean 方法去获取实例时，最终获取到的是 getObject 方法的返回值。</li>
+<li>getObjectType：返回对象的类型。</li>
+<li>isSingleton：getObject 方法所返回的对象是否单例。</li>
+</ul>
+<p>所以当我们调用 getBean 方法去获取 Bean 实例的时候，实际上获取到的是 getObject 方法的返回值，那么是不是就没有办法获取 HelloServiceFactoryBean 呢？当然是有的！</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Test</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">contextLoads</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    ClassPathXmlApplicationContext ctx = <span class="hljs-keyword">new</span> ClassPathXmlApplicationContext(<span class="hljs-string">"beans.xml"</span>);</span><br><span class="line">    Object helloService = ctx.getBean(<span class="hljs-string">"&amp;helloService"</span>);</span><br><span class="line">    System.out.println(helloService.getClass().toString());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>打印结果如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">class org.javaboy.springdemo03.HelloServiceFactoryBean</span><br></pre></td></tr></table></figure>
+<p>小伙伴们可以看到，只需要在 Bean 的名字前面加上一个 &amp; 符号，获取到的就是 HelloServiceFactoryBean 实例了。</p>
+<h2 id="3-源码分析"><a href="#3-源码分析" class="headerlink" title="3.源码分析"></a>3.源码分析</h2><p>根据 <a href="https://mp.weixin.qq.com/s/vQatn3w9BvdSdOY05yQa0Q" target="_blank" rel="noopener">Spring 源码第六弹！松哥和大家聊聊容器的始祖 DefaultListableBeanFactory</a> 一文中的介绍，在 DefaultListableBeanFactory 中还有一个 preInstantiateSingletons 方法可以提前注册 Bean，该方法是在 ConfigurableListableBeanFactory 接口中声明的，DefaultListableBeanFactory 类实现了 ConfigurableListableBeanFactory 接口并实现了接口中的方法：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">preInstantiateSingletons</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;</span><br><span class="line">		logger.trace(<span class="hljs-string">"Pre-instantiating singletons in "</span> + <span class="hljs-keyword">this</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// Iterate over a copy to allow for init methods which in turn register new bean definitions.</span></span><br><span class="line">	<span class="hljs-comment">// While this may not be part of the regular factory bootstrap, it does otherwise work fine.</span></span><br><span class="line">	List&lt;String&gt; beanNames = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;(<span class="hljs-keyword">this</span>.beanDefinitionNames);</span><br><span class="line">	<span class="hljs-comment">// Trigger initialization of all non-lazy singleton beans...</span></span><br><span class="line">	<span class="hljs-keyword">for</span> (String beanName : beanNames) &#123;</span><br><span class="line">		RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);</span><br><span class="line">		<span class="hljs-keyword">if</span> (!bd.isAbstract() &amp;&amp; bd.isSingleton() &amp;&amp; !bd.isLazyInit()) &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> (isFactoryBean(beanName)) &#123;</span><br><span class="line">				Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);</span><br><span class="line">				<span class="hljs-keyword">if</span> (bean <span class="hljs-keyword">instanceof</span> FactoryBean) &#123;</span><br><span class="line">					<span class="hljs-keyword">final</span> FactoryBean&lt;?&gt; factory = (FactoryBean&lt;?&gt;) bean;</span><br><span class="line">					<span class="hljs-keyword">boolean</span> isEagerInit;</span><br><span class="line">					<span class="hljs-keyword">if</span> (System.getSecurityManager() != <span class="hljs-keyword">null</span> &amp;&amp; factory <span class="hljs-keyword">instanceof</span> SmartFactoryBean) &#123;</span><br><span class="line">						isEagerInit = AccessController.doPrivileged((PrivilegedAction&lt;Boolean&gt;)</span><br><span class="line">										((SmartFactoryBean&lt;?&gt;) factory)::isEagerInit,</span><br><span class="line">								getAccessControlContext());</span><br><span class="line">					&#125;</span><br><span class="line">					<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">						isEagerInit = (factory <span class="hljs-keyword">instanceof</span> SmartFactoryBean &amp;&amp;</span><br><span class="line">								((SmartFactoryBean&lt;?&gt;) factory).isEagerInit());</span><br><span class="line">					&#125;</span><br><span class="line">					<span class="hljs-keyword">if</span> (isEagerInit) &#123;</span><br><span class="line">						getBean(beanName);</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">				getBean(beanName);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// Trigger post-initialization callback for all applicable beans...</span></span><br><span class="line">	<span class="hljs-keyword">for</span> (String beanName : beanNames) &#123;</span><br><span class="line">		Object singletonInstance = getSingleton(beanName);</span><br><span class="line">		<span class="hljs-keyword">if</span> (singletonInstance <span class="hljs-keyword">instanceof</span> SmartInitializingSingleton) &#123;</span><br><span class="line">			<span class="hljs-keyword">final</span> SmartInitializingSingleton smartSingleton = (SmartInitializingSingleton) singletonInstance;</span><br><span class="line">			<span class="hljs-keyword">if</span> (System.getSecurityManager() != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">				AccessController.doPrivileged((PrivilegedAction&lt;Object&gt;) () -&gt; &#123;</span><br><span class="line">					smartSingleton.afterSingletonsInstantiated();</span><br><span class="line">					<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;</span><br><span class="line">				&#125;, getAccessControlContext());</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">				smartSingleton.afterSingletonsInstantiated();</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>preInstantiateSingletons 方法的整体逻辑比较简单，就是遍历 beanNames，对符合条件的 Bean 进行实例化，而且大家注意，这里所谓的提前初始化其实就是在我们调用 getBean 方法之前，它自己先调用了一下 getBean。</p>
+<p>这里有几个比较关键的点。</p>
+<p>第一个就是 isFactoryBean 方法的调用，该方法就是根据 beanName 去获取 Bean 实例，进而判断是不是一个 FactoryBean，如果没有 Bean 实例（还没创建出来），则根据 BeanDefinition 去判断是不是一个 FactoryBean。</p>
+<p>如果是 FactoryBean，则在 getBean 时自动加上了 FACTORY_BEAN_PREFIX 前缀，这个常量其实就是 &amp;，这样获取到的实例实际上就是 FactoryBean 的实例。获取到 FactoryBean 实例之后，接下来判断是否需要在容器启动阶段，调用 getObject 方法初始化 Bean，如果 isEagerInit 为 true，则去初始化。</p>
+<p>按照我们前面的定义，这里获取到的 isEagerInit 属性为 false，即不提前加载 Bean，而是在开发者手动调用 getBean 的方法的时候才去加载。如果希望这里能够提前加载，需要重新定义 HelloServiceFactoryBean，并使之实现 SmartFactoryBean 接口，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HelloServiceFactoryBean2</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">SmartFactoryBean</span>&lt;<span class="hljs-title">HelloService</span>&gt; </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> HelloService <span class="hljs-title">getObject</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> HelloService();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-keyword">public</span> Class&lt;?&gt; getObjectType() &#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> HelloService.class;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">isSingleton</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">isEagerInit</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>实现了 SmartFactoryBean 接口之后，重写 isEagerInit 方法并返回 true，其他方法不变，重新配置 beans.xml 文件，然后启动容器。此时在容器启动时，就会提前调用 getBean 方法完成 Bean 的加载。</p>
+<p>接下来我们来看 getBean 方法。</p>
+<p>getBean 方法首先调用 AbstractBeanFactory#doGetBean，在该方法中，又会调用到 AbstractBeanFactory#getObjectForBeanInstance 方法：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">getObjectForBeanInstance</span><span class="hljs-params">(</span></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-params">		Object beanInstance, String name, String beanName, @Nullable RootBeanDefinition mbd)</span> </span>&#123;</span><br><span class="line">	<span class="hljs-comment">// Don't let calling code try to dereference the factory if the bean isn't a factory.</span></span><br><span class="line">	<span class="hljs-keyword">if</span> (BeanFactoryUtils.isFactoryDereference(name)) &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> (beanInstance <span class="hljs-keyword">instanceof</span> NullBean) &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> beanInstance;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> (!(beanInstance <span class="hljs-keyword">instanceof</span> FactoryBean)) &#123;</span><br><span class="line">			<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> BeanIsNotAFactoryException(beanName, beanInstance.getClass());</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> (mbd != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			mbd.isFactoryBean = <span class="hljs-keyword">true</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">return</span> beanInstance;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// Now we have the bean instance, which may be a normal bean or a FactoryBean.</span></span><br><span class="line">	<span class="hljs-comment">// If it's a FactoryBean, we use it to create a bean instance, unless the</span></span><br><span class="line">	<span class="hljs-comment">// caller actually wants a reference to the factory.</span></span><br><span class="line">	<span class="hljs-keyword">if</span> (!(beanInstance <span class="hljs-keyword">instanceof</span> FactoryBean)) &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> beanInstance;</span><br><span class="line">	&#125;</span><br><span class="line">	Object object = <span class="hljs-keyword">null</span>;</span><br><span class="line">	<span class="hljs-keyword">if</span> (mbd != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		mbd.isFactoryBean = <span class="hljs-keyword">true</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		object = getCachedObjectForFactoryBean(beanName);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> (object == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		<span class="hljs-comment">// Return bean instance from factory.</span></span><br><span class="line">		FactoryBean&lt;?&gt; factory = (FactoryBean&lt;?&gt;) beanInstance;</span><br><span class="line">		<span class="hljs-comment">// Caches object obtained from FactoryBean if it is a singleton.</span></span><br><span class="line">		<span class="hljs-keyword">if</span> (mbd == <span class="hljs-keyword">null</span> &amp;&amp; containsBeanDefinition(beanName)) &#123;</span><br><span class="line">			mbd = getMergedLocalBeanDefinition(beanName);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">boolean</span> synthetic = (mbd != <span class="hljs-keyword">null</span> &amp;&amp; mbd.isSynthetic());</span><br><span class="line">		object = getObjectFromFactoryBean(factory, beanName, !synthetic);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> object;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这段源码很有意思：</p>
+<p>BeanFactoryUtils.isFactoryDereference 方法用来判断 name 是不是以 &amp; 开头的，如果是以 &amp; 开头的，表示想要获取的是一个 FactoryBean，那么此时如果 beanInstance 刚好就是一个 FactoryBean，则直接返回。并将 mbd 中的 isFactoryBean 属性设置为 true。</p>
+<p>如果 name 不是以 &amp; 开头的，说明用户就是想获取 FactoryBean 所构造的 Bean，那么此时如果 beanInstance 不是 FactoryBean 实例，则直接返回。</p>
+<p>如果当前的 beanInstance 是一个 FactoryBean，而用户想获取的只是一个普通 Bean，那么就会进入到接下来的代码中。</p>
+<p>首先调用 getCachedObjectForFactoryBean 方法去从缓存中获取 Bean。如果是第一次获取 Bean，这个缓存中是没有的数据的，getObject 方法调用过一次之后，Bean 才有可能被保存到缓存中了。</p>
+<p>为什么说有可能呢？Bean 如果是单例的，则会被保存在缓存中，Bean 如果不是单例的，则不会被保存在缓存中，而是每次加载都去创建新的。</p>
+<p>如果没能从缓存中加载到 Bean，则最终会调用 getObjectFromFactoryBean 方法去加载 Bean。</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">getObjectFromFactoryBean</span><span class="hljs-params">(FactoryBean&lt;?&gt; factory, String beanName, <span class="hljs-keyword">boolean</span> shouldPostProcess)</span> </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> (factory.isSingleton() &amp;&amp; containsSingleton(beanName)) &#123;</span><br><span class="line">		<span class="hljs-keyword">synchronized</span> (getSingletonMutex()) &#123;</span><br><span class="line">			Object object = <span class="hljs-keyword">this</span>.factoryBeanObjectCache.get(beanName);</span><br><span class="line">			<span class="hljs-keyword">if</span> (object == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">				object = doGetObjectFromFactoryBean(factory, beanName);</span><br><span class="line">				<span class="hljs-comment">// Only post-process and store if not put there already during getObject() call above</span></span><br><span class="line">				<span class="hljs-comment">// (e.g. because of circular reference processing triggered by custom getBean calls)</span></span><br><span class="line">				Object alreadyThere = <span class="hljs-keyword">this</span>.factoryBeanObjectCache.get(beanName);</span><br><span class="line">				<span class="hljs-keyword">if</span> (alreadyThere != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">					object = alreadyThere;</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">					<span class="hljs-keyword">if</span> (shouldPostProcess) &#123;</span><br><span class="line">						<span class="hljs-keyword">if</span> (isSingletonCurrentlyInCreation(beanName)) &#123;</span><br><span class="line">							<span class="hljs-comment">// Temporarily return non-post-processed object, not storing it yet..</span></span><br><span class="line">							<span class="hljs-keyword">return</span> object;</span><br><span class="line">						&#125;</span><br><span class="line">						beforeSingletonCreation(beanName);</span><br><span class="line">						<span class="hljs-keyword">try</span> &#123;</span><br><span class="line">							object = postProcessObjectFromFactoryBean(object, beanName);</span><br><span class="line">						&#125;</span><br><span class="line">						<span class="hljs-keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">							<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> BeanCreationException(beanName,</span><br><span class="line">									<span class="hljs-string">"Post-processing of FactoryBean's singleton object failed"</span>, ex);</span><br><span class="line">						&#125;</span><br><span class="line">						<span class="hljs-keyword">finally</span> &#123;</span><br><span class="line">							afterSingletonCreation(beanName);</span><br><span class="line">						&#125;</span><br><span class="line">					&#125;</span><br><span class="line">					<span class="hljs-keyword">if</span> (containsSingleton(beanName)) &#123;</span><br><span class="line">						<span class="hljs-keyword">this</span>.factoryBeanObjectCache.put(beanName, object);</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">return</span> object;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		Object object = doGetObjectFromFactoryBean(factory, beanName);</span><br><span class="line">		<span class="hljs-keyword">if</span> (shouldPostProcess) &#123;</span><br><span class="line">			<span class="hljs-keyword">try</span> &#123;</span><br><span class="line">				object = postProcessObjectFromFactoryBean(object, beanName);</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">				<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> BeanCreationException(beanName, <span class="hljs-string">"Post-processing of FactoryBean's object failed"</span>, ex);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">return</span> object;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在 getObjectFromFactoryBean 方法中，首先通过 isSingleton 和 containsSingleton 两个方法判断 getObject 方法返回值是否是单例的，单例的走一条路，非单例的走另外一条路。</p>
+<p>如果是单例的：</p>
+<p>先去缓存中再拿一次，看能不能拿到。如果缓存中没有，调用 doGetObjectFromFactoryBean 方法去获取，这是真正的获取方法。获取到之后，进行 Bean 的后置处理，处理完成后，如果 Bean 是单例的，就缓存起来。</p>
+<p>如果不是单例的：</p>
+<p>不是单例就简单，直接调用 doGetObjectFromFactoryBean 方法获取 Bean 实例，然后进行后置处理就完事，也不用缓存。</p>
+<p>接下来我们就来看看 doGetObjectFromFactoryBean 方法：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">private</span> Object <span class="hljs-title">doGetObjectFromFactoryBean</span><span class="hljs-params">(FactoryBean&lt;?&gt; factory, String beanName)</span> <span class="hljs-keyword">throws</span> BeanCreationException </span>&#123;</span><br><span class="line">	Object object;</span><br><span class="line">	<span class="hljs-keyword">try</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> (System.getSecurityManager() != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			AccessControlContext acc = getAccessControlContext();</span><br><span class="line">			<span class="hljs-keyword">try</span> &#123;</span><br><span class="line">				object = AccessController.doPrivileged((PrivilegedExceptionAction&lt;Object&gt;) factory::getObject, acc);</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">catch</span> (PrivilegedActionException pae) &#123;</span><br><span class="line">				<span class="hljs-keyword">throw</span> pae.getException();</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			object = factory.getObject();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">catch</span> (FactoryBeanNotInitializedException ex) &#123;</span><br><span class="line">		<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> BeanCurrentlyInCreationException(beanName, ex.toString());</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">		<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> BeanCreationException(beanName, <span class="hljs-string">"FactoryBean threw exception on object creation"</span>, ex);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// Do not accept a null value for a FactoryBean that's not fully</span></span><br><span class="line">	<span class="hljs-comment">// initialized yet: Many FactoryBeans just return null then.</span></span><br><span class="line">	<span class="hljs-keyword">if</span> (object == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> (isSingletonCurrentlyInCreation(beanName)) &#123;</span><br><span class="line">			<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> BeanCurrentlyInCreationException(</span><br><span class="line">					beanName, <span class="hljs-string">"FactoryBean which is currently in creation returned null from getObject"</span>);</span><br><span class="line">		&#125;</span><br><span class="line">		object = <span class="hljs-keyword">new</span> NullBean();</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> object;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>做了一些判断之后，最终通过 factory.getObject(); 方法获取我们想要的实例。</p>
+<p>这就是整个 FactoryBean 的加载流程。</p>
+<h2 id="4-应用"><a href="#4-应用" class="headerlink" title="4.应用"></a>4.应用</h2><p>FactoryBean 在 Spring 框架中有非常广泛的应用，即使我们不写上面那段代码，也还是使用了不少的 FactoryBean。</p>
+<p>接下来松哥随便举两个例子。</p>
+<h3 id="4-1-SqlSessionFactoryBean"><a href="#4-1-SqlSessionFactoryBean" class="headerlink" title="4.1 SqlSessionFactoryBean"></a>4.1 SqlSessionFactoryBean</h3><p>这可能是大家接触最多的 FactoryBean，当 MyBatis 整合 Spring 时，我们少不了如下一行配置：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"org.mybatis.spring.SqlSessionFactoryBean"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"sqlSessionFactoryBean"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"dataSource"</span> <span class="hljs-attr">ref</span>=<span class="hljs-string">"dataSource"</span>/&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"typeAliasesPackage"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"org.javaboy.meeting.model"</span>/&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"mapperLocations"</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">value</span>&gt;</span></span><br><span class="line">            classpath*:org/javaboy/meeting/mapper/*.xml</span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">value</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>这就是在配置 FactoryBean。当我们单独使用 MyBatis 时候，需要有一个 SqlSessionFactory（公众号江南一点雨后台回复 MyBatis 有 MyBatis 教程），现在整合之后，没有 SqlSessionFactory 了，我们有理由相信是 SqlSessionFactoryBean 的 getObject 方法提供了 SqlSessionFactory，我们来看下其源码：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> SqlSessionFactory <span class="hljs-title">getObject</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.sqlSessionFactory == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">    afterPropertiesSet();</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.sqlSessionFactory;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>确实如此！</p>
+<h3 id="4-2-Jackson2ObjectMapperFactoryBean"><a href="#4-2-Jackson2ObjectMapperFactoryBean" class="headerlink" title="4.2 Jackson2ObjectMapperFactoryBean"></a>4.2 Jackson2ObjectMapperFactoryBean</h3><p>这也是一个大家使用相对较多的 FactoryBean。</p>
+<p>如果项目中使用了 Jackson，同时希望在全局层面做一些配置，一般来说我们可能会用到这个类：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">mvc:annotation-driven</span> <span class="hljs-attr">conversion-service</span>=<span class="hljs-string">"conversionService"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">mvc:message-converters</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"org.springframework.http.converter.json.MappingJackson2HttpMessageConverter"</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"objectMapper"</span>&gt;</span></span><br><span class="line">                <span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"org.springframework.http.converter.json.Jackson2ObjectMapperFactoryBean"</span>&gt;</span></span><br><span class="line">                    <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"simpleDateFormat"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"yyyy-MM-dd"</span>/&gt;</span></span><br><span class="line">                <span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">mvc:message-converters</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">mvc:annotation-driven</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>MappingJackson2HttpMessageConverter 类的 objectMapper 属性实际上是需要一个 ObjectMapper 对象，但是我们这里却提供了一个 Jackson2ObjectMapperFactoryBean，这是因为 Jackson2ObjectMapperFactoryBean 的 getObject 方法就是我们需要的 ObjectMapper：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-meta">@Nullable</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> ObjectMapper <span class="hljs-title">getObject</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.objectMapper;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="4-3-FormattingConversionServiceFactoryBean"><a href="#4-3-FormattingConversionServiceFactoryBean" class="headerlink" title="4.3 FormattingConversionServiceFactoryBean"></a>4.3 FormattingConversionServiceFactoryBean</h3><p>FormattingConversionServiceFactoryBean 也曾经出现在松哥的 SpringMVC 教程中（公众号江南一点雨后台回复 springmvc 获取教程）。</p>
+<p>如果前端传递的参数格式是 key-value 形式，那么日期类型的参数需要服务端提供一个日期类型转换器，像下面这样：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Component</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">DateConverter</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Converter</span>&lt;<span class="hljs-title">String</span>, <span class="hljs-title">Date</span>&gt; </span>&#123;</span><br><span class="line">    SimpleDateFormat sdf = <span class="hljs-keyword">new</span> SimpleDateFormat(<span class="hljs-string">"yyyy-MM-dd"</span>);</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> Date <span class="hljs-title">convert</span><span class="hljs-params">(String source)</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">            <span class="hljs-keyword">return</span> sdf.parse(source);</span><br><span class="line">        &#125; <span class="hljs-keyword">catch</span> (ParseException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后在 XML 文件中对此进行配置：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">mvc:annotation-driven</span> <span class="hljs-attr">conversion-service</span>=<span class="hljs-string">"conversionService"</span>/&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"org.springframework.format.support.FormattingConversionServiceFactoryBean"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"conversionService"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"converters"</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">set</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">ref</span> <span class="hljs-attr">bean</span>=<span class="hljs-string">"dateConverter"</span>/&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">set</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>FormattingConversionServiceFactoryBean 中的 getObject 方法最终返回的是 FormattingConversionService。</p>
+<p>类似的例子还有很多，例如 EhCacheManagerFactoryBean、YamlPropertiesFactoryBean 等，松哥就不一一赘述了，感兴趣的小伙伴可以自行查看。</p>
+<h2 id="5-小结"><a href="#5-小结" class="headerlink" title="5.小结"></a>5.小结</h2><p>好啦，今天就和小伙伴们聊一聊 FactoryBean，讲了它的源码，也讲了它的用法，后面再来和大家聊一聊 BeanFactory，两个都聊完了了，文章一开始提出的面试题就不在话下了。</p>
+<p>小伙伴们觉得有收获，记得点个在看鼓励下松哥哦～</p>
+
+                    <!--<div class="asb-post-01">
+                        <div class="mask"></div>
+                        <div class="info" style="display: flex;justify-content:center;flex-direction:column;align-items:center">
+                                <div>扫码关注微信公众号：<span style="color: #E9405A; font-weight: bold;">江南一点雨</span></div>
+                                <div>
+                                    <span>发送 </span><span class="token" style="color: #e9415a; font-weight: bold; font-size: 17px; margin-bottom: 45px;">290992</span>
+                                </div>
+                                <div>
+                                    即可<span style="color: #e9415a; font-weight: bold;">立即永久</span>解锁本站全部文章（注意区分大小写哦）
+                                </div>
+                            <div>
+                                <img class="code-img" style="width: 300px;display:unset" src="https://www.javaboy.org/images/sb/javaboy.jpg">
+                            </div>
+                        </div>
+                    </div>-->
+                </div>
+        
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Spring/">Spring</a>, <a class="has-link-grey -link" href="/tags/源码解析/">源码解析</a>
+                </div>
+            </div>
+        </div>
+		<div class="level is-size-6">
+						<p>喜欢这篇文章吗？扫码关注公众号<b>【江南一点雨】</b>，<b>【江南一点雨】</b>专注于 SPRING BOOT+微服务以及前后端分离技术，每天推送原创技术干货，关注后回复 JAVA，领取松哥为你精心准备的 JAVA 干货!
+</p>
+		</div>
+		<div class="level is-size-7 is-uppercase">
+<img class="menu-label has-text-centered" src="http://www.javaboy.org/images/sb/javaboy.jpg" alt>
+		</div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">觉得不错，可以给小编加个鸡腿</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="https://www.javaboy.org/images/sb/weixin_pay.png" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2020/0828/spring-security-oauth2.html">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">为什么你使用的 Spring Security OAuth 过期了？松哥来和大家捋一捋！</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2020/0820/weixin-bug.html">
+                <span class="level-item">凌晨 1 点的 Bug，我似乎被微信坑了一把</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+	<section id="comments"></section>
+	<script src="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/gitment.browser.js"></script>
+	<!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/default.css"/>-->
+	<link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+	<script>
+		if (document.getElementById('comments')) {
+			var gitment = new Gitment({
+				id: '2020/0824/spring-factorybean.html'.length>50?'2020/0824/spring-factorybean.html'.substring(0,50):'2020/0824/spring-factorybean.html',
+				owner: 'lenve',
+				repo: 'javaboy_comment',
+				oauth: {
+					client_id: 'ecc1a65d7b7baf6a495c',
+					client_secret: '427ecd90ada169afa77fc164509449905dd37f67',
+				},
+			})
+			gitment.render('comments')
+		}
+	</script>
+	
+    </div>
+</div>
+<style>
+.lock {
+    position: relative;
+    overflow: hidden;
+    padding-bottom: 30px;
+}
+.asb-post-01 {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    display: block;
+    z-index: 10000;
+    margin-bottom: 0;
+}
+.asb-post-01 .info {
+    background: white;
+    height: 370px;
+}
+.asb-post-01 .mask {
+    height: 240px;
+    width: 100%;
+    background: -webkit-gradient(linear, 0 top, 0 bottom, from(rgba(255, 255, 255, 0)), to(#fff));
+}
+</style>
+<!--<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script>
+function getCookie(name) {
+	var value = "; " + document.cookie;
+	var parts = value.split("; " + name + "=");
+	if (parts.length == 2)
+		return parts.pop().split(";").shift();
+}
+
+function getToken() {
+	let value = getCookie('UM_distinctid');
+	if (!value) {
+		return defaultToken;
+	}
+	return value.substring(value.length - 6).toUpperCase();
+}
+
+
+
+// 文章所在容器的选择器
+// var articleSelector = 'article.article-content';
+
+// DOM 完全就绪时执行
+$(function() {
+    // 找到文章所在的容器
+    var $article = $("#content");
+    console.log($article)
+	if ($article.length > 0) {
+		// 文章的实际高度
+		var article = $article[0], height = article.clientHeight;
+		// 文章隐藏后的高度
+		var halfHeight = height * 0.3;
+		
+		// 篇幅短一点的文章就不需要解锁了
+		if (halfHeight > 800) {
+			
+            // 获取口令
+            var mytoken = window.localStorage.getItem("javaboytoken")
+            var token;
+            if(mytoken){
+                token=mytoken
+            }else{
+                token = 'B'+getToken();
+                window.localStorage.setItem("javaboytoken",token)
+            }
+			$('.asb-post-01').find('.token').text(token);
+			
+var _lock = function() {
+	$article.css('height', halfHeight + 'px');
+	$article.addClass('lock');
+	$('.asb-post-01').css('display', 'block');
+}
+
+var _unlock = function() {
+	$article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+
+// 查询后端的结果
+var _detect = function() {
+	$.ajax({
+		url : 'http://blog-wx.itboyhub.com/wx/checktoken',
+		method : 'GET',
+		data : {
+			token : token
+		},
+		success : function(data) {
+			if (data.locked === true) {
+				_lock();
+			} else {
+				_unlock();
+			}
+		},
+		error : function(data) {
+			_unlock();
+		}
+	})
+}
+
+_detect();
+setInterval(function() {
+    _detect();
+}, 5000);
+}else{
+    $article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+    }
+});
+</script>-->
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="江南一点雨">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>China· ShenZhen</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        373
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        54
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        95
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/lenve" target="_blank">
+                扫码关注微信公众号</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="Github" href="https://github.com/lenve">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="envelope" href="mailto:wangsong0210@gmail.com">
+                
+                <i class="fa fa-envelope"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="RSS" href="/atom.xml">
+                
+                <i class="fas fa-rss"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/2019/">
+            <span class="level-start">
+                <span class="level-item">2019</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Blog/">
+            <span class="level-start">
+                <span class="level-item">Blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Chrome/">
+            <span class="level-start">
+                <span class="level-item">Chrome</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/FastDFS/">
+            <span class="level-start">
+                <span class="level-item">FastDFS</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Git/">
+            <span class="level-start">
+                <span class="level-item">Git</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/GitHub/">
+            <span class="level-start">
+                <span class="level-item">GitHub</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/HUAWEI/">
+            <span class="level-start">
+                <span class="level-item">HUAWEI</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IDEA/">
+            <span class="level-start">
+                <span class="level-item">IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IntelliJ-IDEA/">
+            <span class="level-start">
+                <span class="level-item">IntelliJ IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Java/">
+            <span class="level-start">
+                <span class="level-item">Java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/JavaWeb/">
+            <span class="level-start">
+                <span class="level-item">JavaWeb</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MacBookPro/">
+            <span class="level-start">
+                <span class="level-item">MacBookPro</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Maven/">
+            <span class="level-start">
+                <span class="level-item">Maven</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MongoDB/">
+            <span class="level-start">
+                <span class="level-item">MongoDB</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MyBatis/">
+            <span class="level-start">
+                <span class="level-item">MyBatis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MySQL/">
+            <span class="level-start">
+                <span class="level-item">MySQL</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">10</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Nginx/">
+            <span class="level-start">
+                <span class="level-item">Nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/OAuth2/">
+            <span class="level-start">
+                <span class="level-item">OAuth2</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">10</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Redis/">
+            <span class="level-start">
+                <span class="level-item">Redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Resume/">
+            <span class="level-start">
+                <span class="level-item">Resume</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SSM/">
+            <span class="level-start">
+                <span class="level-item">SSM</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring/">
+            <span class="level-start">
+                <span class="level-item">Spring</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">13</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Boot/">
+            <span class="level-start">
+                <span class="level-item">Spring Boot</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">127</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Cloud/">
+            <span class="level-start">
+                <span class="level-item">Spring Cloud</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Security/">
+            <span class="level-start">
+                <span class="level-item">Spring Security</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">53</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringMVC/">
+            <span class="level-start">
+                <span class="level-item">SpringMVC</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringSecurity/">
+            <span class="level-start">
+                <span class="level-item">SpringSecurity</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Transaction/">
+            <span class="level-start">
+                <span class="level-item">Transaction</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/blog/">
+            <span class="level-start">
+                <span class="level-item">blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/docker/">
+            <span class="level-start">
+                <span class="level-item">docker</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/domain/">
+            <span class="level-start">
+                <span class="level-item">domain</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/hexo/">
+            <span class="level-start">
+                <span class="level-item">hexo</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/idea/">
+            <span class="level-start">
+                <span class="level-item">idea</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/java/">
+            <span class="level-start">
+                <span class="level-item">java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/life/">
+            <span class="level-start">
+                <span class="level-item">life</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/mail/">
+            <span class="level-start">
+                <span class="level-item">mail</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/nginx/">
+            <span class="level-start">
+                <span class="level-item">nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/redis/">
+            <span class="level-start">
+                <span class="level-item">redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/transaction/">
+            <span class="level-start">
+                <span class="level-item">transaction</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vhr/">
+            <span class="level-start">
+                <span class="level-item">vhr</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vue/">
+            <span class="level-start">
+                <span class="level-item">vue</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/weixin/">
+            <span class="level-start">
+                <span class="level-item">weixin</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/侃侃而谈/">
+            <span class="level-start">
+                <span class="level-item">侃侃而谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">12</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/前后端分离/">
+            <span class="level-start">
+                <span class="level-item">前后端分离</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/外包/">
+            <span class="level-start">
+                <span class="level-item">外包</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/学习资源/">
+            <span class="level-start">
+                <span class="level-item">学习资源</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">7</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/工具/">
+            <span class="level-start">
+                <span class="level-item">工具</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微人事/">
+            <span class="level-start">
+                <span class="level-item">微人事</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微服务/">
+            <span class="level-start">
+                <span class="level-item">微服务</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/杂谈/">
+            <span class="level-start">
+                <span class="level-item">杂谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/生活/">
+            <span class="level-start">
+                <span class="level-item">生活</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/程序人生/">
+            <span class="level-start">
+                <span class="level-item">程序人生</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/面试/">
+            <span class="level-start">
+                <span class="level-item">面试</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/项目实战/">
+            <span class="level-start">
+                <span class="level-item">项目实战</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/2019-article/" style="font-size: 10px;">2019-article</a> <a href="/tags/Blog/" style="font-size: 10px;">Blog</a> <a href="/tags/CAS/" style="font-size: 11.88px;">CAS</a> <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 10.63px;">Chrome</a> <a href="/tags/Docker/" style="font-size: 11.25px;">Docker</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/Eureka/" style="font-size: 10px;">Eureka</a> <a href="/tags/FastDFS/" style="font-size: 11.25px;">FastDFS</a> <a href="/tags/Flyway/" style="font-size: 10px;">Flyway</a> <a href="/tags/Freemarker/" style="font-size: 10.63px;">Freemarker</a> <a href="/tags/Git/" style="font-size: 14.38px;">Git</a> <a href="/tags/GitHub/" style="font-size: 10.63px;">GitHub</a> <a href="/tags/Https/" style="font-size: 10px;">Https</a> <a href="/tags/IDEA/" style="font-size: 13.75px;">IDEA</a> <a href="/tags/IDEA，EasyCode/" style="font-size: 10px;">IDEA，EasyCode</a> <a href="/tags/IntelliJ-IDEA/" style="font-size: 11.25px;">IntelliJ IDEA</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/Java/" style="font-size: 10.63px;">Java</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 10.63px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 11.25px;">Jpa</a> <a href="/tags/LiveReload/" style="font-size: 10px;">LiveReload</a> <a href="/tags/MacBookPro/" style="font-size: 10px;">MacBookPro</a> <a href="/tags/Mail/" style="font-size: 10px;">Mail</a> <a href="/tags/Maven/" style="font-size: 11.88px;">Maven</a> <a href="/tags/MongoDB/" style="font-size: 18.13px;">MongoDB</a> <a href="/tags/MyBatis/" style="font-size: 12.5px;">MyBatis</a> <a href="/tags/MyCat/" style="font-size: 11.88px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 15px;">MySQL</a> <a href="/tags/Nacos/" style="font-size: 10px;">Nacos</a> <a href="/tags/Nginx/" style="font-size: 10.63px;">Nginx</a> <a href="/tags/OAuth2/" style="font-size: 15px;">OAuth2</a> <a href="/tags/PicGo/" style="font-size: 10px;">PicGo</a> <a href="/tags/RabbitMQ/" style="font-size: 10.63px;">RabbitMQ</a> <a href="/tags/Redis/" style="font-size: 18.75px;">Redis</a> <a href="/tags/Resume/" style="font-size: 10px;">Resume</a> <a href="/tags/SSM/" style="font-size: 10.63px;">SSM</a> <a href="/tags/Shiro/" style="font-size: 10px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 17.5px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Cloud/" style="font-size: 11.88px;">Spring Cloud</a> <a href="/tags/Spring-Data/" style="font-size: 10.63px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 19.38px;">Spring Security</a> <a href="/tags/SpringBoot/" style="font-size: 11.25px;">SpringBoot</a> <a href="/tags/SpringMVC/" style="font-size: 11.88px;">SpringMVC</a> <a href="/tags/SpringSecurity/" style="font-size: 10px;">SpringSecurity</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Thymeleaf/" style="font-size: 10px;">Thymeleaf</a> <a href="/tags/Transaction/" style="font-size: 10px;">Transaction</a> <a href="/tags/Video/" style="font-size: 10px;">Video</a> <a href="/tags/Vue/" style="font-size: 16.88px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/blog/" style="font-size: 10.63px;">blog</a> <a href="/tags/docker/" style="font-size: 14.38px;">docker</a> <a href="/tags/domain/" style="font-size: 10px;">domain</a> <a href="/tags/hdz/" style="font-size: 10px;">hdz</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/huawei/" style="font-size: 10px;">huawei</a> <a href="/tags/i18n/" style="font-size: 10px;">i18n</a> <a href="/tags/idea/" style="font-size: 10px;">idea</a> <a href="/tags/java/" style="font-size: 10px;">java</a> <a href="/tags/life/" style="font-size: 16.25px;">life</a> <a href="/tags/mail/" style="font-size: 10px;">mail</a> <a href="/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/router/" style="font-size: 10px;">router</a> <a href="/tags/transaction/" style="font-size: 10.63px;">transaction</a> <a href="/tags/vhr/" style="font-size: 13.13px;">vhr</a> <a href="/tags/vue/" style="font-size: 10px;">vue</a> <a href="/tags/vuepress/" style="font-size: 10px;">vuepress</a> <a href="/tags/weixin/" style="font-size: 11.25px;">weixin</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/七牛云/" style="font-size: 10px;">七牛云</a> <a href="/tags/中间件/" style="font-size: 10px;">中间件</a> <a href="/tags/侃侃而谈/" style="font-size: 15.63px;">侃侃而谈</a> <a href="/tags/分布式锁/" style="font-size: 10px;">分布式锁</a> <a href="/tags/前后端分离/" style="font-size: 12.5px;">前后端分离</a> <a href="/tags/单体应用/" style="font-size: 10px;">单体应用</a> <a href="/tags/外包/" style="font-size: 10px;">外包</a> <a href="/tags/学习资源/" style="font-size: 12.5px;">学习资源</a> <a href="/tags/工具/" style="font-size: 10.63px;">工具</a> <a href="/tags/微人事/" style="font-size: 10.63px;">微人事</a> <a href="/tags/微服务/" style="font-size: 10.63px;">微服务</a> <a href="/tags/杂谈/" style="font-size: 13.13px;">杂谈</a> <a href="/tags/条件注解/" style="font-size: 10px;">条件注解</a> <a href="/tags/源码解析/" style="font-size: 11.88px;">源码解析</a> <a href="/tags/源码解读/" style="font-size: 13.75px;">源码解读</a> <a href="/tags/生活/" style="font-size: 10.63px;">生活</a> <a href="/tags/程序人生/" style="font-size: 10.63px;">程序人生</a> <a href="/tags/程序员/" style="font-size: 10px;">程序员</a> <a href="/tags/自学/" style="font-size: 10px;">自学</a> <a href="/tags/视频/" style="font-size: 10px;">视频</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow  ">
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-09-28T01:57:32.000Z">2020-09-28</time></div>
+                    <a href="/2020/0928/huawei-connect.html" class="has-link-black-ter is-size-6">为了避免“内卷”，松哥跑去上海见世面了</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/HUAWEI/">HUAWEI</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-09-25T01:57:17.000Z">2020-09-25</time></div>
+                    <a href="/2020/0925/springsecurity-rbac.html" class="has-link-black-ter is-size-6">聊一个 GitHub 上开源的 RBAC 权限管理系统，很6！</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring-Security/">Spring Security</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-09-23T01:56:29.000Z">2020-09-23</time></div>
+                    <a href="/2020/0923/spring-expressionurlauthorizationconfigurer-urlauthorizationconfigurer.html" class="has-link-black-ter is-size-6">我又发现 Spring Security 中一个小秘密！</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring-Security/">Spring Security</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-09-21T01:56:14.000Z">2020-09-21</time></div>
+                    <a href="/2020/0921/springsecurity-rbac.html" class="has-link-black-ter is-size-6">Spring Security 中最流行的权限管理模型！</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring-Security/">Spring Security</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-09-17T01:55:57.000Z">2020-09-17</time></div>
+                    <a href="/2020/0917/springsecurity-acl-demo.html" class="has-link-black-ter is-size-6">一个案例演示 Spring Security 中粒度超细的权限控制！</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring-Security/">Spring Security</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">9</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">22</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">21</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">23</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">25</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">25</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">20</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">40</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">17</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">22</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">12</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">43</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">16</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">26</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+            
+
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            友链
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itboyhub.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">江南一点雨-国内站</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itboyhub.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.ityouknow.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">纯洁的微笑</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.ityouknow.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.itechyou.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">I Tech You, 我教你！</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itechyou.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itwanger.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">沉默王二</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itwanger.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://bugstack.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">bugstack虫洞栈</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">bugstack.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.cxyxiaowu.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">五分钟学算法</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.cxyxiaowu.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.justdojava.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 极客技术</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.justdojava.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cxytiandi.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">猿天地</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cxytiandi.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://vimjc.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Vim教程网</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">vimjc.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://muggle.javaboy.org/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">muggle</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">muggle.javaboy.org</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://crossoverjie.top/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">crossoverJie&#39;s Blog</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">crossoverjie.top</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cmsblogs.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 技术驿站</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cmsblogs.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://maizitoday.github.io/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">麦子的博客</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">maizitoday.github.io</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.haoservice.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">码农code之路</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.haoservice.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.jitwxs.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Jitwxs</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.jitwxs.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.gameboys.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 烂笔头</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.gameboys.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.a2data.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">A2Data</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.a2data.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="Spring 源码第 9 篇，深入分析 FactoryBean" height="28">
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2020 江南一点雨&nbsp;
+				<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><!--
+PV <span id="busuanzi_value_site_pv"></span>&nbsp;|&nbsp;<i class="fa fa-user-md"></i>  UV <span id="busuanzi_value_site_uv"></span>&nbsp;-->
+				<script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? "https://" : "http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1276890692'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s96.cnzz.com/z_stat.php%3Fid%3D1276890692%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+				<a href="http://www.beian.miit.gov.cn/" style="color: black;">粤ICP备19111220号</a>
+                <!--Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么...">
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>
