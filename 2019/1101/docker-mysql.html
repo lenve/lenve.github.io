@@ -16,7 +16,7 @@
 <meta property="og:description" content="hello 各位小伙伴大家好，今年 5 月份的时候，松哥和大家聊过如何搭建 MySQL 主从复制：">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="http://www.javaboy.org/images/og_image.png">
-<meta property="og:updated_time" content="2019-11-20T02:48:43.402Z">
+<meta property="og:updated_time" content="2021-01-28T12:00:36.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="使用 Docker 搭建 MySQL 主从复制">
 <meta name="twitter:description" content="hello 各位小伙伴大家好，今年 5 月份的时候，松哥和大家聊过如何搭建 MySQL 主从复制：">
@@ -169,7 +169,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    10 分钟 读完 (大约 1526 个字)
+                    10 分钟 读完 (大约 1518 个字)
                 </span>
                 
                 
@@ -200,7 +200,7 @@
 <p>在 Docker 中创建两个 MySQL 实例的命令如下：</p>
 <figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">docker run --name mysql1 -p 33061:3306 -e MYSQL_ROOT_PASSWORD=123 -d mysql:5.7 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci</span><br><span class="line">docker run --name mysql2 -p 33062:3306 -e MYSQL_ROOT_PASSWORD=123 -d mysql:5.7 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci</span><br></pre></td></tr></table></figure>
 <p>创建完成后，通过 <code>docker ps</code> 命令可以查看 MySQL 实例的运行情况：</p>
-<p><img src="http://www.javaboy.org/images/mysql/10-0.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/docker/10-0.png" alt></p>
 <p>如此，表示 MySQL 实例已经在运行了。使用 Docker 配置 MySQL 主从最方便的莫过于配错了可以非常方便的从头开始。</p>
 <p>接下来，我们就开始主从的配置。</p>
 <h2 id="配置主机"><a href="#配置主机" class="headerlink" title="配置主机"></a>配置主机</h2><p>主机上的配置，主要是两个地方：</p>
@@ -213,7 +213,7 @@
 <p>输入密码后，进入到主机的命令行。然后给从机分配用户(因为我的宿主机上也安装了 MySQL，所以可以直接执行 mysql 命令，如果宿主机没有安装 MySQL，建议通过 <code>docker exec</code> 进入到 MySQL 容器中，然后执行如下命令)：</p>
 <figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GRANT REPLICATION SLAVE ON *.* to &apos;rep1&apos;@&apos;%&apos; identified by &apos;123&apos;;</span><br></pre></td></tr></table></figure>
 <p>这个表示从机一会使用 <code>rep1/123</code> 来登录主机，<code>%</code> 表示这个账户可以从任意地址登录，也可以给一个固定的 <code>IP</code>，表示这个账户只能从某一个 IP 登录。</p>
-<p><img src="http://www.javaboy.org/images/mysql/10-1.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/docker/10-1-20210126171517336.png" alt></p>
 <p>接下来开启 binlog。</p>
 <p>binlog 的开启，需要修改 MySQL 的配置，因此，我们需要进入到容器内部去执行。</p>
 <p>首先进入到容器内部：</p>
@@ -227,31 +227,31 @@
 <li>server-id 表示集群中，每个实例的唯一标识符。</li>
 <li>bindlog-do-db 表示要同步的数据库有哪些。当从机连上主机后，并不是主机中的每一个库都要同步，这里表示配置哪些库需要同步。</li>
 </ul>
-<p><img src="http://www.javaboy.org/images/mysql/10-2.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/docker/10-2-20210126171523894.png" alt></p>
 <p>配置完成后，保存退出。</p>
 <p>接下来执行命令，将宿主机中的 mysqld.cnf 拷贝到容器中：</p>
 <figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker cp ./mysqld.cnf mysql1:/etc/mysql/mysql.conf.d/</span><br></pre></td></tr></table></figure>
 <p>拷贝完成后，重启容器。</p>
 <figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker restart mysql1</span><br></pre></td></tr></table></figure>
 <p>容器重启完成后，进入到主机的命令行中，查看配置是否成功：</p>
-<p><img src="http://www.javaboy.org/images/mysql/10-3.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/docker/10-3-20210126171528291.png" alt></p>
 <p>File 和 Position 需要记着，这两个标记了二进制日志的起点位置，在从机的配置中将使用到这两个参数。</p>
 <p>至此，主机的配置就算完成了。</p>
 <h2 id="配置从机"><a href="#配置从机" class="headerlink" title="配置从机"></a>配置从机</h2><p>从机的配置比较简单，不用开启 binlog，也不用配置要同步的库，只需要在配置文件中，添加一个 server-id 即可。</p>
 <p>这是从机的 mysqld.cnf 配置：</p>
-<p><img src="http://www.javaboy.org/images/mysql/10-4.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/docker/10-4-20210126171533719.png" alt></p>
 <p>配置完成后，一样拷贝到容器中。拷贝方式和主机一样：</p>
 <figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker cp ./mysqld.cnf mysql2:/etc/mysql/mysql.conf.d/</span><br></pre></td></tr></table></figure>
 <p>配置完成后，重启从机容器：</p>
 <figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker restart mysql2</span><br></pre></td></tr></table></figure>
 <p>重启完成后，进入到 mysql2 的命令行，执行如下命令，开启数据同步：</p>
 <figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">change master to master_host=&apos;192.168.66.131&apos;,master_port=33061,master_user=&apos;rep1&apos;,master_password=&apos;123&apos;,master_log_file=&apos;binlog.000001&apos;,master_log_pos=154;</span><br></pre></td></tr></table></figure>
-<p><img src="http://www.javaboy.org/images/mysql/10-5.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/docker/10-5.png" alt></p>
 <p>配置完成后，开启从机进程。在从机命令行执行如下命令：</p>
 <figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">start slave;</span><br></pre></td></tr></table></figure>
-<p><img src="http://www.javaboy.org/images/mysql/10-6.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/docker/10-6.png" alt></p>
 <p>接下来，执行 show slave status\G；查看从机状态：</p>
-<p><img src="http://www.javaboy.org/images/mysql/10-7.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/docker/10-7.png" alt></p>
 <p>这里重点查看 Slave_IO_Running 和 Slave_SQL_Running ，这两个的值必须为 Yes。如果有一个的值不为 Yes，表示配置失败，一般情况下，配置失败，下面会有失败提示。</p>
 <p>至此，我们的 MySQL 主从就算是配置成功了。</p>
 <h2 id="检验"><a href="#检验" class="headerlink" title="检验"></a>检验</h2><p>配置成功之后，我们可以通过 Navicat 或者 SQLyog 等工具连接上我们的两个 MySQL 实例，然后在主机中创建一个名为 db1 的库，你会发现从机中也会自动同步这个库。</p>
@@ -528,7 +528,7 @@ setInterval(function() {
                         文章
                     </p>
                     <p class="title has-text-weight-normal">
-                        384
+                        406
                     </p>
                 </div>
             </div>
@@ -538,7 +538,7 @@ setInterval(function() {
                         分类
                     </p>
                     <p class="title has-text-weight-normal">
-                        56
+                        58
                     </p>
                 </div>
             </div>
@@ -548,7 +548,7 @@ setInterval(function() {
                         标签
                     </p>
                     <p class="title has-text-weight-normal">
-                        101
+                        112
                     </p>
                 </div>
             </div>
@@ -619,6 +619,14 @@ setInterval(function() {
                 <span class="level-item tag">1</span>
             </span>
         </a></li><li>
+        <a class="level is-marginless" href="/categories/Docker/">
+            <span class="level-start">
+                <span class="level-item">Docker</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
         <a class="level is-marginless" href="/categories/ElasticSearch/">
             <span class="level-start">
                 <span class="level-item">ElasticSearch</span>
@@ -680,7 +688,7 @@ setInterval(function() {
                 <span class="level-item">Java</span>
             </span>
             <span class="level-end">
-                <span class="level-item tag">1</span>
+                <span class="level-item tag">2</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/JavaWeb/">
@@ -704,7 +712,7 @@ setInterval(function() {
                 <span class="level-item">Maven</span>
             </span>
             <span class="level-end">
-                <span class="level-item tag">1</span>
+                <span class="level-item tag">2</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/MongoDB/">
@@ -768,7 +776,7 @@ setInterval(function() {
                 <span class="level-item">SSM</span>
             </span>
             <span class="level-end">
-                <span class="level-item tag">1</span>
+                <span class="level-item tag">9</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/Spring/">
@@ -801,6 +809,14 @@ setInterval(function() {
             </span>
             <span class="level-end">
                 <span class="level-item tag">54</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringBoot/">
+            <span class="level-start">
+                <span class="level-item">SpringBoot</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">7</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/SpringMVC/">
@@ -880,7 +896,7 @@ setInterval(function() {
                 <span class="level-item">life</span>
             </span>
             <span class="level-end">
-                <span class="level-item tag">6</span>
+                <span class="level-item tag">8</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/mail/">
@@ -944,7 +960,7 @@ setInterval(function() {
                 <span class="level-item">侃侃而谈</span>
             </span>
             <span class="level-end">
-                <span class="level-item tag">15</span>
+                <span class="level-item tag">16</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/前后端分离/">
@@ -1024,7 +1040,7 @@ setInterval(function() {
                 <span class="level-item">资料</span>
             </span>
             <span class="level-end">
-                <span class="level-item tag">1</span>
+                <span class="level-item tag">2</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/面试/">
@@ -1054,7 +1070,7 @@ setInterval(function() {
         <h3 class="menu-label">
             标签云
         </h3>
-        <a href="/tags/2019-article/" style="font-size: 10px;">2019-article</a> <a href="/tags/Blog/" style="font-size: 10px;">Blog</a> <a href="/tags/CAS/" style="font-size: 11.88px;">CAS</a> <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 10.63px;">Chrome</a> <a href="/tags/Docker/" style="font-size: 11.25px;">Docker</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/ElasticSearch/" style="font-size: 11.88px;">ElasticSearch</a> <a href="/tags/ElasticSerach/" style="font-size: 10px;">ElasticSerach</a> <a href="/tags/Eureka/" style="font-size: 10px;">Eureka</a> <a href="/tags/FastDFS/" style="font-size: 11.25px;">FastDFS</a> <a href="/tags/Flyway/" style="font-size: 10px;">Flyway</a> <a href="/tags/Freemarker/" style="font-size: 10.63px;">Freemarker</a> <a href="/tags/Git/" style="font-size: 14.38px;">Git</a> <a href="/tags/GitHub/" style="font-size: 10.63px;">GitHub</a> <a href="/tags/Https/" style="font-size: 10px;">Https</a> <a href="/tags/IDEA/" style="font-size: 13.75px;">IDEA</a> <a href="/tags/IDEA，EasyCode/" style="font-size: 10px;">IDEA，EasyCode</a> <a href="/tags/IntelliJ-IDEA/" style="font-size: 11.25px;">IntelliJ IDEA</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/Java/" style="font-size: 10.63px;">Java</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 10.63px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 11.25px;">Jpa</a> <a href="/tags/LiveReload/" style="font-size: 10px;">LiveReload</a> <a href="/tags/MacBook/" style="font-size: 10px;">MacBook</a> <a href="/tags/MacBookPro/" style="font-size: 10px;">MacBookPro</a> <a href="/tags/Mail/" style="font-size: 10px;">Mail</a> <a href="/tags/Maven/" style="font-size: 11.88px;">Maven</a> <a href="/tags/MongoDB/" style="font-size: 18.13px;">MongoDB</a> <a href="/tags/MyBatis/" style="font-size: 12.5px;">MyBatis</a> <a href="/tags/MyCat/" style="font-size: 11.88px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 15px;">MySQL</a> <a href="/tags/Nacos/" style="font-size: 10px;">Nacos</a> <a href="/tags/Nginx/" style="font-size: 10.63px;">Nginx</a> <a href="/tags/OAuth2/" style="font-size: 15.63px;">OAuth2</a> <a href="/tags/PicGo/" style="font-size: 10px;">PicGo</a> <a href="/tags/RabbitMQ/" style="font-size: 10.63px;">RabbitMQ</a> <a href="/tags/Redis/" style="font-size: 18.75px;">Redis</a> <a href="/tags/Resume/" style="font-size: 10px;">Resume</a> <a href="/tags/SSM/" style="font-size: 10.63px;">SSM</a> <a href="/tags/Shiro/" style="font-size: 10px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 17.5px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Cloud/" style="font-size: 11.88px;">Spring Cloud</a> <a href="/tags/Spring-Data/" style="font-size: 10.63px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 19.38px;">Spring Security</a> <a href="/tags/SpringBoot/" style="font-size: 11.25px;">SpringBoot</a> <a href="/tags/SpringMVC/" style="font-size: 11.88px;">SpringMVC</a> <a href="/tags/SpringSecurity/" style="font-size: 10px;">SpringSecurity</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Thymeleaf/" style="font-size: 10px;">Thymeleaf</a> <a href="/tags/Transaction/" style="font-size: 10px;">Transaction</a> <a href="/tags/Video/" style="font-size: 10px;">Video</a> <a href="/tags/Vue/" style="font-size: 16.88px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/blog/" style="font-size: 10.63px;">blog</a> <a href="/tags/docker/" style="font-size: 14.38px;">docker</a> <a href="/tags/domain/" style="font-size: 10px;">domain</a> <a href="/tags/es/" style="font-size: 12.5px;">es</a> <a href="/tags/hdz/" style="font-size: 10px;">hdz</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/huawei/" style="font-size: 10px;">huawei</a> <a href="/tags/i18n/" style="font-size: 10px;">i18n</a> <a href="/tags/idea/" style="font-size: 10px;">idea</a> <a href="/tags/java/" style="font-size: 10px;">java</a> <a href="/tags/life/" style="font-size: 16.25px;">life</a> <a href="/tags/mail/" style="font-size: 10px;">mail</a> <a href="/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/router/" style="font-size: 10px;">router</a> <a href="/tags/transaction/" style="font-size: 10.63px;">transaction</a> <a href="/tags/vhr/" style="font-size: 13.13px;">vhr</a> <a href="/tags/vue/" style="font-size: 10px;">vue</a> <a href="/tags/vuepress/" style="font-size: 10px;">vuepress</a> <a href="/tags/weixin/" style="font-size: 11.25px;">weixin</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/七牛云/" style="font-size: 10px;">七牛云</a> <a href="/tags/中间件/" style="font-size: 10px;">中间件</a> <a href="/tags/侃侃而谈/" style="font-size: 15.63px;">侃侃而谈</a> <a href="/tags/分布式锁/" style="font-size: 10px;">分布式锁</a> <a href="/tags/前后端分离/" style="font-size: 12.5px;">前后端分离</a> <a href="/tags/单体应用/" style="font-size: 10px;">单体应用</a> <a href="/tags/外包/" style="font-size: 10.63px;">外包</a> <a href="/tags/学习资源/" style="font-size: 12.5px;">学习资源</a> <a href="/tags/工具/" style="font-size: 10.63px;">工具</a> <a href="/tags/微人事/" style="font-size: 10.63px;">微人事</a> <a href="/tags/微服务/" style="font-size: 10.63px;">微服务</a> <a href="/tags/杂谈/" style="font-size: 13.13px;">杂谈</a> <a href="/tags/条件注解/" style="font-size: 10px;">条件注解</a> <a href="/tags/源码解析/" style="font-size: 11.88px;">源码解析</a> <a href="/tags/源码解读/" style="font-size: 13.75px;">源码解读</a> <a href="/tags/生活/" style="font-size: 11.25px;">生活</a> <a href="/tags/私活/" style="font-size: 10px;">私活</a> <a href="/tags/程序人生/" style="font-size: 10.63px;">程序人生</a> <a href="/tags/程序员/" style="font-size: 10px;">程序员</a> <a href="/tags/自学/" style="font-size: 10px;">自学</a> <a href="/tags/视频/" style="font-size: 10px;">视频</a> <a href="/tags/资料/" style="font-size: 10px;">资料</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
+        <a href="/tags/2019-article/" style="font-size: 10px;">2019-article</a> <a href="/tags/Actuator/" style="font-size: 10px;">Actuator</a> <a href="/tags/Blog/" style="font-size: 10px;">Blog</a> <a href="/tags/Bug/" style="font-size: 10px;">Bug</a> <a href="/tags/CAS/" style="font-size: 11.88px;">CAS</a> <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 10.63px;">Chrome</a> <a href="/tags/Docker/" style="font-size: 11.88px;">Docker</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/ElasticSearch/" style="font-size: 11.88px;">ElasticSearch</a> <a href="/tags/ElasticSerach/" style="font-size: 10px;">ElasticSerach</a> <a href="/tags/Eureka/" style="font-size: 10px;">Eureka</a> <a href="/tags/FastDFS/" style="font-size: 11.25px;">FastDFS</a> <a href="/tags/Flyway/" style="font-size: 10px;">Flyway</a> <a href="/tags/Freemarker/" style="font-size: 11.25px;">Freemarker</a> <a href="/tags/Git/" style="font-size: 14.38px;">Git</a> <a href="/tags/GitHub/" style="font-size: 10.63px;">GitHub</a> <a href="/tags/Https/" style="font-size: 10px;">Https</a> <a href="/tags/IDEA/" style="font-size: 13.75px;">IDEA</a> <a href="/tags/IDEA，EasyCode/" style="font-size: 10px;">IDEA，EasyCode</a> <a href="/tags/IntelliJ-IDEA/" style="font-size: 11.25px;">IntelliJ IDEA</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/Java/" style="font-size: 11.25px;">Java</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 10.63px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 11.25px;">Jpa</a> <a href="/tags/LiveReload/" style="font-size: 10px;">LiveReload</a> <a href="/tags/Log/" style="font-size: 10px;">Log</a> <a href="/tags/MacBook/" style="font-size: 10px;">MacBook</a> <a href="/tags/MacBookPro/" style="font-size: 10px;">MacBookPro</a> <a href="/tags/Mail/" style="font-size: 10px;">Mail</a> <a href="/tags/Maven/" style="font-size: 12.5px;">Maven</a> <a href="/tags/MongoDB/" style="font-size: 18.13px;">MongoDB</a> <a href="/tags/MyBatis/" style="font-size: 15px;">MyBatis</a> <a href="/tags/MyCat/" style="font-size: 11.88px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 15.63px;">MySQL</a> <a href="/tags/Nacos/" style="font-size: 10px;">Nacos</a> <a href="/tags/Nginx/" style="font-size: 10.63px;">Nginx</a> <a href="/tags/OAuth2/" style="font-size: 16.25px;">OAuth2</a> <a href="/tags/PicGo/" style="font-size: 10px;">PicGo</a> <a href="/tags/Plugin/" style="font-size: 10px;">Plugin</a> <a href="/tags/RabbitMQ/" style="font-size: 10.63px;">RabbitMQ</a> <a href="/tags/Redis/" style="font-size: 18.75px;">Redis</a> <a href="/tags/Resume/" style="font-size: 10px;">Resume</a> <a href="/tags/SSM/" style="font-size: 13.13px;">SSM</a> <a href="/tags/Shiro/" style="font-size: 10px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 17.5px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Cloud/" style="font-size: 11.88px;">Spring Cloud</a> <a href="/tags/Spring-Data/" style="font-size: 10.63px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 19.38px;">Spring Security</a> <a href="/tags/SpringBoot/" style="font-size: 15.63px;">SpringBoot</a> <a href="/tags/SpringMVC/" style="font-size: 14.38px;">SpringMVC</a> <a href="/tags/SpringSecurity/" style="font-size: 10px;">SpringSecurity</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Swagger3/" style="font-size: 10px;">Swagger3</a> <a href="/tags/Tencent/" style="font-size: 10px;">Tencent</a> <a href="/tags/Thymeleaf/" style="font-size: 10.63px;">Thymeleaf</a> <a href="/tags/Transaction/" style="font-size: 10px;">Transaction</a> <a href="/tags/Video/" style="font-size: 10px;">Video</a> <a href="/tags/ViewResolver/" style="font-size: 10px;">ViewResolver</a> <a href="/tags/Vue/" style="font-size: 16.88px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/blog/" style="font-size: 10.63px;">blog</a> <a href="/tags/docker/" style="font-size: 14.38px;">docker</a> <a href="/tags/domain/" style="font-size: 10px;">domain</a> <a href="/tags/es/" style="font-size: 12.5px;">es</a> <a href="/tags/hdz/" style="font-size: 10px;">hdz</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/huawei/" style="font-size: 10px;">huawei</a> <a href="/tags/i18n/" style="font-size: 10px;">i18n</a> <a href="/tags/idea/" style="font-size: 10px;">idea</a> <a href="/tags/java/" style="font-size: 10px;">java</a> <a href="/tags/life/" style="font-size: 16.88px;">life</a> <a href="/tags/mail/" style="font-size: 10px;">mail</a> <a href="/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/router/" style="font-size: 10px;">router</a> <a href="/tags/transaction/" style="font-size: 10.63px;">transaction</a> <a href="/tags/vhr/" style="font-size: 13.13px;">vhr</a> <a href="/tags/vue/" style="font-size: 10px;">vue</a> <a href="/tags/vuepress/" style="font-size: 10px;">vuepress</a> <a href="/tags/weixin/" style="font-size: 11.25px;">weixin</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/七牛云/" style="font-size: 10px;">七牛云</a> <a href="/tags/中间件/" style="font-size: 10px;">中间件</a> <a href="/tags/侃侃而谈/" style="font-size: 16.25px;">侃侃而谈</a> <a href="/tags/分布式锁/" style="font-size: 10px;">分布式锁</a> <a href="/tags/前后端分离/" style="font-size: 12.5px;">前后端分离</a> <a href="/tags/单体应用/" style="font-size: 10px;">单体应用</a> <a href="/tags/外包/" style="font-size: 10.63px;">外包</a> <a href="/tags/学习资源/" style="font-size: 12.5px;">学习资源</a> <a href="/tags/工具/" style="font-size: 10.63px;">工具</a> <a href="/tags/干货汇总/" style="font-size: 10px;">干货汇总</a> <a href="/tags/微人事/" style="font-size: 10.63px;">微人事</a> <a href="/tags/微服务/" style="font-size: 10.63px;">微服务</a> <a href="/tags/杂谈/" style="font-size: 13.13px;">杂谈</a> <a href="/tags/条件注解/" style="font-size: 10px;">条件注解</a> <a href="/tags/源码解析/" style="font-size: 11.88px;">源码解析</a> <a href="/tags/源码解读/" style="font-size: 13.75px;">源码解读</a> <a href="/tags/生活/" style="font-size: 11.25px;">生活</a> <a href="/tags/私活/" style="font-size: 10px;">私活</a> <a href="/tags/程序人生/" style="font-size: 10.63px;">程序人生</a> <a href="/tags/程序员/" style="font-size: 10px;">程序员</a> <a href="/tags/腾讯/" style="font-size: 10px;">腾讯</a> <a href="/tags/自学/" style="font-size: 10px;">自学</a> <a href="/tags/视频/" style="font-size: 10px;">视频</a> <a href="/tags/视频教程/" style="font-size: 10px;">视频教程</a> <a href="/tags/资料/" style="font-size: 10px;">资料</a> <a href="/tags/逆向工程/" style="font-size: 10.63px;">逆向工程</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
     </div>
 </div>
 
@@ -1073,10 +1089,10 @@ setInterval(function() {
             
             <div class="media-content">
                 <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-11-26T02:13:20.000Z">2020-11-26</time></div>
-                    <a href="/2020/1126/es-analyzer.html" class="has-link-black-ter is-size-6">ElasticSearch 中的中文分词器以及索引基本操作详解</a>
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-03-07T14:41:20.000Z">2021-03-07</time></div>
+                    <a href="/2021/0307/b1f4b54f.html" class="has-link-black-ter is-size-6">Spring5 里边的新玩法！这种 URL 请求让我涨见识了！</a>
                     <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/ElasticSearch/">ElasticSearch</a>
+                        <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
                     </p>
                 </div>
             </div>
@@ -1086,10 +1102,10 @@ setInterval(function() {
             
             <div class="media-content">
                 <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-11-23T02:30:00.000Z">2020-11-23</time></div>
-                    <a href="/2020/1123/java-doc.html" class="has-link-black-ter is-size-6">想做个项目练练手却不知道做啥？松哥准备了 50 个热门需求文档给大家！</a>
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-03-04T14:41:04.000Z">2021-03-04</time></div>
+                    <a href="/2021/0304/mybatis-video.html" class="has-link-black-ter is-size-6">来啦来啦，松哥的免费视频教程来啦！</a>
                     <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/资料/">资料</a>
+                        <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
                     </p>
                 </div>
             </div>
@@ -1099,10 +1115,10 @@ setInterval(function() {
             
             <div class="media-content">
                 <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-11-18T02:29:46.000Z">2020-11-18</time></div>
-                    <a href="/2020/1118/es-bilibili.html" class="has-link-black-ter is-size-6">ElasticSearch 视频上传到 B 站了，撸起来！</a>
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-03-02T14:40:10.000Z">2021-03-02</time></div>
+                    <a href="/2021/0302/springmvc-flashmap.html" class="has-link-black-ter is-size-6">SpringMVC 中的参数还能这么传递？涨姿势了！</a>
                     <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/ElasticSearch/">ElasticSearch</a>
+                        <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
                     </p>
                 </div>
             </div>
@@ -1112,10 +1128,10 @@ setInterval(function() {
             
             <div class="media-content">
                 <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-11-15T02:29:30.000Z">2020-11-15</time></div>
-                    <a href="/2020/1115/parttime.html" class="has-link-black-ter is-size-6">接了两个私活，都是血汗钱</a>
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-02-26T14:39:55.000Z">2021-02-26</time></div>
+                    <a href="/2021/0226/mybatis-plugin.html" class="has-link-black-ter is-size-6">手把手教你开发 MyBatis 插件</a>
                     <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/侃侃而谈/">侃侃而谈</a>
+                        <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
                     </p>
                 </div>
             </div>
@@ -1125,10 +1141,10 @@ setInterval(function() {
             
             <div class="media-content">
                 <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-11-05T02:32:10.000Z">2020-11-05</time></div>
-                    <a href="/2020/1105/elastic_search_guide.html" class="has-link-black-ter is-size-6">ElasticSearch 入门</a>
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-02-23T14:39:41.000Z">2021-02-23</time></div>
+                    <a href="/2021/0223/springmvc-video.html" class="has-link-black-ter is-size-6">硬核！松哥又整了一套免费视频，搞起！</a>
                     <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/ElasticSearch/">ElasticSearch</a>
+                        <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
                     </p>
                 </div>
             </div>
@@ -1145,6 +1161,50 @@ setInterval(function() {
             归档
         </h3>
         <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">3</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">5</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">8</span>
+                </span>
+            </a>
+        </li>
         
         <li>
             <a class="level is-marginless" href="/archives/2020/11/">
@@ -1604,7 +1664,7 @@ setInterval(function() {
                 
                 </a>
                 <p class="is-size-7">
-                &copy; 2020 江南一点雨&nbsp;
+                &copy; 2021 江南一点雨&nbsp;
 				<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><!--
 PV <span id="busuanzi_value_site_pv"></span>&nbsp;|&nbsp;<i class="fa fa-user-md"></i>  UV <span id="busuanzi_value_site_uv"></span>&nbsp;-->
 				<script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? "https://" : "http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1276890692'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s96.cnzz.com/z_stat.php%3Fid%3D1276890692%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>

@@ -16,7 +16,7 @@
 <meta property="og:description" content="上次和大伙聊了 MyCat 的安装，今天来说一个新的话题，就是数据库的分片。">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="http://www.javaboy.org/images/og_image.png">
-<meta property="og:updated_time" content="2019-07-12T04:58:05.877Z">
+<meta property="og:updated_time" content="2021-01-28T12:54:18.833Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="数据库分库分表，都有哪些分片规则？">
 <meta name="twitter:description" content="上次和大伙聊了 MyCat 的安装，今天来说一个新的话题，就是数据库的分片。">
@@ -169,7 +169,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    20 分钟 读完 (大约 2978 个字)
+                    20 分钟 读完 (大约 2961 个字)
                 </span>
                 
                 
@@ -199,7 +199,7 @@
 <hr>
 <h1 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h1><h2 id="逻辑库"><a href="#逻辑库" class="headerlink" title="逻辑库"></a>逻辑库</h2><p>一般来说，对于应用而言，数据库中间件是透明的，应用并不需要去了解中间件复杂的运作过程，中间件对应用来说就是透明的，我们操作中间件就像操作一个普通的 MySQL 一样，这就是 MyCat 的优势之一。</p>
 <p>但是我们毕竟操作的不是 MySQL ，而是 MyCat ，MyCat 中的数据库并不真正存储数据，数据还是存储在 MySQL 中，因此，我们可以将 MyCat 看作是一个或者多个数据库集群构成的逻辑库。</p>
-<p><img src="http://www.javaboy.org/images/mysql/6-2.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/mysql/6-2-20210128205234196.png" alt></p>
 <h2 id="逻辑表"><a href="#逻辑表" class="headerlink" title="逻辑表"></a>逻辑表</h2><p>逻辑表又有几种不同的划分：</p>
 <ul>
 <li>逻辑表</li>
@@ -253,51 +253,51 @@
 </ul>
 <h1 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h1><p>这里向大家简单介绍 5 种规则。</p>
 <h2 id="global"><a href="#global" class="headerlink" title="global"></a>global</h2><p>有一些表，数据量不大，也不怎么修改，主要是查询操作，例如系统配置表，这一类表我们可以使用 global 这种分片规则。global 的特点是，该表会在所有的库中都创建，而且每一个库中都保存了该表的完整数据。具体配置方式，就是在 schema.xml 的 table 节点中添加一个 type 属性，值为 global：</p>
-<p><img src="http://www.javaboy.org/images/mysql/8-1.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/mysql/8-1-20210128205246158.png" alt></p>
 <p>配置完成后，重启 mycat</p>
 <figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bin/mycat restart</span><br></pre></td></tr></table></figure>
 <p>重启完成后，要删除之前已经创建的 <code>t_user</code> 表，然后重新创建表，创建完成后，向表中插入数据，可以看到，db1、db2 以及 db3 中都有数据了。</p>
-<p><img src="http://www.javaboy.org/images/mysql/8-2.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/mysql/8-2-20210128205251953.png" alt></p>
 <p>这里 虽然查询出来的记录只有一条，实际上 db1、db2 以及 db3 中都有该条记录。</p>
 <p>总结：global 适合于 数据量不大、以查询为主、增删改较少的表。</p>
 <h2 id="sharding-by-intfile"><a href="#sharding-by-intfile" class="headerlink" title="sharding-by-intfile"></a>sharding-by-intfile</h2><p>sharding-by-intfile 这个是枚举分片，就是在数据表中专门设计一个字段，以后根据这个字段的值来决定数据插入到哪个 dataNode 上。</p>
 <p>注意，在配置 sharding-by-intfile 规则时，一定要删除 type=”global” ，否则配置不会生效。具体配置如下：</p>
-<p><img src="http://www.javaboy.org/images/mysql/8-3.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/mysql/8-3-20210128205257371.png" alt></p>
 <p>配置完成后，还需要指定枚举的数据。枚举的数据可以在 rule.xml　中查看。</p>
-<p><img src="http://www.javaboy.org/images/mysql/8-4.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/mysql/8-4-20210128205302046.png" alt></p>
 <p>在 rule.xml 文件中，首先找到 tableRule 的名字为 sharding-by-intfile 的节点，这个节点中定义了两个属性，一个是 columns 表示一会在数据表中定义的枚举列的名字（数据表中一会需要创建一个名为 sharding_id 的列，这个列的值决定了该条数据保存在哪个数据库实例中），这个名字可以自定义；另外一个属性叫做 algorithm ，这是指 sharding-by-intfile 所对应的算法名称。根据这个名称，可以找到具体的算法：</p>
-<p><img src="http://www.javaboy.org/images/mysql/8-5.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/mysql/8-5-20210128205306638.png" alt></p>
 <p>还是在 rule.xml 文件中，我们找到了 hash-int ，class 表示这个算法对应的 Java 类的路径。第一个属性 mapFile 表示相关的配置文件，从这个文件名可以看出，这个文件 就在 conf 目录下。</p>
 <p>打开 conf 目录下的 partition-hash-int.txt 文件，内容如下：</p>
-<p><img src="http://www.javaboy.org/images/mysql/8-6.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/mysql/8-6-20210128205312167.png" alt></p>
 <p>前面的数字表示枚举的值 ，后面的数字表示 dataNode 的下标，所以前面的数字可以自定义，后面的数字不能随意定义。</p>
 <p>配置完成后，重启 MyCat ，然后进行测试：</p>
 <figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">drop table if exists t_user;</span><br><span class="line">create table t_user (id integer primary key,username varchar(255),sharding_id integer);</span><br><span class="line">insert into t_user(id,username,sharding_id) values(1,&apos;www.javaboy.org&apos;,0);</span><br><span class="line">insert into t_user(id,username,sharding_id) values(1,&apos;www.javaboy.org&apos;,1);</span><br><span class="line">insert into t_user(id,username,sharding_id) values(1,&apos;www.javaboy.org&apos;,2);</span><br><span class="line">select  * from t_user;</span><br></pre></td></tr></table></figure>
 <p>执行完后，sharding_id 对应值分别为 0 、1 、2 的记录分别插入到 db1 、db2 以及 db3 中。</p>
 <h2 id="auto-sharding-long"><a href="#auto-sharding-long" class="headerlink" title="auto-sharding-long"></a>auto-sharding-long</h2><p>auto-sharding-long 表示按照既定的范围去存储数据。就是提前规划好某个字段的值在某个范围时，相应的记录存到某个 dataNode 中。</p>
 <p>配置方式，首先修改路由规则：</p>
-<p><img src="http://www.javaboy.org/images/mysql/8-7.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/mysql/8-7.png" alt></p>
 <p>然后去 rule.xml 中查看对应的算法了规则相关的配置：</p>
-<p><img src="http://www.javaboy.org/images/mysql/8-8.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/mysql/8-8.png" alt></p>
 <p>可以看到，默认是按照 id 的范围来划分数据的存储位置的，对应的算法就是 rang-long 。</p>
 <p>继续查看，可以找到算法对应的类，以及相关的配置文件，这个配置文件也在 conf 目录下，打开该文件：</p>
-<p><img src="http://www.javaboy.org/images/mysql/8-9.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/mysql/8-9.png" alt></p>
 <p>如上配置，表示 当 id 的取值在 0-5之间时，将数据存储到 db1 中，当 id 在 5-10 之间时，存储到 db2 中，当 id 的取值在 10-1500W 之间时，存储到 db3 中。</p>
 <p>配置完成后，重启 MyCat ，测试：</p>
-<p><img src="http://www.javaboy.org/images/mysql/8-10.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/mysql/8-10.png" alt></p>
 <h2 id="mod-long"><a href="#mod-long" class="headerlink" title="mod-long"></a>mod-long</h2><p>取模：根据表中的某一个字段，做取模操作。根据取模的结果将记录存放在不同的 dataNode 上。这种方式不需要再添加额外字段。</p>
-<p><img src="http://www.javaboy.org/images/mysql/8-11.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/mysql/8-11.png" alt></p>
 <p>然后去 rule.xml 中配置一下 dataNode 的个数。</p>
-<p><img src="http://www.javaboy.org/images/mysql/8-12.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/mysql/8-12.png" alt></p>
 <p>可以看到，取模的字段是 id ，取模的算法名称是 mod-long ，再看具体的算法：</p>
-<p><img src="http://www.javaboy.org/images/mysql/8-13.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/mysql/8-13.png" alt></p>
 <p>在具体的算法中，配置了 dataNode 的个数为 3。</p>
 <p>然后保存退出，重启 MyCat，进行测试：</p>
-<p><img src="http://www.javaboy.org/images/mysql/8-14.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/mysql/8-14.png" alt></p>
 <h2 id="sharding-by-murmur"><a href="#sharding-by-murmur" class="headerlink" title="sharding-by-murmur"></a>sharding-by-murmur</h2><p>前面介绍的几种方式，都存在一个问题，如果数据库要扩容，之前配置会失效，可能会出现数据库查询紊乱。因此我们要引入一致性 hash 这样一种分片规则，可以解决这个问题。具体配置和前面一样：</p>
-<p><img src="http://www.javaboy.org/images/mysql/8-15.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/mysql/8-15.png" alt></p>
 <p>另外需要注意，在 rule.xml 中修改默认 dataNode 的数量：</p>
-<p><img src="http://www.javaboy.org/images/mysql/8-16.png" alt></p>
+<p><img src="http://img.itboyhub.com/2021/01/mysql/8-16.png" alt></p>
 <p>修改完后，重启 MyCat ，进行测试。</p>
 <p>好了，本文主要向大家介绍了 MyCat 的五种不同的切片规则。有问题欢迎留言讨论。</p>
 <p>参考资料：</p>
@@ -576,7 +576,7 @@ setInterval(function() {
                         文章
                     </p>
                     <p class="title has-text-weight-normal">
-                        384
+                        406
                     </p>
                 </div>
             </div>
@@ -586,7 +586,7 @@ setInterval(function() {
                         分类
                     </p>
                     <p class="title has-text-weight-normal">
-                        56
+                        58
                     </p>
                 </div>
             </div>
@@ -596,7 +596,7 @@ setInterval(function() {
                         标签
                     </p>
                     <p class="title has-text-weight-normal">
-                        101
+                        112
                     </p>
                 </div>
             </div>
@@ -667,6 +667,14 @@ setInterval(function() {
                 <span class="level-item tag">1</span>
             </span>
         </a></li><li>
+        <a class="level is-marginless" href="/categories/Docker/">
+            <span class="level-start">
+                <span class="level-item">Docker</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
         <a class="level is-marginless" href="/categories/ElasticSearch/">
             <span class="level-start">
                 <span class="level-item">ElasticSearch</span>
@@ -728,7 +736,7 @@ setInterval(function() {
                 <span class="level-item">Java</span>
             </span>
             <span class="level-end">
-                <span class="level-item tag">1</span>
+                <span class="level-item tag">2</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/JavaWeb/">
@@ -752,7 +760,7 @@ setInterval(function() {
                 <span class="level-item">Maven</span>
             </span>
             <span class="level-end">
-                <span class="level-item tag">1</span>
+                <span class="level-item tag">2</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/MongoDB/">
@@ -816,7 +824,7 @@ setInterval(function() {
                 <span class="level-item">SSM</span>
             </span>
             <span class="level-end">
-                <span class="level-item tag">1</span>
+                <span class="level-item tag">9</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/Spring/">
@@ -849,6 +857,14 @@ setInterval(function() {
             </span>
             <span class="level-end">
                 <span class="level-item tag">54</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringBoot/">
+            <span class="level-start">
+                <span class="level-item">SpringBoot</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">7</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/SpringMVC/">
@@ -928,7 +944,7 @@ setInterval(function() {
                 <span class="level-item">life</span>
             </span>
             <span class="level-end">
-                <span class="level-item tag">6</span>
+                <span class="level-item tag">8</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/mail/">
@@ -992,7 +1008,7 @@ setInterval(function() {
                 <span class="level-item">侃侃而谈</span>
             </span>
             <span class="level-end">
-                <span class="level-item tag">15</span>
+                <span class="level-item tag">16</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/前后端分离/">
@@ -1072,7 +1088,7 @@ setInterval(function() {
                 <span class="level-item">资料</span>
             </span>
             <span class="level-end">
-                <span class="level-item tag">1</span>
+                <span class="level-item tag">2</span>
             </span>
         </a></li><li>
         <a class="level is-marginless" href="/categories/面试/">
@@ -1102,7 +1118,7 @@ setInterval(function() {
         <h3 class="menu-label">
             标签云
         </h3>
-        <a href="/tags/2019-article/" style="font-size: 10px;">2019-article</a> <a href="/tags/Blog/" style="font-size: 10px;">Blog</a> <a href="/tags/CAS/" style="font-size: 11.88px;">CAS</a> <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 10.63px;">Chrome</a> <a href="/tags/Docker/" style="font-size: 11.25px;">Docker</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/ElasticSearch/" style="font-size: 11.88px;">ElasticSearch</a> <a href="/tags/ElasticSerach/" style="font-size: 10px;">ElasticSerach</a> <a href="/tags/Eureka/" style="font-size: 10px;">Eureka</a> <a href="/tags/FastDFS/" style="font-size: 11.25px;">FastDFS</a> <a href="/tags/Flyway/" style="font-size: 10px;">Flyway</a> <a href="/tags/Freemarker/" style="font-size: 10.63px;">Freemarker</a> <a href="/tags/Git/" style="font-size: 14.38px;">Git</a> <a href="/tags/GitHub/" style="font-size: 10.63px;">GitHub</a> <a href="/tags/Https/" style="font-size: 10px;">Https</a> <a href="/tags/IDEA/" style="font-size: 13.75px;">IDEA</a> <a href="/tags/IDEA，EasyCode/" style="font-size: 10px;">IDEA，EasyCode</a> <a href="/tags/IntelliJ-IDEA/" style="font-size: 11.25px;">IntelliJ IDEA</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/Java/" style="font-size: 10.63px;">Java</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 10.63px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 11.25px;">Jpa</a> <a href="/tags/LiveReload/" style="font-size: 10px;">LiveReload</a> <a href="/tags/MacBook/" style="font-size: 10px;">MacBook</a> <a href="/tags/MacBookPro/" style="font-size: 10px;">MacBookPro</a> <a href="/tags/Mail/" style="font-size: 10px;">Mail</a> <a href="/tags/Maven/" style="font-size: 11.88px;">Maven</a> <a href="/tags/MongoDB/" style="font-size: 18.13px;">MongoDB</a> <a href="/tags/MyBatis/" style="font-size: 12.5px;">MyBatis</a> <a href="/tags/MyCat/" style="font-size: 11.88px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 15px;">MySQL</a> <a href="/tags/Nacos/" style="font-size: 10px;">Nacos</a> <a href="/tags/Nginx/" style="font-size: 10.63px;">Nginx</a> <a href="/tags/OAuth2/" style="font-size: 15.63px;">OAuth2</a> <a href="/tags/PicGo/" style="font-size: 10px;">PicGo</a> <a href="/tags/RabbitMQ/" style="font-size: 10.63px;">RabbitMQ</a> <a href="/tags/Redis/" style="font-size: 18.75px;">Redis</a> <a href="/tags/Resume/" style="font-size: 10px;">Resume</a> <a href="/tags/SSM/" style="font-size: 10.63px;">SSM</a> <a href="/tags/Shiro/" style="font-size: 10px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 17.5px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Cloud/" style="font-size: 11.88px;">Spring Cloud</a> <a href="/tags/Spring-Data/" style="font-size: 10.63px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 19.38px;">Spring Security</a> <a href="/tags/SpringBoot/" style="font-size: 11.25px;">SpringBoot</a> <a href="/tags/SpringMVC/" style="font-size: 11.88px;">SpringMVC</a> <a href="/tags/SpringSecurity/" style="font-size: 10px;">SpringSecurity</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Thymeleaf/" style="font-size: 10px;">Thymeleaf</a> <a href="/tags/Transaction/" style="font-size: 10px;">Transaction</a> <a href="/tags/Video/" style="font-size: 10px;">Video</a> <a href="/tags/Vue/" style="font-size: 16.88px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/blog/" style="font-size: 10.63px;">blog</a> <a href="/tags/docker/" style="font-size: 14.38px;">docker</a> <a href="/tags/domain/" style="font-size: 10px;">domain</a> <a href="/tags/es/" style="font-size: 12.5px;">es</a> <a href="/tags/hdz/" style="font-size: 10px;">hdz</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/huawei/" style="font-size: 10px;">huawei</a> <a href="/tags/i18n/" style="font-size: 10px;">i18n</a> <a href="/tags/idea/" style="font-size: 10px;">idea</a> <a href="/tags/java/" style="font-size: 10px;">java</a> <a href="/tags/life/" style="font-size: 16.25px;">life</a> <a href="/tags/mail/" style="font-size: 10px;">mail</a> <a href="/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/router/" style="font-size: 10px;">router</a> <a href="/tags/transaction/" style="font-size: 10.63px;">transaction</a> <a href="/tags/vhr/" style="font-size: 13.13px;">vhr</a> <a href="/tags/vue/" style="font-size: 10px;">vue</a> <a href="/tags/vuepress/" style="font-size: 10px;">vuepress</a> <a href="/tags/weixin/" style="font-size: 11.25px;">weixin</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/七牛云/" style="font-size: 10px;">七牛云</a> <a href="/tags/中间件/" style="font-size: 10px;">中间件</a> <a href="/tags/侃侃而谈/" style="font-size: 15.63px;">侃侃而谈</a> <a href="/tags/分布式锁/" style="font-size: 10px;">分布式锁</a> <a href="/tags/前后端分离/" style="font-size: 12.5px;">前后端分离</a> <a href="/tags/单体应用/" style="font-size: 10px;">单体应用</a> <a href="/tags/外包/" style="font-size: 10.63px;">外包</a> <a href="/tags/学习资源/" style="font-size: 12.5px;">学习资源</a> <a href="/tags/工具/" style="font-size: 10.63px;">工具</a> <a href="/tags/微人事/" style="font-size: 10.63px;">微人事</a> <a href="/tags/微服务/" style="font-size: 10.63px;">微服务</a> <a href="/tags/杂谈/" style="font-size: 13.13px;">杂谈</a> <a href="/tags/条件注解/" style="font-size: 10px;">条件注解</a> <a href="/tags/源码解析/" style="font-size: 11.88px;">源码解析</a> <a href="/tags/源码解读/" style="font-size: 13.75px;">源码解读</a> <a href="/tags/生活/" style="font-size: 11.25px;">生活</a> <a href="/tags/私活/" style="font-size: 10px;">私活</a> <a href="/tags/程序人生/" style="font-size: 10.63px;">程序人生</a> <a href="/tags/程序员/" style="font-size: 10px;">程序员</a> <a href="/tags/自学/" style="font-size: 10px;">自学</a> <a href="/tags/视频/" style="font-size: 10px;">视频</a> <a href="/tags/资料/" style="font-size: 10px;">资料</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
+        <a href="/tags/2019-article/" style="font-size: 10px;">2019-article</a> <a href="/tags/Actuator/" style="font-size: 10px;">Actuator</a> <a href="/tags/Blog/" style="font-size: 10px;">Blog</a> <a href="/tags/Bug/" style="font-size: 10px;">Bug</a> <a href="/tags/CAS/" style="font-size: 11.88px;">CAS</a> <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 10.63px;">Chrome</a> <a href="/tags/Docker/" style="font-size: 11.88px;">Docker</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/ElasticSearch/" style="font-size: 11.88px;">ElasticSearch</a> <a href="/tags/ElasticSerach/" style="font-size: 10px;">ElasticSerach</a> <a href="/tags/Eureka/" style="font-size: 10px;">Eureka</a> <a href="/tags/FastDFS/" style="font-size: 11.25px;">FastDFS</a> <a href="/tags/Flyway/" style="font-size: 10px;">Flyway</a> <a href="/tags/Freemarker/" style="font-size: 11.25px;">Freemarker</a> <a href="/tags/Git/" style="font-size: 14.38px;">Git</a> <a href="/tags/GitHub/" style="font-size: 10.63px;">GitHub</a> <a href="/tags/Https/" style="font-size: 10px;">Https</a> <a href="/tags/IDEA/" style="font-size: 13.75px;">IDEA</a> <a href="/tags/IDEA，EasyCode/" style="font-size: 10px;">IDEA，EasyCode</a> <a href="/tags/IntelliJ-IDEA/" style="font-size: 11.25px;">IntelliJ IDEA</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/Java/" style="font-size: 11.25px;">Java</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 10.63px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 11.25px;">Jpa</a> <a href="/tags/LiveReload/" style="font-size: 10px;">LiveReload</a> <a href="/tags/Log/" style="font-size: 10px;">Log</a> <a href="/tags/MacBook/" style="font-size: 10px;">MacBook</a> <a href="/tags/MacBookPro/" style="font-size: 10px;">MacBookPro</a> <a href="/tags/Mail/" style="font-size: 10px;">Mail</a> <a href="/tags/Maven/" style="font-size: 12.5px;">Maven</a> <a href="/tags/MongoDB/" style="font-size: 18.13px;">MongoDB</a> <a href="/tags/MyBatis/" style="font-size: 15px;">MyBatis</a> <a href="/tags/MyCat/" style="font-size: 11.88px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 15.63px;">MySQL</a> <a href="/tags/Nacos/" style="font-size: 10px;">Nacos</a> <a href="/tags/Nginx/" style="font-size: 10.63px;">Nginx</a> <a href="/tags/OAuth2/" style="font-size: 16.25px;">OAuth2</a> <a href="/tags/PicGo/" style="font-size: 10px;">PicGo</a> <a href="/tags/Plugin/" style="font-size: 10px;">Plugin</a> <a href="/tags/RabbitMQ/" style="font-size: 10.63px;">RabbitMQ</a> <a href="/tags/Redis/" style="font-size: 18.75px;">Redis</a> <a href="/tags/Resume/" style="font-size: 10px;">Resume</a> <a href="/tags/SSM/" style="font-size: 13.13px;">SSM</a> <a href="/tags/Shiro/" style="font-size: 10px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 17.5px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Cloud/" style="font-size: 11.88px;">Spring Cloud</a> <a href="/tags/Spring-Data/" style="font-size: 10.63px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 19.38px;">Spring Security</a> <a href="/tags/SpringBoot/" style="font-size: 15.63px;">SpringBoot</a> <a href="/tags/SpringMVC/" style="font-size: 14.38px;">SpringMVC</a> <a href="/tags/SpringSecurity/" style="font-size: 10px;">SpringSecurity</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Swagger3/" style="font-size: 10px;">Swagger3</a> <a href="/tags/Tencent/" style="font-size: 10px;">Tencent</a> <a href="/tags/Thymeleaf/" style="font-size: 10.63px;">Thymeleaf</a> <a href="/tags/Transaction/" style="font-size: 10px;">Transaction</a> <a href="/tags/Video/" style="font-size: 10px;">Video</a> <a href="/tags/ViewResolver/" style="font-size: 10px;">ViewResolver</a> <a href="/tags/Vue/" style="font-size: 16.88px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/blog/" style="font-size: 10.63px;">blog</a> <a href="/tags/docker/" style="font-size: 14.38px;">docker</a> <a href="/tags/domain/" style="font-size: 10px;">domain</a> <a href="/tags/es/" style="font-size: 12.5px;">es</a> <a href="/tags/hdz/" style="font-size: 10px;">hdz</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/huawei/" style="font-size: 10px;">huawei</a> <a href="/tags/i18n/" style="font-size: 10px;">i18n</a> <a href="/tags/idea/" style="font-size: 10px;">idea</a> <a href="/tags/java/" style="font-size: 10px;">java</a> <a href="/tags/life/" style="font-size: 16.88px;">life</a> <a href="/tags/mail/" style="font-size: 10px;">mail</a> <a href="/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/router/" style="font-size: 10px;">router</a> <a href="/tags/transaction/" style="font-size: 10.63px;">transaction</a> <a href="/tags/vhr/" style="font-size: 13.13px;">vhr</a> <a href="/tags/vue/" style="font-size: 10px;">vue</a> <a href="/tags/vuepress/" style="font-size: 10px;">vuepress</a> <a href="/tags/weixin/" style="font-size: 11.25px;">weixin</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/七牛云/" style="font-size: 10px;">七牛云</a> <a href="/tags/中间件/" style="font-size: 10px;">中间件</a> <a href="/tags/侃侃而谈/" style="font-size: 16.25px;">侃侃而谈</a> <a href="/tags/分布式锁/" style="font-size: 10px;">分布式锁</a> <a href="/tags/前后端分离/" style="font-size: 12.5px;">前后端分离</a> <a href="/tags/单体应用/" style="font-size: 10px;">单体应用</a> <a href="/tags/外包/" style="font-size: 10.63px;">外包</a> <a href="/tags/学习资源/" style="font-size: 12.5px;">学习资源</a> <a href="/tags/工具/" style="font-size: 10.63px;">工具</a> <a href="/tags/干货汇总/" style="font-size: 10px;">干货汇总</a> <a href="/tags/微人事/" style="font-size: 10.63px;">微人事</a> <a href="/tags/微服务/" style="font-size: 10.63px;">微服务</a> <a href="/tags/杂谈/" style="font-size: 13.13px;">杂谈</a> <a href="/tags/条件注解/" style="font-size: 10px;">条件注解</a> <a href="/tags/源码解析/" style="font-size: 11.88px;">源码解析</a> <a href="/tags/源码解读/" style="font-size: 13.75px;">源码解读</a> <a href="/tags/生活/" style="font-size: 11.25px;">生活</a> <a href="/tags/私活/" style="font-size: 10px;">私活</a> <a href="/tags/程序人生/" style="font-size: 10.63px;">程序人生</a> <a href="/tags/程序员/" style="font-size: 10px;">程序员</a> <a href="/tags/腾讯/" style="font-size: 10px;">腾讯</a> <a href="/tags/自学/" style="font-size: 10px;">自学</a> <a href="/tags/视频/" style="font-size: 10px;">视频</a> <a href="/tags/视频教程/" style="font-size: 10px;">视频教程</a> <a href="/tags/资料/" style="font-size: 10px;">资料</a> <a href="/tags/逆向工程/" style="font-size: 10.63px;">逆向工程</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
     </div>
 </div>
 
@@ -1121,10 +1137,10 @@ setInterval(function() {
             
             <div class="media-content">
                 <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-11-26T02:13:20.000Z">2020-11-26</time></div>
-                    <a href="/2020/1126/es-analyzer.html" class="has-link-black-ter is-size-6">ElasticSearch 中的中文分词器以及索引基本操作详解</a>
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-03-07T14:41:20.000Z">2021-03-07</time></div>
+                    <a href="/2021/0307/b1f4b54f.html" class="has-link-black-ter is-size-6">Spring5 里边的新玩法！这种 URL 请求让我涨见识了！</a>
                     <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/ElasticSearch/">ElasticSearch</a>
+                        <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
                     </p>
                 </div>
             </div>
@@ -1134,10 +1150,10 @@ setInterval(function() {
             
             <div class="media-content">
                 <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-11-23T02:30:00.000Z">2020-11-23</time></div>
-                    <a href="/2020/1123/java-doc.html" class="has-link-black-ter is-size-6">想做个项目练练手却不知道做啥？松哥准备了 50 个热门需求文档给大家！</a>
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-03-04T14:41:04.000Z">2021-03-04</time></div>
+                    <a href="/2021/0304/mybatis-video.html" class="has-link-black-ter is-size-6">来啦来啦，松哥的免费视频教程来啦！</a>
                     <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/资料/">资料</a>
+                        <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
                     </p>
                 </div>
             </div>
@@ -1147,10 +1163,10 @@ setInterval(function() {
             
             <div class="media-content">
                 <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-11-18T02:29:46.000Z">2020-11-18</time></div>
-                    <a href="/2020/1118/es-bilibili.html" class="has-link-black-ter is-size-6">ElasticSearch 视频上传到 B 站了，撸起来！</a>
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-03-02T14:40:10.000Z">2021-03-02</time></div>
+                    <a href="/2021/0302/springmvc-flashmap.html" class="has-link-black-ter is-size-6">SpringMVC 中的参数还能这么传递？涨姿势了！</a>
                     <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/ElasticSearch/">ElasticSearch</a>
+                        <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
                     </p>
                 </div>
             </div>
@@ -1160,10 +1176,10 @@ setInterval(function() {
             
             <div class="media-content">
                 <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-11-15T02:29:30.000Z">2020-11-15</time></div>
-                    <a href="/2020/1115/parttime.html" class="has-link-black-ter is-size-6">接了两个私活，都是血汗钱</a>
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-02-26T14:39:55.000Z">2021-02-26</time></div>
+                    <a href="/2021/0226/mybatis-plugin.html" class="has-link-black-ter is-size-6">手把手教你开发 MyBatis 插件</a>
                     <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/侃侃而谈/">侃侃而谈</a>
+                        <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
                     </p>
                 </div>
             </div>
@@ -1173,10 +1189,10 @@ setInterval(function() {
             
             <div class="media-content">
                 <div class="content">
-                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2020-11-05T02:32:10.000Z">2020-11-05</time></div>
-                    <a href="/2020/1105/elastic_search_guide.html" class="has-link-black-ter is-size-6">ElasticSearch 入门</a>
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-02-23T14:39:41.000Z">2021-02-23</time></div>
+                    <a href="/2021/0223/springmvc-video.html" class="has-link-black-ter is-size-6">硬核！松哥又整了一套免费视频，搞起！</a>
                     <p class="is-size-7 is-uppercase">
-                        <a class="has-link-grey -link" href="/categories/ElasticSearch/">ElasticSearch</a>
+                        <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
                     </p>
                 </div>
             </div>
@@ -1193,6 +1209,50 @@ setInterval(function() {
             归档
         </h3>
         <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">3</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">5</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">8</span>
+                </span>
+            </a>
+        </li>
         
         <li>
             <a class="level is-marginless" href="/archives/2020/11/">
@@ -1652,7 +1712,7 @@ setInterval(function() {
                 
                 </a>
                 <p class="is-size-7">
-                &copy; 2020 江南一点雨&nbsp;
+                &copy; 2021 江南一点雨&nbsp;
 				<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><!--
 PV <span id="busuanzi_value_site_pv"></span>&nbsp;|&nbsp;<i class="fa fa-user-md"></i>  UV <span id="busuanzi_value_site_uv"></span>&nbsp;-->
 				<script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? "https://" : "http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1276890692'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s96.cnzz.com/z_stat.php%3Fid%3D1276890692%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
