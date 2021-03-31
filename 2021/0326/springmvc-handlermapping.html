@@ -1,0 +1,1946 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head><meta name="generator" content="Hexo 3.8.0">
+    <meta charset="utf-8">
+<title>SpringMVC 九大组件之 HandlerMapping 深入分析 - 江南一点雨</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+
+
+    <meta name="description" content="前面跟小伙伴们分享了 SpringMVC 一个大致的初始化流程以及请求的大致处理流程，在请求处理过程中，涉及到九大组件，分别是：  HandlerMapping HandlerAdapter HandlerExceptionResolver ViewResolver RequestToViewNameTranslator LocaleResolver ThemeResolver Multipart">
+<meta name="keywords" content="SpringMVC,SSM">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SpringMVC 九大组件之 HandlerMapping 深入分析">
+<meta property="og:url" content="http://www.javaboy.org/2021/0326/springmvc-handlermapping.html">
+<meta property="og:site_name" content="江南一点雨">
+<meta property="og:description" content="前面跟小伙伴们分享了 SpringMVC 一个大致的初始化流程以及请求的大致处理流程，在请求处理过程中，涉及到九大组件，分别是：  HandlerMapping HandlerAdapter HandlerExceptionResolver ViewResolver RequestToViewNameTranslator LocaleResolver ThemeResolver Multipart">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="http://www.javaboy.org/images/og_image.png">
+<meta property="og:updated_time" content="2021-03-31T07:03:03.605Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="SpringMVC 九大组件之 HandlerMapping 深入分析">
+<meta name="twitter:description" content="前面跟小伙伴们分享了 SpringMVC 一个大致的初始化流程以及请求的大致处理流程，在请求处理过程中，涉及到九大组件，分别是：  HandlerMapping HandlerAdapter HandlerExceptionResolver ViewResolver RequestToViewNameTranslator LocaleResolver ThemeResolver Multipart">
+<meta name="twitter:image" content="http://www.javaboy.org/images/og_image.png">
+
+
+
+
+
+
+
+<link rel="icon" href="https://www.javaboy.org/favicon.ico">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-2-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+                
+                <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="SpringMVC 九大组件之 HandlerMapping 深入分析" height="28">
+                
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item" href="/">江南一点雨</a>
+                
+                <a class="navbar-item" href="/archives">归档</a>
+                
+                <a class="navbar-item" href="/fronted-backend">前后端分离</a>
+                
+                <a class="navbar-item" href="http://spring.javaboy.org">Spring</a>
+                
+                <a class="navbar-item" href="http://springmvc.javaboy.org">SpringMVC</a>
+                
+                <a class="navbar-item" href="http://mybatis.javaboy.org">MyBatis</a>
+                
+                <a class="navbar-item" href="http://springboot.javaboy.org">Spring Boot</a>
+                
+                <a class="navbar-item" href="http://www.javaboy.org/springsecurity">Spring Security</a>
+                
+                <a class="navbar-item" href="http://maven.javaboy.org">Maven</a>
+                
+                <a class="navbar-item" href="/redis">Redis</a>
+                
+                <a class="navbar-item" href="/mongodb">MongoDB</a>
+                
+                <a class="navbar-item" href="/mysql">MySQL</a>
+                
+                <a class="navbar-item" href="/docker">Docker</a>
+                
+                <a class="navbar-item" href="/git">Git</a>
+                
+                <a class="navbar-item" href="/about">About</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                
+                
+                <a class="navbar-item search" style="height: 40px;line-height: 60px;width: 180px;margin: 12px 15px;box-sizing: border-box;border: 1px solid #dedede;border-radius: 20px;display: flex;justify-content: space-between;padding-left: 12px;padding-right: 10px" title="搜索" href="javascript:;">
+                    <!--<div style="border: 1px solid #dedede;border-radius: 10px;">-->
+                    <div>搜索</div>
+                        <i class="fas fa-search"></i>
+                    <!--</div>-->
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2021-03-26T06:58:28.000Z">2021-03-26</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    1 小时 读完 (大约 7031 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                SpringMVC 九大组件之 HandlerMapping 深入分析
+            
+        </h1>
+        
+            <div class="content" id="content">
+                    <p>前面跟小伙伴们分享了 SpringMVC 一个大致的初始化流程以及请求的大致处理流程，在请求处理过程中，涉及到九大组件，分别是：</p>
+<ol>
+<li>HandlerMapping</li>
+<li>HandlerAdapter</li>
+<li>HandlerExceptionResolver</li>
+<li>ViewResolver</li>
+<li>RequestToViewNameTranslator</li>
+<li>LocaleResolver</li>
+<li>ThemeResolver</li>
+<li>MultipartResolver</li>
+<li>FlashMapManager</li>
+</ol>
+<a id="more"></a>
+<p>这些组件相信小伙伴们在日常开发中多多少少都有涉及到，如果你对这些组件感到陌生，可以在公众号后台回复 <strong>ssm</strong>，免费获取松哥的入门视频教程。</p>
+<p>那么接下来的几篇文章，松哥想和大家深入分析这九大组件，从用法到源码，挨个分析，今天我们就先来看看这九大组件中的第一个 HandlerMapping。</p>
+<h2 id="1-概览"><a href="#1-概览" class="headerlink" title="1.概览"></a>1.概览</h2><p>HandlerMapping 叫做处理器映射器，它的作用就是根据当前 request 找到对应的 Handler 和 Interceptor，然后封装成一个 HandlerExecutionChain 对象返回，我们来看下 HandlerMapping 接口：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">HandlerMapping</span> </span>&#123;</span><br><span class="line">	String BEST_MATCHING_HANDLER_ATTRIBUTE = HandlerMapping.class.getName() + <span class="hljs-string">".bestMatchingHandler"</span>;</span><br><span class="line">	<span class="hljs-meta">@Deprecated</span></span><br><span class="line">	String LOOKUP_PATH = HandlerMapping.class.getName() + <span class="hljs-string">".lookupPath"</span>;</span><br><span class="line">	String PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE = HandlerMapping.class.getName() + <span class="hljs-string">".pathWithinHandlerMapping"</span>;</span><br><span class="line">	String BEST_MATCHING_PATTERN_ATTRIBUTE = HandlerMapping.class.getName() + <span class="hljs-string">".bestMatchingPattern"</span>;</span><br><span class="line">	String INTROSPECT_TYPE_LEVEL_MAPPING = HandlerMapping.class.getName() + <span class="hljs-string">".introspectTypeLevelMapping"</span>;</span><br><span class="line">	String URI_TEMPLATE_VARIABLES_ATTRIBUTE = HandlerMapping.class.getName() + <span class="hljs-string">".uriTemplateVariables"</span>;</span><br><span class="line">	String MATRIX_VARIABLES_ATTRIBUTE = HandlerMapping.class.getName() + <span class="hljs-string">".matrixVariables"</span>;</span><br><span class="line">	String PRODUCIBLE_MEDIA_TYPES_ATTRIBUTE = HandlerMapping.class.getName() + <span class="hljs-string">".producibleMediaTypes"</span>;</span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">default</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">usesPathPatterns</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-meta">@Nullable</span></span><br><span class="line">	<span class="hljs-function">HandlerExecutionChain <span class="hljs-title">getHandler</span><span class="hljs-params">(HttpServletRequest request)</span> <span class="hljs-keyword">throws</span> Exception</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，除了一堆声明的常量外，其实就一个需要实现的方法 getHandler，该方法的返回值就是我们所了解到的 HandlerExecutionChain。</p>
+<p>HandlerMapping 的继承关系如下：</p>
+<p><img src="http://img.itboyhub.com/2021/02/HandlerMapping.png" alt></p>
+<p>这个继承关系虽然看着有点绕，其实仔细观察就两大类：</p>
+<ul>
+<li>AbstractHandlerMethodMapping</li>
+<li>AbstractUrlHandlerMapping</li>
+</ul>
+<p>其他的都是一些辅助接口。</p>
+<p>AbstractHandlerMethodMapping 体系下的都是根据方法名进行匹配的，而 AbstractUrlHandlerMapping 体系下的都是根据 URL 路径进行匹配的，这两者有一个共同的父类 AbstractHandlerMapping，接下来我们就对这三个关键类进行详细分析。</p>
+<h2 id="2-AbstractHandlerMapping"><a href="#2-AbstractHandlerMapping" class="headerlink" title="2.AbstractHandlerMapping"></a>2.AbstractHandlerMapping</h2><p>AbstractHandlerMapping 实现了 HandlerMapping 接口，无论是通过 URL 进行匹配还是通过方法名进行匹配，都是通过继承 AbstractHandlerMapping 来实现的，所以 AbstractHandlerMapping 所做的事情其实就是一些公共的事情，将以一些需要具体处理的事情则交给子类去处理，这其实就是典型的模版方法模式。</p>
+<p>AbstractHandlerMapping 间接继承自 ApplicationObjectSupport，并重写了 initApplicationContext 方法（其实该方法也是一个模版方法），这也是 AbstractHandlerMapping 的初始化入口方法，我们一起来看下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">initApplicationContext</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">	extendInterceptors(<span class="hljs-keyword">this</span>.interceptors);</span><br><span class="line">	detectMappedInterceptors(<span class="hljs-keyword">this</span>.adaptedInterceptors);</span><br><span class="line">	initInterceptors();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>三个方法都和拦截器有关。</p>
+<p><strong>extendInterceptors</strong></p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">extendInterceptors</span><span class="hljs-params">(List&lt;Object&gt; interceptors)</span> </span>&#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>extendInterceptors 是一个模版方法，可以在子类中实现，子类实现了该方法之后，可以对拦截器进行添加、删除或者修改，不过在 SpringMVC 的具体实现中，其实这个方法并没有在子类中进行实现。</p>
+<p><strong>detectMappedInterceptors</strong></p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">detectMappedInterceptors</span><span class="hljs-params">(List&lt;HandlerInterceptor&gt; mappedInterceptors)</span> </span>&#123;</span><br><span class="line">	mappedInterceptors.addAll(BeanFactoryUtils.beansOfTypeIncludingAncestors(</span><br><span class="line">			obtainApplicationContext(), MappedInterceptor.class, <span class="hljs-keyword">true</span>, <span class="hljs-keyword">false</span>).values());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>detectMappedInterceptors 方法会从 SpringMVC 容器以及 Spring 容器中查找所有 MappedInterceptor 类型的 Bean，查找到之后添加到 mappedInterceptors 属性中（其实就是全局的 adaptedInterceptors 属性）。一般来说，我们定义好一个拦截器之后，还要在 XML 文件中配置该拦截器，拦截器以及各种配置信息，最终就会被封装成一个 MappedInterceptor 对象。</p>
+<p><strong>initInterceptors</strong></p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">initInterceptors</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.interceptors.isEmpty()) &#123;</span><br><span class="line">		<span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-keyword">this</span>.interceptors.size(); i++) &#123;</span><br><span class="line">			Object interceptor = <span class="hljs-keyword">this</span>.interceptors.get(i);</span><br><span class="line">			<span class="hljs-keyword">if</span> (interceptor == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">				<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalArgumentException(<span class="hljs-string">"Entry number "</span> + i + <span class="hljs-string">" in interceptors array is null"</span>);</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">this</span>.adaptedInterceptors.add(adaptInterceptor(interceptor));</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>initInterceptors 方法主要是进行拦截器的初始化操作，具体内容是将 interceptors 集合中的拦截器添加到 adaptedInterceptors 集合中。</p>
+<p>至此，我们看到，所有拦截器最终都会被存入 adaptedInterceptors 变量中。</p>
+<p>AbstractHandlerMapping 的初始化其实也就是拦截器的初始化过程。</p>
+<blockquote>
+<p>为什么 AbstractHandlerMapping 中对拦截器如此重视呢？其实不是重视，大家想想，AbstractUrlHandlerMapping 和 AbstractHandlerMethodMapping 最大的区别在于查找处理器的区别，一旦处理器找到了，再去找拦截器，但是拦截器都是统一的，并没有什么明显区别，所以拦截器就统一在 AbstractHandlerMapping 中进行处理，而不会去 AbstractUrlHandlerMapping 或者 AbstractHandlerMethodMapping 中处理。</p>
+</blockquote>
+<p>接下来我们再来看看 AbstractHandlerMapping#getHandler 方法，看看处理器是如何获取到的：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-meta">@Nullable</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> HandlerExecutionChain <span class="hljs-title">getHandler</span><span class="hljs-params">(HttpServletRequest request)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	Object handler = getHandlerInternal(request);</span><br><span class="line">	<span class="hljs-keyword">if</span> (handler == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		handler = getDefaultHandler();</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> (handler == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// Bean name or resolved handler?</span></span><br><span class="line">	<span class="hljs-keyword">if</span> (handler <span class="hljs-keyword">instanceof</span> String) &#123;</span><br><span class="line">		String handlerName = (String) handler;</span><br><span class="line">		handler = obtainApplicationContext().getBean(handlerName);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// Ensure presence of cached lookupPath for interceptors and others</span></span><br><span class="line">	<span class="hljs-keyword">if</span> (!ServletRequestPathUtils.hasCachedPath(request)) &#123;</span><br><span class="line">		initLookupPath(request);</span><br><span class="line">	&#125;</span><br><span class="line">	HandlerExecutionChain executionChain = getHandlerExecutionChain(handler, request);</span><br><span class="line">	<span class="hljs-keyword">if</span> (hasCorsConfigurationSource(handler) || CorsUtils.isPreFlightRequest(request)) &#123;</span><br><span class="line">		CorsConfiguration config = getCorsConfiguration(handler, request);</span><br><span class="line">		<span class="hljs-keyword">if</span> (getCorsConfigurationSource() != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			CorsConfiguration globalConfig = getCorsConfigurationSource().getCorsConfiguration(request);</span><br><span class="line">			config = (globalConfig != <span class="hljs-keyword">null</span> ? globalConfig.combine(config) : config);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> (config != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			config.validateAllowCredentials();</span><br><span class="line">		&#125;</span><br><span class="line">		executionChain = getCorsHandlerExecutionChain(request, executionChain, config);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> executionChain;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个方法的执行流程是这样的：</p>
+<ol>
+<li>首先调用 getHandlerInternal 方法去尝试获取处理器，getHandlerInternal 方法也是一个模版方法，该方法将在子类中实现。</li>
+<li>如果没找到相应的处理器，则调用 getDefaultHandler 方法获取默认的处理器，我们在配置 HandlerMapping 的时候可以配置默认的处理器。</li>
+<li>如果找到的处理器是一个字符串，则根据该字符串找去 SpringMVC 容器中找到对应的 Bean。</li>
+<li>确保 lookupPath 存在，一会找对应的拦截器的时候会用到。</li>
+<li>找到 handler 之后，接下来再调用 getHandlerExecutionChain 方法获取 HandlerExecutionChain 对象。</li>
+<li>接下来 if 里边的是进行跨域处理的，获取到跨域的相关配置，然后进行验证&amp;配置，检查是否允许跨域。跨域这块的配置以及校验还是蛮有意思的，松哥以后专门写文章来和小伙伴们细聊。</li>
+</ol>
+<p>接下来我们再来看看第五步的 getHandlerExecutionChain 方法的执行逻辑，正是在这个方法里边把 handler 变成了 HandlerExecutionChain：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> HandlerExecutionChain <span class="hljs-title">getHandlerExecutionChain</span><span class="hljs-params">(Object handler, HttpServletRequest request)</span> </span>&#123;</span><br><span class="line">	HandlerExecutionChain chain = (handler <span class="hljs-keyword">instanceof</span> HandlerExecutionChain ?</span><br><span class="line">			(HandlerExecutionChain) handler : <span class="hljs-keyword">new</span> HandlerExecutionChain(handler));</span><br><span class="line">	<span class="hljs-keyword">for</span> (HandlerInterceptor interceptor : <span class="hljs-keyword">this</span>.adaptedInterceptors) &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> (interceptor <span class="hljs-keyword">instanceof</span> MappedInterceptor) &#123;</span><br><span class="line">			MappedInterceptor mappedInterceptor = (MappedInterceptor) interceptor;</span><br><span class="line">			<span class="hljs-keyword">if</span> (mappedInterceptor.matches(request)) &#123;</span><br><span class="line">				chain.addInterceptor(mappedInterceptor.getInterceptor());</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			chain.addInterceptor(interceptor);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> chain;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里直接根据已有的 handler 创建一个新的 HandlerExecutionChain 对象，然后遍历 adaptedInterceptors 集合，该集合里存放的都是拦截器，如果拦截器的类型是 MappedInterceptor，则调用 matches 方法去匹配一下，看一下是否是拦截当前请求的拦截器，如果是，则调用 chain.addInterceptor 方法加入到 HandlerExecutionChain 对象中；如果就是一个普通拦截器，则直接加入到 HandlerExecutionChain 对象中。</p>
+<p>这就是 AbstractHandlerMapping#getHandler 方法的大致逻辑，可以看到，这里留了一个模版方法 getHandlerInternal 在子类中实现，接下来我们就来看看它的子类。</p>
+<h2 id="3-AbstractUrlHandlerMapping"><a href="#3-AbstractUrlHandlerMapping" class="headerlink" title="3.AbstractUrlHandlerMapping"></a>3.AbstractUrlHandlerMapping</h2><p>AbstractUrlHandlerMapping，看名字就知道，都是按照 URL 地址来进行匹配的，它的原理就是将 URL 地址与对应的 Handler 保存在同一个 Map 中，当调用 getHandlerInternal 方法时，就根据请求的 URL 去 Map 中找到对应的 Handler 返回就行了。</p>
+<p>这里我们就先从他的 getHandlerInternal 方法开始看起：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-meta">@Nullable</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">getHandlerInternal</span><span class="hljs-params">(HttpServletRequest request)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	String lookupPath = initLookupPath(request);</span><br><span class="line">	Object handler;</span><br><span class="line">	<span class="hljs-keyword">if</span> (usesPathPatterns()) &#123;</span><br><span class="line">		RequestPath path = ServletRequestPathUtils.getParsedRequestPath(request);</span><br><span class="line">		handler = lookupHandler(path, lookupPath, request);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		handler = lookupHandler(lookupPath, request);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> (handler == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		<span class="hljs-comment">// We need to care for the default handler directly, since we need to</span></span><br><span class="line">		<span class="hljs-comment">// expose the PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE for it as well.</span></span><br><span class="line">		Object rawHandler = <span class="hljs-keyword">null</span>;</span><br><span class="line">		<span class="hljs-keyword">if</span> (StringUtils.matchesCharacter(lookupPath, <span class="hljs-string">'/'</span>)) &#123;</span><br><span class="line">			rawHandler = getRootHandler();</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> (rawHandler == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			rawHandler = getDefaultHandler();</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> (rawHandler != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			<span class="hljs-comment">// Bean name or resolved handler?</span></span><br><span class="line">			<span class="hljs-keyword">if</span> (rawHandler <span class="hljs-keyword">instanceof</span> String) &#123;</span><br><span class="line">				String handlerName = (String) rawHandler;</span><br><span class="line">				rawHandler = obtainApplicationContext().getBean(handlerName);</span><br><span class="line">			&#125;</span><br><span class="line">			validateHandler(rawHandler, request);</span><br><span class="line">			handler = buildPathExposingHandler(rawHandler, lookupPath, lookupPath, <span class="hljs-keyword">null</span>);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> handler;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>首先找到 lookupPath，就是请求的路径。这个方法本身松哥就不多说了，之前在<a href>Spring5 里边的新玩法！这种 URL 请求让我涨见识了！</a>一文中有过介绍。</li>
+<li>接下来就是调用 lookupHandler 方法获取 Handler 对象，lookupHandler 有一个重载方法，具体用哪个，主要看所使用的 URL 匹配模式，如果使用了最新的 PathPattern（Spring5 之后的），则使用三个参数的 lookupHandler；如果还是使用之前旧的 AntPathMatcher，则这里使用两个参数的 lookupHandler。</li>
+<li>如果前面没有获取到 handler 实例，则接下来再做各种尝试，去分别查找 RootHandler、DefaultHandler 等，如果找到的 Handler 是一个 String，则去 Spring 容器中查找该 String 对应的 Bean，再调用 validateHandler 方法来校验找到的 handler 和 request 是否匹配，不过这是一个空方法，子类也没有实现，所以可以忽略之。最后再通过 buildPathExposingHandler 方法给找到的 handler 添加一些参数。</li>
+</ol>
+<p>这就是整个 getHandlerInternal 方法的逻辑，实际上并不难，里边主要涉及到 lookupHandler 和 buildPathExposingHandler 两个方法，需要和大家详细介绍下，我们分别来看。</p>
+<p><strong>lookupHandler</strong></p>
+<p>lookupHandler 有两个，我们分别来看。</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Nullable</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">lookupHandler</span><span class="hljs-params">(String lookupPath, HttpServletRequest request)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	Object handler = getDirectMatch(lookupPath, request);</span><br><span class="line">	<span class="hljs-keyword">if</span> (handler != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> handler;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// Pattern match?</span></span><br><span class="line">	List&lt;String&gt; matchingPatterns = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">	<span class="hljs-keyword">for</span> (String registeredPattern : <span class="hljs-keyword">this</span>.handlerMap.keySet()) &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> (getPathMatcher().match(registeredPattern, lookupPath)) &#123;</span><br><span class="line">			matchingPatterns.add(registeredPattern);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (useTrailingSlashMatch()) &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> (!registeredPattern.endsWith(<span class="hljs-string">"/"</span>) &amp;&amp; getPathMatcher().match(registeredPattern + <span class="hljs-string">"/"</span>, lookupPath)) &#123;</span><br><span class="line">				matchingPatterns.add(registeredPattern + <span class="hljs-string">"/"</span>);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	String bestMatch = <span class="hljs-keyword">null</span>;</span><br><span class="line">	Comparator&lt;String&gt; patternComparator = getPathMatcher().getPatternComparator(lookupPath);</span><br><span class="line">	<span class="hljs-keyword">if</span> (!matchingPatterns.isEmpty()) &#123;</span><br><span class="line">		matchingPatterns.sort(patternComparator);</span><br><span class="line">		bestMatch = matchingPatterns.get(<span class="hljs-number">0</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> (bestMatch != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		handler = <span class="hljs-keyword">this</span>.handlerMap.get(bestMatch);</span><br><span class="line">		<span class="hljs-keyword">if</span> (handler == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> (bestMatch.endsWith(<span class="hljs-string">"/"</span>)) &#123;</span><br><span class="line">				handler = <span class="hljs-keyword">this</span>.handlerMap.get(bestMatch.substring(<span class="hljs-number">0</span>, bestMatch.length() - <span class="hljs-number">1</span>));</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">if</span> (handler == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">				<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(</span><br><span class="line">						<span class="hljs-string">"Could not find handler for best pattern match ["</span> + bestMatch + <span class="hljs-string">"]"</span>);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-comment">// Bean name or resolved handler?</span></span><br><span class="line">		<span class="hljs-keyword">if</span> (handler <span class="hljs-keyword">instanceof</span> String) &#123;</span><br><span class="line">			String handlerName = (String) handler;</span><br><span class="line">			handler = obtainApplicationContext().getBean(handlerName);</span><br><span class="line">		&#125;</span><br><span class="line">		validateHandler(handler, request);</span><br><span class="line">		String pathWithinMapping = getPathMatcher().extractPathWithinPattern(bestMatch, lookupPath);</span><br><span class="line">		<span class="hljs-comment">// There might be multiple 'best patterns', let's make sure we have the correct URI template variables</span></span><br><span class="line">		<span class="hljs-comment">// for all of them</span></span><br><span class="line">		Map&lt;String, String&gt; uriTemplateVariables = <span class="hljs-keyword">new</span> LinkedHashMap&lt;&gt;();</span><br><span class="line">		<span class="hljs-keyword">for</span> (String matchingPattern : matchingPatterns) &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> (patternComparator.compare(bestMatch, matchingPattern) == <span class="hljs-number">0</span>) &#123;</span><br><span class="line">				Map&lt;String, String&gt; vars = getPathMatcher().extractUriTemplateVariables(matchingPattern, lookupPath);</span><br><span class="line">				Map&lt;String, String&gt; decodedVars = getUrlPathHelper().decodePathVariables(request, vars);</span><br><span class="line">				uriTemplateVariables.putAll(decodedVars);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">return</span> buildPathExposingHandler(handler, bestMatch, pathWithinMapping, uriTemplateVariables);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// No handler found...</span></span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-meta">@Nullable</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">private</span> Object <span class="hljs-title">getDirectMatch</span><span class="hljs-params">(String urlPath, HttpServletRequest request)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	Object handler = <span class="hljs-keyword">this</span>.handlerMap.get(urlPath);</span><br><span class="line">	<span class="hljs-keyword">if</span> (handler != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		<span class="hljs-comment">// Bean name or resolved handler?</span></span><br><span class="line">		<span class="hljs-keyword">if</span> (handler <span class="hljs-keyword">instanceof</span> String) &#123;</span><br><span class="line">			String handlerName = (String) handler;</span><br><span class="line">			handler = obtainApplicationContext().getBean(handlerName);</span><br><span class="line">		&#125;</span><br><span class="line">		validateHandler(handler, request);</span><br><span class="line">		<span class="hljs-keyword">return</span> buildPathExposingHandler(handler, urlPath, urlPath, <span class="hljs-keyword">null</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>这里首先调用 getDirectMatch 方法直接去 handlerMap 中找对应的处理器，handlerMap 中就保存了请求 URL 和处理器的映射关系，具体的查找过程就是先去 handlerMap 中找，找到了，如果是 String，则去 Spring 容器中找对应的 Bean，然后调用 validateHandler 方法去验证（实际上没有验证，前面已经说了），最后调用 buildPathExposingHandler 方法添加拦截器。</li>
+<li>如果 getDirectMatch 方法返回值不为 null，则直接将查找到的 handler 返回，方法到此为止。那么什么情况下 getDirectMatch 方法的返回值不为 null 呢？简单来收就是没有使用通配符的情况下，请求地址中没有通配符，一个请求地址对应一个处理器，只有这种情况，getDirectMatch 方法返回值才不为 null，因为 handlerMap 中保存的是代码的定义，比如我们定义代码的时候，某个处理器的访问路径可能带有通配符，但是当我们真正发起请求的时候，请求路径里是没有通配符的，这个时候再去 handlerMap 中就找不对对应的处理器了。如果用到了定义接口时用到了通配符，则需要在下面的代码中继续处理。</li>
+<li>接下来处理通配符的情况。首先定义 matchingPatterns 集合，将当前请求路径和 handlerMap 集合中保存的请求路径规则进行对比，凡是能匹配上的规则都直接存入 matchingPatterns 集合中。具体处理中，还有一个 useTrailingSlashMatch 的可能，有的小伙伴 SpringMVC 用的不熟练，看到这里可能就懵了，这里是这样的，SpringMVC 中，默认是可以匹配结尾 <code>/</code> 的，举个简单例子，如果你定义的接口是 <code>/user</code>，那么请求路径可以是 <code>/user</code> 也可以 <code>/user/</code>，这两种默认都是支持的，所以这里的 useTrailingSlashMatch 分支主要是处理后面这种情况，处理方式很简单，就在 registeredPattern 后面加上 <code>/</code> 然后继续和请求路径进行匹配。</li>
+<li>由于一个请求 URL 可能会和定义的多个接口匹配上，所以 matchingPatterns 变量是一个数组，接下来就要对 matchingPatterns 进行排序，排序完成后，选择排序后的第一项作为最佳选项赋值给 bestMatch 变量。默认的排序规则是 AntPatternComparator，当然开发者也可以自定义。AntPatternComparator 中定义的优先级如下：</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">路由配置</th>
+<th style="text-align:left">优先级</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">不含任何特殊符号的路径，如：配置路由<code>/a/b/c</code></td>
+<td style="text-align:left">第一优先级</td>
+</tr>
+<tr>
+<td style="text-align:left">带有<code>{}</code>的路径，如：<code>/a/{b}/c</code></td>
+<td style="text-align:left">第二优先级</td>
+</tr>
+<tr>
+<td style="text-align:left">带有正则的路径，如：<code>/a/{regex:\d{3}}/c</code></td>
+<td style="text-align:left">第三优先级</td>
+</tr>
+<tr>
+<td style="text-align:left">带有<code>*</code>的路径，如：<code>/a/b/*</code></td>
+<td style="text-align:left">第四优先级</td>
+</tr>
+<tr>
+<td style="text-align:left">带有<code>**</code>的路径，如：<code>/a/b/**</code></td>
+<td style="text-align:left">第五优先级</td>
+</tr>
+<tr>
+<td style="text-align:left">最模糊的匹配：<code>/**</code></td>
+<td style="text-align:left">最低优先级</td>
+</tr>
+</tbody>
+</table>
+<ol start="5">
+<li>找到 bestMatch 之后，接下来再根据 bestMatch 去 handlerMap 中找到对应的处理器，直接找如果没找到，就去检查 bestMatch 是否以 <code>/</code> 结尾，如果是以 <code>/</code> 结尾，则去掉结尾的 <code>/</code> 再去 handlerMap 中查找，如果还没找到，那就该抛异常出来了。如果找到的 handler 是 String 类型的，则再去 Spring 容器中查找对应的 Bean，接下来再调用 validateHandler 方法进行验证。</li>
+<li>接下来调用 extractPathWithinPattern 方法提取出映射路径，例如定义的接口规则是 <code>myroot/*.html</code>，请求路径是 <code>myroot/myfile.html</code>，那么最终获取到的就是 <code>myfile.html</code>。</li>
+<li>接下来的 for 循环是为了处理存在多个最佳匹配规则的情况，在第四步中，我们对 matchingPatterns 进行排序，排序完成后，选择第一项作为最佳选项赋值给 bestMatch，但是最佳选项可能会有多个，这里就是处理最佳选项有多个的情况。</li>
+<li>最后调用 buildPathExposingHandler 方法注册两个内部拦截器，该方法下文我会给大家详细介绍。</li>
+</ol>
+<p>lookupHandler 还有一个重载方法，不过只要大家把这个方法的执行流程搞清楚了，重载方法其实很好理解，这里松哥就不再赘述了，唯一要说的就是重载方法用了 PathPattern 去匹配 URL 路径，而这个方法用了 AntPathMatcher 去匹配 URL 路径。</p>
+<p><strong>buildPathExposingHandler</strong></p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">buildPathExposingHandler</span><span class="hljs-params">(Object rawHandler, String bestMatchingPattern,</span></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-params">		String pathWithinMapping, @Nullable Map&lt;String, String&gt; uriTemplateVariables)</span> </span>&#123;</span><br><span class="line">	HandlerExecutionChain chain = <span class="hljs-keyword">new</span> HandlerExecutionChain(rawHandler);</span><br><span class="line">	chain.addInterceptor(<span class="hljs-keyword">new</span> PathExposingHandlerInterceptor(bestMatchingPattern, pathWithinMapping));</span><br><span class="line">	<span class="hljs-keyword">if</span> (!CollectionUtils.isEmpty(uriTemplateVariables)) &#123;</span><br><span class="line">		chain.addInterceptor(<span class="hljs-keyword">new</span> UriTemplateVariablesHandlerInterceptor(uriTemplateVariables));</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> chain;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>buildPathExposingHandler 方法向 HandlerExecutionChain 中添加了两个拦截器 PathExposingHandlerInterceptor 和 UriTemplateVariablesHandlerInterceptor，这两个拦截器在各自的 preHandle 中分别向 request 对象添加了一些属性，具体添加的属性小伙伴们可以自行查看，这个比较简单，我就不多说了。</p>
+<p>在前面的方法中，涉及到一个重要的变量 handlerMap，我们定义的接口和处理器之间的关系都保存在这个变量中，那么这个变量是怎么初始化的呢？这就涉及到 AbstractUrlHandlerMapping 中的另一个方法 registerHandler：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">registerHandler</span><span class="hljs-params">(String[] urlPaths, String beanName)</span> <span class="hljs-keyword">throws</span> BeansException, IllegalStateException </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">for</span> (String urlPath : urlPaths) &#123;</span><br><span class="line">		registerHandler(urlPath, beanName);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">registerHandler</span><span class="hljs-params">(String urlPath, Object handler)</span> <span class="hljs-keyword">throws</span> BeansException, IllegalStateException </span>&#123;</span><br><span class="line">	Object resolvedHandler = handler;</span><br><span class="line">	<span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.lazyInitHandlers &amp;&amp; handler <span class="hljs-keyword">instanceof</span> String) &#123;</span><br><span class="line">		String handlerName = (String) handler;</span><br><span class="line">		ApplicationContext applicationContext = obtainApplicationContext();</span><br><span class="line">		<span class="hljs-keyword">if</span> (applicationContext.isSingleton(handlerName)) &#123;</span><br><span class="line">			resolvedHandler = applicationContext.getBean(handlerName);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	Object mappedHandler = <span class="hljs-keyword">this</span>.handlerMap.get(urlPath);</span><br><span class="line">	<span class="hljs-keyword">if</span> (mappedHandler != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> (mappedHandler != resolvedHandler) &#123;</span><br><span class="line">			<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(</span><br><span class="line">					<span class="hljs-string">"Cannot map "</span> + getHandlerDescription(handler) + <span class="hljs-string">" to URL path ["</span> + urlPath +</span><br><span class="line">					<span class="hljs-string">"]: There is already "</span> + getHandlerDescription(mappedHandler) + <span class="hljs-string">" mapped."</span>);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> (urlPath.equals(<span class="hljs-string">"/"</span>)) &#123;</span><br><span class="line">			setRootHandler(resolvedHandler);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (urlPath.equals(<span class="hljs-string">"/*"</span>)) &#123;</span><br><span class="line">			setDefaultHandler(resolvedHandler);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">this</span>.handlerMap.put(urlPath, resolvedHandler);</span><br><span class="line">			<span class="hljs-keyword">if</span> (getPatternParser() != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">				<span class="hljs-keyword">this</span>.pathPatternHandlerMap.put(getPatternParser().parse(urlPath), resolvedHandler);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>registerHandler(String[],String) 方法有两个参数，第一个就是定义的请求路径，第二个参数则是处理器 Bean 的名字，第一个参数是一个数组，那是因为同一个处理器可以对应多个不同的请求路径。</p>
+<p>在重载方法 registerHandler(String,String) 里边，完成了 handlerMap 的初始化，具体流程如下：</p>
+<ol>
+<li>如果没有设置 lazyInitHandlers，并且 handler 是 String 类型，那么就去 Spring 容器中找到对应的 Bean 赋值给 resolvedHandler。</li>
+<li>根据 urlPath 去 handlerMap 中查看是否已经有对应的处理器了，如果有的话，则抛出异常，一个 URL 地址只能对应一个处理器，这个很好理解。</li>
+<li>接下来根据 URL 路径，将处理器进行配置，最终添加到 handlerMap 变量中。</li>
+</ol>
+<p>这就是 AbstractUrlHandlerMapping 的主要工作，其中 registerHandler 将在它的子类中调用。</p>
+<p>接下来我们来看 AbstractUrlHandlerMapping 的子类。</p>
+<h3 id="3-1-SimpleUrlHandlerMapping"><a href="#3-1-SimpleUrlHandlerMapping" class="headerlink" title="3.1 SimpleUrlHandlerMapping"></a>3.1 SimpleUrlHandlerMapping</h3><p>为了方便处理，SimpleUrlHandlerMapping 中自己定义了一个 urlMap 变量，这样可以在注册之前做一些预处理，例如确保所有的 URL 都是以 <code>/</code> 开始。SimpleUrlHandlerMapping 在定义时重写了父类的 initApplicationContext 方法，并在该方法中调用了 registerHandlers，在 registerHandlers 中又调用了父类的 registerHandler 方法完成了 handlerMap 的初始化操作：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">initApplicationContext</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">super</span>.initApplicationContext();</span><br><span class="line">	registerHandlers(<span class="hljs-keyword">this</span>.urlMap);</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">registerHandlers</span><span class="hljs-params">(Map&lt;String, Object&gt; urlMap)</span> <span class="hljs-keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> (urlMap.isEmpty()) &#123;</span><br><span class="line">		logger.trace(<span class="hljs-string">"No patterns in "</span> + formatMappingName());</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		urlMap.forEach((url, handler) -&gt; &#123;</span><br><span class="line">			<span class="hljs-comment">// Prepend with slash if not already present.</span></span><br><span class="line">			<span class="hljs-keyword">if</span> (!url.startsWith(<span class="hljs-string">"/"</span>)) &#123;</span><br><span class="line">				url = <span class="hljs-string">"/"</span> + url;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-comment">// Remove whitespace from handler bean name.</span></span><br><span class="line">			<span class="hljs-keyword">if</span> (handler <span class="hljs-keyword">instanceof</span> String) &#123;</span><br><span class="line">				handler = ((String) handler).trim();</span><br><span class="line">			&#125;</span><br><span class="line">			registerHandler(url, handler);</span><br><span class="line">		&#125;);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这块代码很简单，实在没啥好说的，如果 URL 不是以 <code>/</code> 开头，则手动给它加上 <code>/</code> 即可。有小伙伴们可能要问了，urlMap 的值从哪里来？当然是从我们的配置文件里边来呀，像下面这样：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"org.springframework.web.servlet.handler.SimpleUrlHandlerMapping"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"urlMap"</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">map</span>&gt;</span></span><br><span class="line">            <span class="hljs-tag">&lt;<span class="hljs-name">entry</span> <span class="hljs-attr">key</span>=<span class="hljs-string">"/aaa"</span> <span class="hljs-attr">value-ref</span>=<span class="hljs-string">"/hello"</span>/&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">map</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h3 id="3-2-AbstractDetectingUrlHandlerMapping"><a href="#3-2-AbstractDetectingUrlHandlerMapping" class="headerlink" title="3.2 AbstractDetectingUrlHandlerMapping"></a>3.2 AbstractDetectingUrlHandlerMapping</h3><p>AbstractDetectingUrlHandlerMapping 也是 AbstractUrlHandlerMapping 的子类，但是它和 SimpleUrlHandlerMapping 有一些不一样的地方。</p>
+<p>不一样的是哪里呢？</p>
+<p>AbstractDetectingUrlHandlerMapping 会自动查找到 SpringMVC 容器以及 Spring 容器中的所有 beanName，然后根据 beanName 解析出对应的 URL 地址，再将解析出的 url 地址和对应的 beanName 注册到父类的 handlerMap 变量中。换句话说，如果你用了 AbstractDetectingUrlHandlerMapping，就不用像 SimpleUrlHandlerMapping 那样去挨个配置 URL 地址和处理器的映射关系了。我们来看下 AbstractDetectingUrlHandlerMapping#initApplicationContext 方法：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">initApplicationContext</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> ApplicationContextException </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">super</span>.initApplicationContext();</span><br><span class="line">	detectHandlers();</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">detectHandlers</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">	ApplicationContext applicationContext = obtainApplicationContext();</span><br><span class="line">	String[] beanNames = (<span class="hljs-keyword">this</span>.detectHandlersInAncestorContexts ?</span><br><span class="line">			BeanFactoryUtils.beanNamesForTypeIncludingAncestors(applicationContext, Object.class) :</span><br><span class="line">			applicationContext.getBeanNamesForType(Object.class));</span><br><span class="line">	<span class="hljs-keyword">for</span> (String beanName : beanNames) &#123;</span><br><span class="line">		String[] urls = determineUrlsForHandler(beanName);</span><br><span class="line">		<span class="hljs-keyword">if</span> (!ObjectUtils.isEmpty(urls)) &#123;</span><br><span class="line">			registerHandler(urls, beanName);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>AbstractDetectingUrlHandlerMapping 重写了父类的 initApplicationContext 方法，并在该方法中调用了 detectHandlers 方法，在 detectHandlers 中，首先查找到所有的 beanName，然后调用 determineUrlsForHandler 方法分析出 beanName 对应的 URL，不过这里的 determineUrlsForHandler 方法是一个空方法，具体的实现在它的子类中，AbstractDetectingUrlHandlerMapping 只有一个子类 BeanNameUrlHandlerMapping，我们一起来看下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">BeanNameUrlHandlerMapping</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">AbstractDetectingUrlHandlerMapping</span> </span>&#123;</span><br><span class="line">	<span class="hljs-meta">@Override</span></span><br><span class="line">	<span class="hljs-keyword">protected</span> String[] determineUrlsForHandler(String beanName) &#123;</span><br><span class="line">		List&lt;String&gt; urls = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">		<span class="hljs-keyword">if</span> (beanName.startsWith(<span class="hljs-string">"/"</span>)) &#123;</span><br><span class="line">			urls.add(beanName);</span><br><span class="line">		&#125;</span><br><span class="line">		String[] aliases = obtainApplicationContext().getAliases(beanName);</span><br><span class="line">		<span class="hljs-keyword">for</span> (String alias : aliases) &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> (alias.startsWith(<span class="hljs-string">"/"</span>)) &#123;</span><br><span class="line">				urls.add(alias);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">return</span> StringUtils.toStringArray(urls);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个类很简单，里边就一个 determineUrlsForHandler 方法，这个方法的执行逻辑也很简单，就判断 beanName 是不是以 <code>/</code> 开始，如果是，则将之作为 URL。</p>
+<p>如果我们想要在项目中使用 BeanNameUrlHandlerMapping，配置方式如下：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"org.javaboy.init.HelloController"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"/hello"</span>/&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"org.springframework.web.servlet.handler.BeanNameUrlHandlerMapping"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"handlerMapping"</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>注意，Controller 的 name 必须是以 <code>/</code> 开始，否则该 bean 不会被自动作为处理器。</p>
+<p>至此，AbstractUrlHandlerMapping 体系下的东西就和大家分享完了。</p>
+<h2 id="4-AbstractHandlerMethodMapping"><a href="#4-AbstractHandlerMethodMapping" class="headerlink" title="4.AbstractHandlerMethodMapping"></a>4.AbstractHandlerMethodMapping</h2><p>AbstractHandlerMethodMapping 体系下只有三个类，分别是 AbstractHandlerMethodMapping、RequestMappingInfoHandlerMapping 以及 RequestMappingHandlerMapping，如下图：</p>
+<p><img src="http://img.itboyhub.com/2021/02/20210307171135.png" alt></p>
+<p>在前面第三小节的 AbstractUrlHandlerMapping 体系下，一个 Handler 一般就是一个类，但是在 AbstractHandlerMethodMapping 体系下，一个 Handler 就是一个 Mehtod，这也是我们目前使用 SpringMVC 时最常见的用法，即直接用 @RequestMapping 去标记一个方法，该方法就是一个 Handler。</p>
+<p>接下来我们就一起来看看 AbstractHandlerMethodMapping。</p>
+<h3 id="4-1-初始化流程"><a href="#4-1-初始化流程" class="headerlink" title="4.1 初始化流程"></a>4.1 初始化流程</h3><p>AbstractHandlerMethodMapping 类实现了 InitializingBean 接口，所以 Spring 容器会自动调用其 afterPropertiesSet 方法，在这里将完成初始化操作：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">afterPropertiesSet</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">	initHandlerMethods();</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">initHandlerMethods</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">for</span> (String beanName : getCandidateBeanNames()) &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> (!beanName.startsWith(SCOPED_TARGET_NAME_PREFIX)) &#123;</span><br><span class="line">			processCandidateBean(beanName);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	handlerMethodsInitialized(getHandlerMethods());</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-keyword">protected</span> String[] getCandidateBeanNames() &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> (<span class="hljs-keyword">this</span>.detectHandlerMethodsInAncestorContexts ?</span><br><span class="line">			BeanFactoryUtils.beanNamesForTypeIncludingAncestors(obtainApplicationContext(), Object.class) :</span><br><span class="line">			obtainApplicationContext().getBeanNamesForType(Object.class));</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">processCandidateBean</span><span class="hljs-params">(String beanName)</span> </span>&#123;</span><br><span class="line">	Class&lt;?&gt; beanType = <span class="hljs-keyword">null</span>;</span><br><span class="line">	<span class="hljs-keyword">try</span> &#123;</span><br><span class="line">		beanType = obtainApplicationContext().getType(beanName);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> (beanType != <span class="hljs-keyword">null</span> &amp;&amp; isHandler(beanType)) &#123;</span><br><span class="line">		detectHandlerMethods(beanName);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，具体的初始化又是在 initHandlerMethods 方法中完成的，在该方法中，首先调用 getCandidateBeanNames 方法获取容器中所有的 beanName，然后调用 processCandidateBean 方法对这些候选的 beanName 进行处理，具体的处理思路就是根据 beanName 找到 beanType，然后调用 isHandler 方法判断该 beanType 是不是一个 Handler，isHandler 是一个空方法，在它的子类 RequestMappingHandlerMapping 中被实现了，该方法主要是检查该 beanType 上有没有 <code>@Controller</code> 或者 <code>@RequestMapping</code> 注解，如果有，说明这就是我们想要的 handler，接下来再调用 detectHandlerMethods 方法保存 URL 和 handler 的映射关系：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">detectHandlerMethods</span><span class="hljs-params">(Object handler)</span> </span>&#123;</span><br><span class="line">	Class&lt;?&gt; handlerType = (handler <span class="hljs-keyword">instanceof</span> String ?</span><br><span class="line">			obtainApplicationContext().getType((String) handler) : handler.getClass());</span><br><span class="line">	<span class="hljs-keyword">if</span> (handlerType != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		Class&lt;?&gt; userType = ClassUtils.getUserClass(handlerType);</span><br><span class="line">		Map&lt;Method, T&gt; methods = MethodIntrospector.selectMethods(userType,</span><br><span class="line">				(MethodIntrospector.MetadataLookup&lt;T&gt;) method -&gt; &#123;</span><br><span class="line">					<span class="hljs-keyword">try</span> &#123;</span><br><span class="line">						<span class="hljs-keyword">return</span> getMappingForMethod(method, userType);</span><br><span class="line">					&#125;</span><br><span class="line">					<span class="hljs-keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">						<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(<span class="hljs-string">"Invalid mapping on handler class ["</span> +</span><br><span class="line">								userType.getName() + <span class="hljs-string">"]: "</span> + method, ex);</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;);</span><br><span class="line">		methods.forEach((method, mapping) -&gt; &#123;</span><br><span class="line">			Method invocableMethod = AopUtils.selectInvocableMethod(method, userType);</span><br><span class="line">			registerHandlerMethod(handler, invocableMethod, mapping);</span><br><span class="line">		&#125;);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>首先找到 handler 的类型 handlerType。</li>
+<li>调用 ClassUtils.getUserClass 方法检查是否是 cglib 代理的子对象类型，如果是，则返回父类型，否则将参数直接返回。</li>
+<li>接下来调用 MethodIntrospector.selectMethods 方法获取当前 bean 中所有符合要求的 method。</li>
+<li>遍历 methods，调用 registerHandlerMethod 方法完成注册。</li>
+</ol>
+<p>上面这段代码里又涉及到两个方法：</p>
+<ul>
+<li>getMappingForMethod</li>
+<li>registerHandlerMethod</li>
+</ul>
+<p>我们分别来看：</p>
+<p><strong>getMappingForMethod</strong></p>
+<p>getMappingForMethod 是一个模版方法，具体的实现也是在子类 RequestMappingHandlerMapping 里边：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-meta">@Nullable</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> RequestMappingInfo <span class="hljs-title">getMappingForMethod</span><span class="hljs-params">(Method method, Class&lt;?&gt; handlerType)</span> </span>&#123;</span><br><span class="line">	RequestMappingInfo info = createRequestMappingInfo(method);</span><br><span class="line">	<span class="hljs-keyword">if</span> (info != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		RequestMappingInfo typeInfo = createRequestMappingInfo(handlerType);</span><br><span class="line">		<span class="hljs-keyword">if</span> (typeInfo != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			info = typeInfo.combine(info);</span><br><span class="line">		&#125;</span><br><span class="line">		String prefix = getPathPrefix(handlerType);</span><br><span class="line">		<span class="hljs-keyword">if</span> (prefix != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			info = RequestMappingInfo.paths(prefix).options(<span class="hljs-keyword">this</span>.config).build().combine(info);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> info;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先根据 method 对象，调用 createRequestMappingInfo 方法获取一个 RequestMappingInfo，一个 RequestMappingInfo 包含了一个接口定义的详细信息，例如参数、header、produces、consumes、请求方法等等信息都在这里边。接下来再根据 handlerType 也获取一个 RequestMappingInfo，并调用 combine 方法将两个 RequestMappingInfo 进行合并。接下来调用 getPathPrefix 方法查看 handlerType 上有没有 URL 前缀，如果有，就添加到 info 里边去，最后将 info 返回。</p>
+<p>这里要说一下 handlerType 里边的这个前缀是那里来的，我们可以在 Controller 上使用 <code>@RequestMapping</code> 注解，配置一个路径前缀，这样 Controller 中的所有方法都加上了该路径前缀，但是这种方式需要一个一个的配置，如果想一次性配置所有的 Controller 呢？我们可以使用 Spring5.1 中新引入的方法 addPathPrefix 来配置，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">WebConfig</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">WebMvcConfigurer</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">configurePathMatch</span><span class="hljs-params">(PathMatchConfigurer configurer)</span> </span>&#123;</span><br><span class="line">        configurer.setPatternParser(<span class="hljs-keyword">new</span> PathPatternParser()).addPathPrefix(<span class="hljs-string">"/itboyhub"</span>, HandlerTypePredicate.forAnnotation(RestController.class));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面这个配置表示，所有的 <code>@RestController</code> 标记的类都自动加上 <code>itboyhub</code> 前缀。有了这个配置之后，上面的 getPathPrefix 方法获取到的就是 <code>/itboyhub</code> 了。</p>
+<p><strong>registerHandlerMethod</strong></p>
+<p>当找齐了 URL 和 handlerMethod 之后，接下来就是将这些信息保存下来，方式如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">registerHandlerMethod</span><span class="hljs-params">(Object handler, Method method, T mapping)</span> </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">this</span>.mappingRegistry.register(mapping, handler, method);</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">register</span><span class="hljs-params">(T mapping, Object handler, Method method)</span> </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">this</span>.readWriteLock.writeLock().lock();</span><br><span class="line">	<span class="hljs-keyword">try</span> &#123;</span><br><span class="line">		HandlerMethod handlerMethod = createHandlerMethod(handler, method);</span><br><span class="line">		validateMethodMapping(handlerMethod, mapping);</span><br><span class="line">		Set&lt;String&gt; directPaths = AbstractHandlerMethodMapping.<span class="hljs-keyword">this</span>.getDirectPaths(mapping);</span><br><span class="line">		<span class="hljs-keyword">for</span> (String path : directPaths) &#123;</span><br><span class="line">			<span class="hljs-keyword">this</span>.pathLookup.add(path, mapping);</span><br><span class="line">		&#125;</span><br><span class="line">		String name = <span class="hljs-keyword">null</span>;</span><br><span class="line">		<span class="hljs-keyword">if</span> (getNamingStrategy() != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			name = getNamingStrategy().getName(handlerMethod, mapping);</span><br><span class="line">			addMappingName(name, handlerMethod);</span><br><span class="line">		&#125;</span><br><span class="line">		CorsConfiguration corsConfig = initCorsConfiguration(handler, method, mapping);</span><br><span class="line">		<span class="hljs-keyword">if</span> (corsConfig != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			corsConfig.validateAllowCredentials();</span><br><span class="line">			<span class="hljs-keyword">this</span>.corsLookup.put(handlerMethod, corsConfig);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">this</span>.registry.put(mapping,</span><br><span class="line">				<span class="hljs-keyword">new</span> MappingRegistration&lt;&gt;(mapping, handlerMethod, directPaths, name, corsConfig != <span class="hljs-keyword">null</span>));</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">finally</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">this</span>.readWriteLock.writeLock().unlock();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>首先调用 createHandlerMethod 方法创建 HandlerMethod 对象。</li>
+<li>调用 validateMethodMapping 方法对 handlerMethod 进行验证，主要是验证 handlerMethod 是否已经存在。</li>
+<li>从 mappings 中提取出 directPaths，就是不包含通配符的请求路径，然后将请求路径和 mapping 的映射关系保存到 pathLookup 中。</li>
+<li>找到所有 handler 的简称，调用 addMappingName 方法添加到 nameLookup 中。例如我们在 HelloController 中定义了一个名为 hello 的请求接口，那么这里拿到的就是 <code>HC#hello</code>，HC 是 HelloController 中的大写字母。</li>
+<li>初始化跨域配置，并添加到 corsLookup 中。</li>
+<li>将构建好的关系添加到 registry 中。</li>
+</ol>
+<p>多说一句，第四步这个东西有啥用呢？这个其实是 Spring4 中开始增加的功能，算是一个小彩蛋吧，虽然日常开发很少用，但是我这里还是和大家说一下。</p>
+<p>假如你有如下一个接口：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@RestController</span></span><br><span class="line"><span class="hljs-meta">@RequestMapping</span>(<span class="hljs-string">"/javaboy"</span>)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HelloController</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@GetMapping</span>(<span class="hljs-string">"/aaa"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">hello99</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-string">"aaa"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当你请求该接口的时候，不想通过路径，想直接通过方法名，行不行呢？当然可以！</p>
+<p>在 jsp 文件中，添加如下超链接：</p>
+<figure class="highlight hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;%@ taglib prefix=<span class="hljs-string">"s"</span> uri=<span class="hljs-string">"http://www.springframework.org/tags"</span> %&gt;</span><br><span class="line">&lt;%@ page contentType=<span class="hljs-string">"text/html;charset=UTF-8"</span> language=<span class="hljs-string">"java"</span> %&gt;</span><br><span class="line">&lt;html&gt;</span><br><span class="line">&lt;head&gt;</span><br><span class="line">    &lt;title&gt;Title&lt;/title&gt;</span><br><span class="line">&lt;/head&gt;</span><br><span class="line">&lt;body&gt;</span><br><span class="line">&lt;a href="$&#123;s:mvcUrl('HC#hello99').build()&#125;"&gt;Go!&lt;/a&gt;</span><br><span class="line">&lt;/body&gt;</span><br><span class="line">&lt;/html&gt;</span><br></pre></td></tr></table></figure>
+<p>当这个 jsp 页面渲染完成后，href 属性就自动成了 hello99 方法的请求路径了。这个功能的实现，就依赖于前面第四步的内容。</p>
+<p>至此，我们就把 AbstractHandlerMethodMapping 的初始化流程看完了。</p>
+<h3 id="4-2-请求处理"><a href="#4-2-请求处理" class="headerlink" title="4.2 请求处理"></a>4.2 请求处理</h3><p>接下来我们来看下当请求到来后，AbstractHandlerMethodMapping 会如何处理。</p>
+<p>和前面第三小节一样，这里处理请求的入口方法也是 getHandlerInternal，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> HandlerMethod <span class="hljs-title">getHandlerInternal</span><span class="hljs-params">(HttpServletRequest request)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	String lookupPath = initLookupPath(request);</span><br><span class="line">	<span class="hljs-keyword">this</span>.mappingRegistry.acquireReadLock();</span><br><span class="line">	<span class="hljs-keyword">try</span> &#123;</span><br><span class="line">		HandlerMethod handlerMethod = lookupHandlerMethod(lookupPath, request);</span><br><span class="line">		<span class="hljs-keyword">return</span> (handlerMethod != <span class="hljs-keyword">null</span> ? handlerMethod.createWithResolvedBean() : <span class="hljs-keyword">null</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">finally</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">this</span>.mappingRegistry.releaseReadLock();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> HandlerMethod <span class="hljs-title">lookupHandlerMethod</span><span class="hljs-params">(String lookupPath, HttpServletRequest request)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	List&lt;Match&gt; matches = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">	List&lt;T&gt; directPathMatches = <span class="hljs-keyword">this</span>.mappingRegistry.getMappingsByDirectPath(lookupPath);</span><br><span class="line">	<span class="hljs-keyword">if</span> (directPathMatches != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		addMatchingMappings(directPathMatches, matches, request);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> (matches.isEmpty()) &#123;</span><br><span class="line">		addMatchingMappings(<span class="hljs-keyword">this</span>.mappingRegistry.getRegistrations().keySet(), matches, request);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> (!matches.isEmpty()) &#123;</span><br><span class="line">		Match bestMatch = matches.get(<span class="hljs-number">0</span>);</span><br><span class="line">		<span class="hljs-keyword">if</span> (matches.size() &gt; <span class="hljs-number">1</span>) &#123;</span><br><span class="line">			Comparator&lt;Match&gt; comparator = <span class="hljs-keyword">new</span> MatchComparator(getMappingComparator(request));</span><br><span class="line">			matches.sort(comparator);</span><br><span class="line">			bestMatch = matches.get(<span class="hljs-number">0</span>);</span><br><span class="line">			<span class="hljs-keyword">if</span> (CorsUtils.isPreFlightRequest(request)) &#123;</span><br><span class="line">				<span class="hljs-keyword">for</span> (Match match : matches) &#123;</span><br><span class="line">					<span class="hljs-keyword">if</span> (match.hasCorsConfig()) &#123;</span><br><span class="line">						<span class="hljs-keyword">return</span> PREFLIGHT_AMBIGUOUS_MATCH;</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">				Match secondBestMatch = matches.get(<span class="hljs-number">1</span>);</span><br><span class="line">				<span class="hljs-keyword">if</span> (comparator.compare(bestMatch, secondBestMatch) == <span class="hljs-number">0</span>) &#123;</span><br><span class="line">					Method m1 = bestMatch.getHandlerMethod().getMethod();</span><br><span class="line">					Method m2 = secondBestMatch.getHandlerMethod().getMethod();</span><br><span class="line">					String uri = request.getRequestURI();</span><br><span class="line">					<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(</span><br><span class="line">							<span class="hljs-string">"Ambiguous handler methods mapped for '"</span> + uri + <span class="hljs-string">"': &#123;"</span> + m1 + <span class="hljs-string">", "</span> + m2 + <span class="hljs-string">"&#125;"</span>);</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		request.setAttribute(BEST_MATCHING_HANDLER_ATTRIBUTE, bestMatch.getHandlerMethod());</span><br><span class="line">		handleMatch(bestMatch.mapping, lookupPath, request);</span><br><span class="line">		<span class="hljs-keyword">return</span> bestMatch.getHandlerMethod();</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> handleNoMatch(<span class="hljs-keyword">this</span>.mappingRegistry.getRegistrations().keySet(), lookupPath, request);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里就比较容易，通过 lookupHandlerMethod 找到对应的 HandlerMethod 返回即可，如果 lookupHandlerMethod 方法返回值不为 null，则通过 createWithResolvedBean 创建 HandlerMethod（主要是确认里边的 Bean 等），具体的创建过程松哥在后面的文章中会专门和大家分享。lookupHandlerMethod 方法也比较容易：</p>
+<ol>
+<li>首先根据 lookupPath 找到匹配条件 directPathMatches，然后将获取到的匹配条件添加到 matches 中（不包含通配符的请求走这里）。</li>
+<li>如果 matches 为空，说明根据 lookupPath 没有找到匹配条件，那么直接将所有匹配条件加入 matches 中（包含通配符的请求走这里）。</li>
+<li>对 matches 进行排序，并选择排序后的第一个为最佳匹配项，如果前两个排序相同，则抛出异常。</li>
+</ol>
+<p>大致的流程就是这样，具体到请求并没有涉及到它的子类。</p>
+<h2 id="5-小结"><a href="#5-小结" class="headerlink" title="5.小结"></a>5.小结</h2><p>SpringMVC 九大组件，今天和小伙伴们把 HandlerMapping 过了一遍，其实只要认真看，这里并没有难点。如果小伙伴们觉得阅读吃力，也可以在公众号后台回复 ssm，查看松哥录制的免费入门教程～</p>
+<p>剩下的八大组件源码解析，小伙伴们敬请期待！</p>
+
+                    <!--<div class="asb-post-01">
+                        <div class="mask"></div>
+                        <div class="info" style="display: flex;justify-content:center;flex-direction:column;align-items:center">
+                                <div>扫码关注微信公众号：<span style="color: #E9405A; font-weight: bold;">江南一点雨</span></div>
+                                <div>
+                                    <span>发送 </span><span class="token" style="color: #e9415a; font-weight: bold; font-size: 17px; margin-bottom: 45px;">290992</span>
+                                </div>
+                                <div>
+                                    即可<span style="color: #e9415a; font-weight: bold;">立即永久</span>解锁本站全部文章（注意区分大小写哦）
+                                </div>
+                            <div>
+                                <img class="code-img" style="width: 300px;display:unset" src="https://www.javaboy.org/images/sb/javaboy.jpg">
+                            </div>
+                        </div>
+                    </div>-->
+                </div>
+        
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/SSM/">SSM</a>, <a class="has-link-grey -link" href="/tags/SpringMVC/">SpringMVC</a>
+                </div>
+            </div>
+        </div>
+		<div class="level is-size-6">
+						<p>喜欢这篇文章吗？扫码关注公众号<b>【江南一点雨】</b>，<b>【江南一点雨】</b>专注于 SPRING BOOT+微服务以及前后端分离技术，每天推送原创技术干货，关注后回复 JAVA，领取松哥为你精心准备的 JAVA 干货!
+</p>
+		</div>
+		<div class="level is-size-7 is-uppercase">
+<img class="menu-label has-text-centered" src="http://www.javaboy.org/images/sb/javaboy.jpg" alt>
+		</div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">觉得不错，可以给小编加个鸡腿</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="https://www.javaboy.org/images/sb/weixin_pay.png" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2021/0330/sessionattribute.html">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">接口参数 Model 中的数据放在 session 中还是 request 中？</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2021/0324/springmvc-dispatcherservlet.html">
+                <span class="level-item">SpringMVC 源码分析之 DispatcherServlet</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+	<section id="comments"></section>
+	<script src="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/gitment.browser.js"></script>
+	<!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/default.css"/>-->
+	<link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+	<script>
+		if (document.getElementById('comments')) {
+			var gitment = new Gitment({
+				id: '2021/0326/springmvc-handlermapping.html'.length>50?'2021/0326/springmvc-handlermapping.html'.substring(0,50):'2021/0326/springmvc-handlermapping.html',
+				owner: 'lenve',
+				repo: 'javaboy_comment',
+				oauth: {
+					client_id: 'ecc1a65d7b7baf6a495c',
+					client_secret: '427ecd90ada169afa77fc164509449905dd37f67',
+				},
+			})
+			gitment.render('comments')
+		}
+	</script>
+	
+    </div>
+</div>
+<style>
+.lock {
+    position: relative;
+    overflow: hidden;
+    padding-bottom: 30px;
+}
+.asb-post-01 {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    display: block;
+    z-index: 10000;
+    margin-bottom: 0;
+}
+.asb-post-01 .info {
+    background: white;
+    height: 370px;
+}
+.asb-post-01 .mask {
+    height: 240px;
+    width: 100%;
+    background: -webkit-gradient(linear, 0 top, 0 bottom, from(rgba(255, 255, 255, 0)), to(#fff));
+}
+</style>
+<!--<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script>
+function getCookie(name) {
+	var value = "; " + document.cookie;
+	var parts = value.split("; " + name + "=");
+	if (parts.length == 2)
+		return parts.pop().split(";").shift();
+}
+
+function getToken() {
+	let value = getCookie('UM_distinctid');
+	if (!value) {
+		return defaultToken;
+	}
+	return value.substring(value.length - 6).toUpperCase();
+}
+
+
+
+// 文章所在容器的选择器
+// var articleSelector = 'article.article-content';
+
+// DOM 完全就绪时执行
+$(function() {
+    // 找到文章所在的容器
+    var $article = $("#content");
+    console.log($article)
+	if ($article.length > 0) {
+		// 文章的实际高度
+		var article = $article[0], height = article.clientHeight;
+		// 文章隐藏后的高度
+		var halfHeight = height * 0.3;
+		
+		// 篇幅短一点的文章就不需要解锁了
+		if (halfHeight > 800) {
+			
+            // 获取口令
+            var mytoken = window.localStorage.getItem("javaboytoken")
+            var token;
+            if(mytoken){
+                token=mytoken
+            }else{
+                token = 'B'+getToken();
+                window.localStorage.setItem("javaboytoken",token)
+            }
+			$('.asb-post-01').find('.token').text(token);
+			
+var _lock = function() {
+	$article.css('height', halfHeight + 'px');
+	$article.addClass('lock');
+	$('.asb-post-01').css('display', 'block');
+}
+
+var _unlock = function() {
+	$article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+
+// 查询后端的结果
+var _detect = function() {
+	$.ajax({
+		url : 'http://blog-wx.itboyhub.com/wx/checktoken',
+		method : 'GET',
+		data : {
+			token : token
+		},
+		success : function(data) {
+			if (data.locked === true) {
+				_lock();
+			} else {
+				_unlock();
+			}
+		},
+		error : function(data) {
+			_unlock();
+		}
+	})
+}
+
+_detect();
+setInterval(function() {
+    _detect();
+}, 5000);
+}else{
+    $article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+    }
+});
+</script>-->
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="江南一点雨">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>China· ShenZhen</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        416
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        58
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        112
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/lenve" target="_blank">
+                扫码关注微信公众号</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="Github" href="https://github.com/lenve">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="envelope" href="mailto:wangsong0210@gmail.com">
+                
+                <i class="fa fa-envelope"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="RSS" href="/atom.xml">
+                
+                <i class="fas fa-rss"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/2019/">
+            <span class="level-start">
+                <span class="level-item">2019</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Blog/">
+            <span class="level-start">
+                <span class="level-item">Blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Chrome/">
+            <span class="level-start">
+                <span class="level-item">Chrome</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Docker/">
+            <span class="level-start">
+                <span class="level-item">Docker</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/ElasticSearch/">
+            <span class="level-start">
+                <span class="level-item">ElasticSearch</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/FastDFS/">
+            <span class="level-start">
+                <span class="level-item">FastDFS</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Git/">
+            <span class="level-start">
+                <span class="level-item">Git</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/GitHub/">
+            <span class="level-start">
+                <span class="level-item">GitHub</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/HUAWEI/">
+            <span class="level-start">
+                <span class="level-item">HUAWEI</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IDEA/">
+            <span class="level-start">
+                <span class="level-item">IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IntelliJ-IDEA/">
+            <span class="level-start">
+                <span class="level-item">IntelliJ IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Java/">
+            <span class="level-start">
+                <span class="level-item">Java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/JavaWeb/">
+            <span class="level-start">
+                <span class="level-item">JavaWeb</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MacBookPro/">
+            <span class="level-start">
+                <span class="level-item">MacBookPro</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Maven/">
+            <span class="level-start">
+                <span class="level-item">Maven</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MongoDB/">
+            <span class="level-start">
+                <span class="level-item">MongoDB</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MyBatis/">
+            <span class="level-start">
+                <span class="level-item">MyBatis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MySQL/">
+            <span class="level-start">
+                <span class="level-item">MySQL</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">10</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Nginx/">
+            <span class="level-start">
+                <span class="level-item">Nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/OAuth2/">
+            <span class="level-start">
+                <span class="level-item">OAuth2</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">11</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Redis/">
+            <span class="level-start">
+                <span class="level-item">Redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Resume/">
+            <span class="level-start">
+                <span class="level-item">Resume</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SSM/">
+            <span class="level-start">
+                <span class="level-item">SSM</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">18</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring/">
+            <span class="level-start">
+                <span class="level-item">Spring</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">13</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Boot/">
+            <span class="level-start">
+                <span class="level-item">Spring Boot</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">127</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Cloud/">
+            <span class="level-start">
+                <span class="level-item">Spring Cloud</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Security/">
+            <span class="level-start">
+                <span class="level-item">Spring Security</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">54</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringBoot/">
+            <span class="level-start">
+                <span class="level-item">SpringBoot</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringMVC/">
+            <span class="level-start">
+                <span class="level-item">SpringMVC</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringSecurity/">
+            <span class="level-start">
+                <span class="level-item">SpringSecurity</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Transaction/">
+            <span class="level-start">
+                <span class="level-item">Transaction</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/blog/">
+            <span class="level-start">
+                <span class="level-item">blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/docker/">
+            <span class="level-start">
+                <span class="level-item">docker</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/domain/">
+            <span class="level-start">
+                <span class="level-item">domain</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/hexo/">
+            <span class="level-start">
+                <span class="level-item">hexo</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/idea/">
+            <span class="level-start">
+                <span class="level-item">idea</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/java/">
+            <span class="level-start">
+                <span class="level-item">java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/life/">
+            <span class="level-start">
+                <span class="level-item">life</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/mail/">
+            <span class="level-start">
+                <span class="level-item">mail</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/nginx/">
+            <span class="level-start">
+                <span class="level-item">nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/redis/">
+            <span class="level-start">
+                <span class="level-item">redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/transaction/">
+            <span class="level-start">
+                <span class="level-item">transaction</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vhr/">
+            <span class="level-start">
+                <span class="level-item">vhr</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vue/">
+            <span class="level-start">
+                <span class="level-item">vue</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/weixin/">
+            <span class="level-start">
+                <span class="level-item">weixin</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/侃侃而谈/">
+            <span class="level-start">
+                <span class="level-item">侃侃而谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">16</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/前后端分离/">
+            <span class="level-start">
+                <span class="level-item">前后端分离</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/外包/">
+            <span class="level-start">
+                <span class="level-item">外包</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/学习资源/">
+            <span class="level-start">
+                <span class="level-item">学习资源</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">7</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/工具/">
+            <span class="level-start">
+                <span class="level-item">工具</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微人事/">
+            <span class="level-start">
+                <span class="level-item">微人事</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微服务/">
+            <span class="level-start">
+                <span class="level-item">微服务</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/杂谈/">
+            <span class="level-start">
+                <span class="level-item">杂谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/生活/">
+            <span class="level-start">
+                <span class="level-item">生活</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/程序人生/">
+            <span class="level-start">
+                <span class="level-item">程序人生</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/资料/">
+            <span class="level-start">
+                <span class="level-item">资料</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/面试/">
+            <span class="level-start">
+                <span class="level-item">面试</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/项目实战/">
+            <span class="level-start">
+                <span class="level-item">项目实战</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/2019-article/" style="font-size: 10px;">2019-article</a> <a href="/tags/Actuator/" style="font-size: 10px;">Actuator</a> <a href="/tags/Blog/" style="font-size: 10px;">Blog</a> <a href="/tags/Bug/" style="font-size: 10px;">Bug</a> <a href="/tags/CAS/" style="font-size: 11.76px;">CAS</a> <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 10.59px;">Chrome</a> <a href="/tags/Docker/" style="font-size: 11.76px;">Docker</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/ElasticSearch/" style="font-size: 11.76px;">ElasticSearch</a> <a href="/tags/ElasticSerach/" style="font-size: 10px;">ElasticSerach</a> <a href="/tags/Eureka/" style="font-size: 10px;">Eureka</a> <a href="/tags/FastDFS/" style="font-size: 11.18px;">FastDFS</a> <a href="/tags/Flyway/" style="font-size: 10px;">Flyway</a> <a href="/tags/Freemarker/" style="font-size: 11.18px;">Freemarker</a> <a href="/tags/Git/" style="font-size: 14.12px;">Git</a> <a href="/tags/GitHub/" style="font-size: 10.59px;">GitHub</a> <a href="/tags/Https/" style="font-size: 10px;">Https</a> <a href="/tags/IDEA/" style="font-size: 13.53px;">IDEA</a> <a href="/tags/IDEA，EasyCode/" style="font-size: 10px;">IDEA，EasyCode</a> <a href="/tags/IntelliJ-IDEA/" style="font-size: 11.18px;">IntelliJ IDEA</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/Java/" style="font-size: 11.18px;">Java</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 10.59px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 11.18px;">Jpa</a> <a href="/tags/LiveReload/" style="font-size: 10px;">LiveReload</a> <a href="/tags/Log/" style="font-size: 10px;">Log</a> <a href="/tags/MacBook/" style="font-size: 10px;">MacBook</a> <a href="/tags/MacBookPro/" style="font-size: 10px;">MacBookPro</a> <a href="/tags/Mail/" style="font-size: 10px;">Mail</a> <a href="/tags/Maven/" style="font-size: 12.35px;">Maven</a> <a href="/tags/MongoDB/" style="font-size: 18.24px;">MongoDB</a> <a href="/tags/MyBatis/" style="font-size: 14.71px;">MyBatis</a> <a href="/tags/MyCat/" style="font-size: 11.76px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 15.29px;">MySQL</a> <a href="/tags/Nacos/" style="font-size: 10px;">Nacos</a> <a href="/tags/Nginx/" style="font-size: 10.59px;">Nginx</a> <a href="/tags/OAuth2/" style="font-size: 15.88px;">OAuth2</a> <a href="/tags/PicGo/" style="font-size: 10px;">PicGo</a> <a href="/tags/Plugin/" style="font-size: 10px;">Plugin</a> <a href="/tags/RabbitMQ/" style="font-size: 10.59px;">RabbitMQ</a> <a href="/tags/Redis/" style="font-size: 18.82px;">Redis</a> <a href="/tags/Resume/" style="font-size: 10px;">Resume</a> <a href="/tags/SSM/" style="font-size: 16.47px;">SSM</a> <a href="/tags/Shiro/" style="font-size: 10px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 17.06px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Cloud/" style="font-size: 11.76px;">Spring Cloud</a> <a href="/tags/Spring-Data/" style="font-size: 10.59px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 19.41px;">Spring Security</a> <a href="/tags/SpringBoot/" style="font-size: 15.88px;">SpringBoot</a> <a href="/tags/SpringMVC/" style="font-size: 17.65px;">SpringMVC</a> <a href="/tags/SpringSecurity/" style="font-size: 10px;">SpringSecurity</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Swagger3/" style="font-size: 10px;">Swagger3</a> <a href="/tags/Tencent/" style="font-size: 10px;">Tencent</a> <a href="/tags/Thymeleaf/" style="font-size: 10.59px;">Thymeleaf</a> <a href="/tags/Transaction/" style="font-size: 10px;">Transaction</a> <a href="/tags/Video/" style="font-size: 10px;">Video</a> <a href="/tags/ViewResolver/" style="font-size: 10px;">ViewResolver</a> <a href="/tags/Vue/" style="font-size: 16.47px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/blog/" style="font-size: 10.59px;">blog</a> <a href="/tags/docker/" style="font-size: 14.12px;">docker</a> <a href="/tags/domain/" style="font-size: 10px;">domain</a> <a href="/tags/es/" style="font-size: 12.35px;">es</a> <a href="/tags/hdz/" style="font-size: 10px;">hdz</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/huawei/" style="font-size: 10px;">huawei</a> <a href="/tags/i18n/" style="font-size: 10px;">i18n</a> <a href="/tags/idea/" style="font-size: 10px;">idea</a> <a href="/tags/java/" style="font-size: 10px;">java</a> <a href="/tags/life/" style="font-size: 16.47px;">life</a> <a href="/tags/mail/" style="font-size: 10px;">mail</a> <a href="/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/router/" style="font-size: 10px;">router</a> <a href="/tags/transaction/" style="font-size: 10.59px;">transaction</a> <a href="/tags/vhr/" style="font-size: 12.94px;">vhr</a> <a href="/tags/vue/" style="font-size: 10px;">vue</a> <a href="/tags/vuepress/" style="font-size: 10px;">vuepress</a> <a href="/tags/weixin/" style="font-size: 11.18px;">weixin</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/七牛云/" style="font-size: 10px;">七牛云</a> <a href="/tags/中间件/" style="font-size: 10px;">中间件</a> <a href="/tags/侃侃而谈/" style="font-size: 15.88px;">侃侃而谈</a> <a href="/tags/分布式锁/" style="font-size: 10px;">分布式锁</a> <a href="/tags/前后端分离/" style="font-size: 12.35px;">前后端分离</a> <a href="/tags/单体应用/" style="font-size: 10px;">单体应用</a> <a href="/tags/外包/" style="font-size: 10.59px;">外包</a> <a href="/tags/学习资源/" style="font-size: 12.35px;">学习资源</a> <a href="/tags/工具/" style="font-size: 10.59px;">工具</a> <a href="/tags/干货汇总/" style="font-size: 10px;">干货汇总</a> <a href="/tags/微人事/" style="font-size: 10.59px;">微人事</a> <a href="/tags/微服务/" style="font-size: 10.59px;">微服务</a> <a href="/tags/杂谈/" style="font-size: 12.94px;">杂谈</a> <a href="/tags/条件注解/" style="font-size: 10px;">条件注解</a> <a href="/tags/源码解析/" style="font-size: 11.76px;">源码解析</a> <a href="/tags/源码解读/" style="font-size: 13.53px;">源码解读</a> <a href="/tags/生活/" style="font-size: 11.18px;">生活</a> <a href="/tags/私活/" style="font-size: 10px;">私活</a> <a href="/tags/程序人生/" style="font-size: 10.59px;">程序人生</a> <a href="/tags/程序员/" style="font-size: 10px;">程序员</a> <a href="/tags/腾讯/" style="font-size: 10px;">腾讯</a> <a href="/tags/自学/" style="font-size: 10px;">自学</a> <a href="/tags/视频/" style="font-size: 10px;">视频</a> <a href="/tags/视频教程/" style="font-size: 10px;">视频教程</a> <a href="/tags/资料/" style="font-size: 10px;">资料</a> <a href="/tags/逆向工程/" style="font-size: 10.59px;">逆向工程</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow  ">
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-03-31T06:58:00.000Z">2021-03-31</time></div>
+                    <a href="/2021/0331/springmvc-handlermethod.html" class="has-link-black-ter is-size-6">Spring Boot 定义接口的方法是否可以声明为 private？</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-03-30T06:58:11.000Z">2021-03-30</time></div>
+                    <a href="/2021/0330/sessionattribute.html" class="has-link-black-ter is-size-6">接口参数 Model 中的数据放在 session 中还是 request 中？</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-03-26T06:58:28.000Z">2021-03-26</time></div>
+                    <a href="/2021/0326/springmvc-handlermapping.html" class="has-link-black-ter is-size-6">SpringMVC 九大组件之 HandlerMapping 深入分析</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-03-24T03:27:25.000Z">2021-03-24</time></div>
+                    <a href="/2021/0324/springmvc-dispatcherservlet.html" class="has-link-black-ter is-size-6">SpringMVC 源码分析之 DispatcherServlet</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-03-23T00:37:53.000Z">2021-03-23</time></div>
+                    <a href="/2021/0323/springmvc-frameworkservlet.html" class="has-link-black-ter is-size-6">SpringMVC 源码分析之 FrameworkServlet</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">13</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">5</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">8</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">7</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">4</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">9</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">22</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">21</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">23</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">25</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">25</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">20</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">40</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">17</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">22</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">12</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">43</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">16</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">26</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+            
+
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            友链
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itboyhub.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">江南一点雨-国内站(速度快)</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itboyhub.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.ityouknow.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">纯洁的微笑</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.ityouknow.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://bugstack.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">bugstack虫洞栈</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">bugstack.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itwanger.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">沉默王二</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itwanger.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://tanqingbo.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">IT码农</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">tanqingbo.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.cxyxiaowu.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">五分钟学算法</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.cxyxiaowu.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.justdojava.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 极客技术</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.justdojava.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cxytiandi.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">猿天地</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cxytiandi.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://vimjc.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Vim教程网</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">vimjc.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://muggle.javaboy.org/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">muggle</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">muggle.javaboy.org</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://crossoverjie.top/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">crossoverJie&#39;s Blog</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">crossoverjie.top</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cmsblogs.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 技术驿站</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cmsblogs.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://maizitoday.github.io/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">麦子的博客</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">maizitoday.github.io</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.haoservice.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">码农code之路</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.haoservice.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.jitwxs.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Jitwxs</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.jitwxs.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.gameboys.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 烂笔头</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.gameboys.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.a2data.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">A2Data</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.a2data.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.itechyou.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">I Tech You, 我教你！</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itechyou.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="SpringMVC 九大组件之 HandlerMapping 深入分析" height="28">
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2021 江南一点雨&nbsp;
+				<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><!--
+PV <span id="busuanzi_value_site_pv"></span>&nbsp;|&nbsp;<i class="fa fa-user-md"></i>  UV <span id="busuanzi_value_site_uv"></span>&nbsp;-->
+				<script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? "https://" : "http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1276890692'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s96.cnzz.com/z_stat.php%3Fid%3D1276890692%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+				<a href="http://www.beian.miit.gov.cn/" style="color: black;">粤ICP备19111220号</a>
+                <!--Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么...">
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>
