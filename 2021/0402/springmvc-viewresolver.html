@@ -1,0 +1,1888 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head><meta name="generator" content="Hexo 3.8.0">
+    <meta charset="utf-8">
+<title>SpringMVC 九大组件之 ViewResolver 深入分析 - 江南一点雨</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+
+
+    <meta name="description" content="SpringMVC 中的九大组件前面已经和大家分享了好几个了，今天我们来继续视图解析器的分析。">
+<meta name="keywords" content="SpringMVC,SSM">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SpringMVC 九大组件之 ViewResolver 深入分析">
+<meta property="og:url" content="http://www.javaboy.org/2021/0402/springmvc-viewresolver.html">
+<meta property="og:site_name" content="江南一点雨">
+<meta property="og:description" content="SpringMVC 中的九大组件前面已经和大家分享了好几个了，今天我们来继续视图解析器的分析。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="http://www.javaboy.org/images/og_image.png">
+<meta property="og:updated_time" content="2021-04-02T06:56:53.276Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="SpringMVC 九大组件之 ViewResolver 深入分析">
+<meta name="twitter:description" content="SpringMVC 中的九大组件前面已经和大家分享了好几个了，今天我们来继续视图解析器的分析。">
+<meta name="twitter:image" content="http://www.javaboy.org/images/og_image.png">
+
+
+
+
+
+
+
+<link rel="icon" href="https://www.javaboy.org/favicon.ico">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-2-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+                
+                <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="SpringMVC 九大组件之 ViewResolver 深入分析" height="28">
+                
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item" href="/">江南一点雨</a>
+                
+                <a class="navbar-item" href="/archives">归档</a>
+                
+                <a class="navbar-item" href="/fronted-backend">前后端分离</a>
+                
+                <a class="navbar-item" href="http://spring.javaboy.org">Spring</a>
+                
+                <a class="navbar-item" href="http://springmvc.javaboy.org">SpringMVC</a>
+                
+                <a class="navbar-item" href="http://mybatis.javaboy.org">MyBatis</a>
+                
+                <a class="navbar-item" href="http://springboot.javaboy.org">Spring Boot</a>
+                
+                <a class="navbar-item" href="http://www.javaboy.org/springsecurity">Spring Security</a>
+                
+                <a class="navbar-item" href="http://maven.javaboy.org">Maven</a>
+                
+                <a class="navbar-item" href="/redis">Redis</a>
+                
+                <a class="navbar-item" href="/mongodb">MongoDB</a>
+                
+                <a class="navbar-item" href="/mysql">MySQL</a>
+                
+                <a class="navbar-item" href="/docker">Docker</a>
+                
+                <a class="navbar-item" href="/git">Git</a>
+                
+                <a class="navbar-item" href="/about">About</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                
+                
+                <a class="navbar-item search" style="height: 40px;line-height: 60px;width: 180px;margin: 12px 15px;box-sizing: border-box;border: 1px solid #dedede;border-radius: 20px;display: flex;justify-content: space-between;padding-left: 12px;padding-right: 10px" title="搜索" href="javascript:;">
+                    <!--<div style="border: 1px solid #dedede;border-radius: 10px;">-->
+                    <div>搜索</div>
+                        <i class="fas fa-search"></i>
+                    <!--</div>-->
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2021-04-02T06:54:42.000Z">2021-04-02</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    29 分钟 读完 (大约 4287 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                SpringMVC 九大组件之 ViewResolver 深入分析
+            
+        </h1>
+        
+            <div class="content" id="content">
+                    <p>SpringMVC 中的九大组件前面已经和大家分享了好几个了，今天我们来继续视图解析器的分析。</p>
+<a id="more"></a>
+<p>关于视图解析器，松哥其实在之前的文章中有和大家分享过，那一次是为了解决多个视图共存的问题，如果小伙伴们还没看过那篇文章，可以先看看：</p>
+<ul>
+<li><a href="https://mp.weixin.qq.com/s/jr6vXw48ackqoeF7FR5pcw" target="_blank" rel="noopener">SpringMVC 中如何同时存在多个视图解析器</a></li>
+</ul>
+<p>ViewResolver 其实就是我们心心念念的视图解析器，用过 SpringMVC 的小伙伴都知道 SpringMVC 中有一个视图解析器，今天我们就来分析一下这个视图解析器到底是怎么工作的。</p>
+<h2 id="1-概览"><a href="#1-概览" class="headerlink" title="1.概览"></a>1.概览</h2><p>首先我们来大概看一下 ViewResolver 接口是什么样子的：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">ViewResolver</span> </span>&#123;</span><br><span class="line">	<span class="hljs-meta">@Nullable</span></span><br><span class="line">	<span class="hljs-function">View <span class="hljs-title">resolveViewName</span><span class="hljs-params">(String viewName, Locale locale)</span> <span class="hljs-keyword">throws</span> Exception</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个接口中只有一个方法，可以看到，非常简单，就是通过视图名和 Locale，找到对应的 View 返回即可。</p>
+<p>如图直接继承自 ViewResolver 接口的类有四个，作用如下：</p>
+<p><img src="http://img.itboyhub.com/2021/02/20210323162032.png" alt></p>
+<ul>
+<li>ContentNegotiatingViewResolver：支持 MediaType 和后缀的视图解析器。</li>
+<li>BeanNameViewResolver：这个是直接根据视图名去 Spring 容器中查找相应的 Bean 并返回。</li>
+<li>AbstractCachingViewResolver：具有缓存功能的视图解析器。</li>
+<li>ViewResolverComposite：这是一个组合的视图解析器，届时可以用来代理其他具体干活的视图解析器。</li>
+</ul>
+<p>接下来我们就对这四个视图解析器逐一进行介绍，先从最简单的 BeanNameViewResolver 开始吧。</p>
+<h2 id="2-BeanNameViewResolver"><a href="#2-BeanNameViewResolver" class="headerlink" title="2.BeanNameViewResolver"></a>2.BeanNameViewResolver</h2><p>BeanNameViewResolver 的处理方式非常简单粗暴，直接根据 viewName 去 Spring 容器中查找相应的 Bean 并返回，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-meta">@Nullable</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> View <span class="hljs-title">resolveViewName</span><span class="hljs-params">(String viewName, Locale locale)</span> <span class="hljs-keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">	ApplicationContext context = obtainApplicationContext();</span><br><span class="line">	<span class="hljs-keyword">if</span> (!context.containsBean(viewName)) &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> (!context.isTypeMatch(viewName, View.class)) &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> context.getBean(viewName, View.class);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>先去判断下有没有相应的 Bean，然后再检查下 Bean 的类型对不对，都没问题，直接查找返回即可。</p>
+<h2 id="3-ContentNegotiatingViewResolver"><a href="#3-ContentNegotiatingViewResolver" class="headerlink" title="3.ContentNegotiatingViewResolver"></a>3.ContentNegotiatingViewResolver</h2><p>ContentNegotiatingViewResolver 其实是目前广泛使用的一个视图解析器，主要是添加了对 MediaType 的支持。ContentNegotiatingViewResolver 这个是 Spring3.0 中引入的的视图解析器，它不负责具体的视图解析，而是根据当前请求的 MIME 类型，从上下文中选择一个合适的视图解析器，并将请求工作委托给它。</p>
+<p>这里我们就先来看看 ContentNegotiatingViewResolver#resolveViewName 方法：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> View <span class="hljs-title">resolveViewName</span><span class="hljs-params">(String viewName, Locale locale)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	RequestAttributes attrs = RequestContextHolder.getRequestAttributes();</span><br><span class="line">	List&lt;MediaType&gt; requestedMediaTypes = getMediaTypes(((ServletRequestAttributes) attrs).getRequest());</span><br><span class="line">	<span class="hljs-keyword">if</span> (requestedMediaTypes != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		List&lt;View&gt; candidateViews = getCandidateViews(viewName, locale, requestedMediaTypes);</span><br><span class="line">		View bestView = getBestView(candidateViews, requestedMediaTypes, attrs);</span><br><span class="line">		<span class="hljs-keyword">if</span> (bestView != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> bestView;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.useNotAcceptableStatusCode) &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> NOT_ACCEPTABLE_VIEW;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里的代码逻辑也比较简单：</p>
+<ul>
+<li>首先是获取到当前的请求对象，可以直接从 RequestContextHolder 中获取。然后从当前请求对象中提取出 MediaType。</li>
+<li>如果 MediaType 不为 null，则根据 MediaType，找到合适的视图解析器，并将解析出来的 View 返回。</li>
+<li>如果 MediaType 为 null，则为两种情况，如果 useNotAcceptableStatusCode 为 true，则返回 NOT_ACCEPTABLE_VIEW 视图，这个视图其实是一个 406 响应，表示客户端错误，服务器端无法提供与 Accept-Charset 以及 Accept-Language 消息头指定的值相匹配的响应；如果 useNotAcceptableStatusCode 为 false，则返回 null。</li>
+</ul>
+<p>现在问题的核心其实就变成 getCandidateViews 方法和 getBestView 方法了，看名字就知道，前者是获取所有的候选 View，后者则是从这些候选 View 中选择一个最佳的 View，我们一个一个来看。</p>
+<p>先来看 getCandidateViews：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">private</span> List&lt;View&gt; <span class="hljs-title">getCandidateViews</span><span class="hljs-params">(String viewName, Locale locale, List&lt;MediaType&gt; requestedMediaTypes)</span></span></span><br><span class="line"><span class="hljs-function">		<span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	List&lt;View&gt; candidateViews = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">	<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.viewResolvers != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		<span class="hljs-keyword">for</span> (ViewResolver viewResolver : <span class="hljs-keyword">this</span>.viewResolvers) &#123;</span><br><span class="line">			View view = viewResolver.resolveViewName(viewName, locale);</span><br><span class="line">			<span class="hljs-keyword">if</span> (view != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">				candidateViews.add(view);</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">for</span> (MediaType requestedMediaType : requestedMediaTypes) &#123;</span><br><span class="line">				List&lt;String&gt; extensions = <span class="hljs-keyword">this</span>.contentNegotiationManager.resolveFileExtensions(requestedMediaType);</span><br><span class="line">				<span class="hljs-keyword">for</span> (String extension : extensions) &#123;</span><br><span class="line">					String viewNameWithExtension = viewName + <span class="hljs-string">'.'</span> + extension;</span><br><span class="line">					view = viewResolver.resolveViewName(viewNameWithExtension, locale);</span><br><span class="line">					<span class="hljs-keyword">if</span> (view != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">						candidateViews.add(view);</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> (!CollectionUtils.isEmpty(<span class="hljs-keyword">this</span>.defaultViews)) &#123;</span><br><span class="line">		candidateViews.addAll(<span class="hljs-keyword">this</span>.defaultViews);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> candidateViews;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>获取所有的候选 View 分为两个步骤：</p>
+<ol>
+<li>调用各个 ViewResolver 中的 resolveViewName 方法去加载出对应的 View 对象。</li>
+<li>根据 MediaType 提取出扩展名，再根据扩展名去加载 View 对象，在实际应用中，这一步我们都很少去配置，所以一步基本上是加载不出来 View 对象的，主要靠第一步。</li>
+</ol>
+<p>第一步去加载 View 对象，其实就是根据你的 viewName，再结合 ViewResolver 中配置的 prefix、suffix、templateLocation 等属性，找到对应的 View，方法执行流程依次是 resolveViewName-&gt;createView-&gt;loadView。</p>
+<p>具体执行的方法我就不一一贴出来了，<strong>唯一需要说的一个重点就是最后的 loadView 方法</strong>，我们来看下这个方法：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> View <span class="hljs-title">loadView</span><span class="hljs-params">(String viewName, Locale locale)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	AbstractUrlBasedView view = buildView(viewName);</span><br><span class="line">	View result = applyLifecycleMethods(viewName, view);</span><br><span class="line">	<span class="hljs-keyword">return</span> (view.checkResource(locale) ? result : <span class="hljs-keyword">null</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在这个方法中，View 加载出来后，会调用其 checkResource 方法判断 View 是否存在，如果存在就返回 View，不存在就返回 null。</p>
+<p>这是一个非常关键的步骤，但是我们常用的视图对此的处理却不尽相同：</p>
+<ul>
+<li>FreeMarkerView：会老老实实检查。</li>
+<li>ThymeleafView：没有检查这个环节（Thymeleaf 的整个 View 体系不同于 FreeMarkerView 和 JstlView）。</li>
+<li>JstlView：检查结果总是返回 true。</li>
+</ul>
+<p>至此，我们就找到了所有的候选 View，但是大家需要注意，这个候选 View 不一定存在，在有 Thymeleaf 的情况下，返回的候选 View 不一定可用，在 JstlView 中，候选 View 也不一定真的存在。</p>
+<p>接下来调用 getBestView 方法，从所有的候选 View 中找到最佳的 View。getBestView 方法的逻辑比较简单，就是查找看所有 View 的 MediaType，然后和请求的 MediaType 数组进行匹配，第一个匹配上的就是最佳 View，这个过程它不会检查视图是否真的存在，所以就有可能选出来一个压根没有的视图，最终导致 404。</p>
+<p>这就是 ContentNegotiatingViewResolver#resolveViewName 方法的工作过程。</p>
+<p>那么这里还涉及到一个问题，ContentNegotiatingViewResolver 中的 ViewResolver 是从哪里来的？这个有两种来源：默认的和手动配置的。我们来看如下一段初始化代码：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">initServletContext</span><span class="hljs-params">(ServletContext servletContext)</span> </span>&#123;</span><br><span class="line">	Collection&lt;ViewResolver&gt; matchingBeans =</span><br><span class="line">			BeanFactoryUtils.beansOfTypeIncludingAncestors(obtainApplicationContext(), ViewResolver.class).values();</span><br><span class="line">	<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.viewResolvers == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		<span class="hljs-keyword">this</span>.viewResolvers = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;(matchingBeans.size());</span><br><span class="line">		<span class="hljs-keyword">for</span> (ViewResolver viewResolver : matchingBeans) &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span> != viewResolver) &#123;</span><br><span class="line">				<span class="hljs-keyword">this</span>.viewResolvers.add(viewResolver);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-keyword">this</span>.viewResolvers.size(); i++) &#123;</span><br><span class="line">			ViewResolver vr = <span class="hljs-keyword">this</span>.viewResolvers.get(i);</span><br><span class="line">			<span class="hljs-keyword">if</span> (matchingBeans.contains(vr)) &#123;</span><br><span class="line">				<span class="hljs-keyword">continue</span>;</span><br><span class="line">			&#125;</span><br><span class="line">			String name = vr.getClass().getName() + i;</span><br><span class="line">			obtainApplicationContext().getAutowireCapableBeanFactory().initializeBean(vr, name);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	AnnotationAwareOrderComparator.sort(<span class="hljs-keyword">this</span>.viewResolvers);</span><br><span class="line">	<span class="hljs-keyword">this</span>.cnmFactoryBean.setServletContext(servletContext);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>首先获取到 matchingBeans，这个是获取到了 Spring 容器中的所有视图解析器。</li>
+<li>如果 viewResolvers 变量为 null，也就是开发者没有给 ContentNegotiatingViewResolver 配置视图解析器，此时会把查到的 matchingBeans 赋值给 viewResolvers。</li>
+<li>如果开发者为 ContentNegotiatingViewResolver 配置了相关的视图解析器，则去检查这些视图解析器是否存在于 matchingBeans 中，如果不存在，则进行初始化操作。</li>
+</ol>
+<p>这就是 ContentNegotiatingViewResolver 所做的事情。</p>
+<h2 id="4-AbstractCachingViewResolver"><a href="#4-AbstractCachingViewResolver" class="headerlink" title="4.AbstractCachingViewResolver"></a>4.AbstractCachingViewResolver</h2><p>视图这种文件有一个特点，就是一旦开发好了不怎么变，所以将之缓存起来提高加载速度就显得尤为重要了。事实上我们使用的大部分视图解析器都是支持缓存功能，也即 AbstractCachingViewResolver 实际上有很多用武之地。</p>
+<p>我们先来大致了解一下 AbstractCachingViewResolver，然后再来学习它的子类。</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-meta">@Nullable</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> View <span class="hljs-title">resolveViewName</span><span class="hljs-params">(String viewName, Locale locale)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> (!isCache()) &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> createView(viewName, locale);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		Object cacheKey = getCacheKey(viewName, locale);</span><br><span class="line">		View view = <span class="hljs-keyword">this</span>.viewAccessCache.get(cacheKey);</span><br><span class="line">		<span class="hljs-keyword">if</span> (view == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			<span class="hljs-keyword">synchronized</span> (<span class="hljs-keyword">this</span>.viewCreationCache) &#123;</span><br><span class="line">				view = <span class="hljs-keyword">this</span>.viewCreationCache.get(cacheKey);</span><br><span class="line">				<span class="hljs-keyword">if</span> (view == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">					view = createView(viewName, locale);</span><br><span class="line">					<span class="hljs-keyword">if</span> (view == <span class="hljs-keyword">null</span> &amp;&amp; <span class="hljs-keyword">this</span>.cacheUnresolved) &#123;</span><br><span class="line">						view = UNRESOLVED_VIEW;</span><br><span class="line">					&#125;</span><br><span class="line">					<span class="hljs-keyword">if</span> (view != <span class="hljs-keyword">null</span> &amp;&amp; <span class="hljs-keyword">this</span>.cacheFilter.filter(view, viewName, locale)) &#123;</span><br><span class="line">						<span class="hljs-keyword">this</span>.viewAccessCache.put(cacheKey, view);</span><br><span class="line">						<span class="hljs-keyword">this</span>.viewCreationCache.put(cacheKey, view);</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">return</span> (view != UNRESOLVED_VIEW ? view : <span class="hljs-keyword">null</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>首先如果没有开启缓存，则直接调用 createView 方法创建视图返回。</li>
+<li>调用 getCacheKey 方法获取缓存的 key。</li>
+<li>去 viewAccessCache 中查找缓存 View，找到了就直接返回。</li>
+<li>去 viewCreationCache 中查找缓存 View，找到了就直接返回，没找到就调用 createView 方法创建新的 View，并将 View 放到两个缓存池中。</li>
+<li>这里有两个缓存池，两个缓存池的区别在于，viewAccessCache 的类型是 ConcurrentHashMap，而 viewCreationCache 的类型是 LinkedHashMap。前者支持并发访问，效率非常高；后者则限制了缓存最大数，效率低于前者。当后者缓存数量达到上限时，会自动删除它里边的元素，在删除自身元素的过程中，也会删除前者 viewAccessCache 中对应的元素。</li>
+</ol>
+<p>那么这里还涉及到一个方法，那就是 createView，我们也来稍微看一下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Nullable</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> View <span class="hljs-title">createView</span><span class="hljs-params">(String viewName, Locale locale)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> loadView(viewName, locale);</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-meta">@Nullable</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">abstract</span> View <span class="hljs-title">loadView</span><span class="hljs-params">(String viewName, Locale locale)</span> <span class="hljs-keyword">throws</span> Exception</span>;</span><br></pre></td></tr></table></figure>
+<p>可以看到，createView 中调用了 loadView，而 loadView 则是一个抽象方法，具体的实现要去子类中查看了。</p>
+<p>这就是缓存 View 的查找过程。</p>
+<p>直接继承 AbstractCachingViewResolver 的视图解析器有四种：ResourceBundleViewResolver、XmlViewResolver、UrlBasedViewResolver 以及 ThymeleafViewResolver，其中前两种从 Spring5.3 开始就已经被废弃掉了，因此这里松哥就不做过多介绍，我们主要来看下后两者。</p>
+<h3 id="4-1-UrlBasedViewResolver"><a href="#4-1-UrlBasedViewResolver" class="headerlink" title="4.1 UrlBasedViewResolver"></a>4.1 UrlBasedViewResolver</h3><p>UrlBasedViewResolver 重写了父类的 getCacheKey、createView、loadView 三个方法：</p>
+<p><strong>getCacheKey</strong></p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">getCacheKey</span><span class="hljs-params">(String viewName, Locale locale)</span> </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> viewName;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>父类的 getCacheKey 是 <code>viewName + &#39;_&#39; + locale</code>，现在变成了 viewName。</p>
+<p><strong>createView</strong></p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> View <span class="hljs-title">createView</span><span class="hljs-params">(String viewName, Locale locale)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> (!canHandle(viewName, locale)) &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> (viewName.startsWith(REDIRECT_URL_PREFIX)) &#123;</span><br><span class="line">		String redirectUrl = viewName.substring(REDIRECT_URL_PREFIX.length());</span><br><span class="line">		RedirectView view = <span class="hljs-keyword">new</span> RedirectView(redirectUrl,</span><br><span class="line">				isRedirectContextRelative(), isRedirectHttp10Compatible());</span><br><span class="line">		String[] hosts = getRedirectHosts();</span><br><span class="line">		<span class="hljs-keyword">if</span> (hosts != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			view.setHosts(hosts);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">return</span> applyLifecycleMethods(REDIRECT_URL_PREFIX, view);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> (viewName.startsWith(FORWARD_URL_PREFIX)) &#123;</span><br><span class="line">		String forwardUrl = viewName.substring(FORWARD_URL_PREFIX.length());</span><br><span class="line">		InternalResourceView view = <span class="hljs-keyword">new</span> InternalResourceView(forwardUrl);</span><br><span class="line">		<span class="hljs-keyword">return</span> applyLifecycleMethods(FORWARD_URL_PREFIX, view);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-keyword">super</span>.createView(viewName, locale);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>首先调用 canHandle 方法判断是否支持这里的逻辑视图。</li>
+<li>接下来判断逻辑视图名前缀是不是 <code>redirect:</code>，如果是，则表示这是一个重定向视图，则构造 RedirectView 进行处理。</li>
+<li>接下来判断逻辑视图名前缀是不是 <code>forward:</code>，如果是，则表示这是一个服务端跳转，则构造 InternalResourceView 进行处理。</li>
+<li>如果前面都不是，则调用父类的 createView 方法去构建视图，这最终会调用到子类的 loadView 方法。</li>
+</ol>
+<p><strong>loadView</strong></p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> View <span class="hljs-title">loadView</span><span class="hljs-params">(String viewName, Locale locale)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	AbstractUrlBasedView view = buildView(viewName);</span><br><span class="line">	View result = applyLifecycleMethods(viewName, view);</span><br><span class="line">	<span class="hljs-keyword">return</span> (view.checkResource(locale) ? result : <span class="hljs-keyword">null</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里边就干了三件事：</p>
+<ol>
+<li>调用 buildView 方法构建 View。</li>
+<li>调用 applyLifecycleMethods 方法完成 View 的初始化。</li>
+<li>检车 View 是否存在并返回。</li>
+</ol>
+<p>第三步比较简单，没啥好说的，主要就是检查视图文件是否存在，像我们常用的 Jsp 视图解析器以及 Freemarker 视图解析器都会去检查，但是 Thymeleaf 不会去检查（具体参见：<a href="https://mp.weixin.qq.com/s/jr6vXw48ackqoeF7FR5pcw" target="_blank" rel="noopener">SpringMVC 中如何同时存在多个视图解析器</a>一文）。这里主要是前两步，松哥要和大家着重说一下，这里又涉及到两个方法 buildView 和 applyLifecycleMethods。</p>
+<h4 id="4-1-1-buildView"><a href="#4-1-1-buildView" class="headerlink" title="4.1.1 buildView"></a>4.1.1 buildView</h4><p>这个方法就是用来构建视图的：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> AbstractUrlBasedView <span class="hljs-title">buildView</span><span class="hljs-params">(String viewName)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	AbstractUrlBasedView view = instantiateView();</span><br><span class="line">	view.setUrl(getPrefix() + viewName + getSuffix());</span><br><span class="line">	view.setAttributesMap(getAttributesMap());</span><br><span class="line">	String contentType = getContentType();</span><br><span class="line">	<span class="hljs-keyword">if</span> (contentType != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		view.setContentType(contentType);</span><br><span class="line">	&#125;</span><br><span class="line">	String requestContextAttribute = getRequestContextAttribute();</span><br><span class="line">	<span class="hljs-keyword">if</span> (requestContextAttribute != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		view.setRequestContextAttribute(requestContextAttribute);</span><br><span class="line">	&#125;</span><br><span class="line">	Boolean exposePathVariables = getExposePathVariables();</span><br><span class="line">	<span class="hljs-keyword">if</span> (exposePathVariables != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		view.setExposePathVariables(exposePathVariables);</span><br><span class="line">	&#125;</span><br><span class="line">	Boolean exposeContextBeansAsAttributes = getExposeContextBeansAsAttributes();</span><br><span class="line">	<span class="hljs-keyword">if</span> (exposeContextBeansAsAttributes != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		view.setExposeContextBeansAsAttributes(exposeContextBeansAsAttributes);</span><br><span class="line">	&#125;</span><br><span class="line">	String[] exposedContextBeanNames = getExposedContextBeanNames();</span><br><span class="line">	<span class="hljs-keyword">if</span> (exposedContextBeanNames != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		view.setExposedContextBeanNames(exposedContextBeanNames);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> view;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>首先调用 instantiateView 方法，根据我们在配置视图解析器时提供的 viewClass，构建一个 View 对象返回。</li>
+<li>给 view 配置 url，就是前缀+viewName+后缀，其中前缀后缀都是我们在配置视图解析器的时候提供的。</li>
+<li>同理，如果用户在配置视图解析器时提供了 content-type，也将其设置给 View 对象。</li>
+<li>配置 requestContext 的属性名称。</li>
+<li>配置 exposePathVariables，也就是通过 <code>@PathVaribale</code> 注解标记的参数信息。</li>
+<li>配置 exposeContextBeansAsAttributes，表示是否可以在 View 中使用容器中的 Bean，该参数我们可以在配置视图解析器时提供。</li>
+<li>配置 exposedContextBeanNames，表示可以在 View 中使用容器中的哪些 Bean，该参数我们可以在配置视图解析器时提供。</li>
+</ol>
+<p>就这样，视图就构建好了，是不是非常 easy！</p>
+<h4 id="4-1-2-applyLifecycleMethods"><a href="#4-1-2-applyLifecycleMethods" class="headerlink" title="4.1.2 applyLifecycleMethods"></a>4.1.2 applyLifecycleMethods</h4><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> View <span class="hljs-title">applyLifecycleMethods</span><span class="hljs-params">(String viewName, AbstractUrlBasedView view)</span> </span>&#123;</span><br><span class="line">	ApplicationContext context = getApplicationContext();</span><br><span class="line">	<span class="hljs-keyword">if</span> (context != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		Object initialized = context.getAutowireCapableBeanFactory().initializeBean(view, viewName);</span><br><span class="line">		<span class="hljs-keyword">if</span> (initialized <span class="hljs-keyword">instanceof</span> View) &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> (View) initialized;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> view;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个就是 Bean 的初始化，没啥好说的。</p>
+<p>UrlBasedViewResolver 的子类还是比较多的，其中有两个比较有代表性的，分别是我们使用 JSP 时所用的 InternalResourceViewResolver 以及当我们使用 Freemarker 时所用的 FreeMarkerViewResolver，由于这两个我们比较常见，因此松哥在这里再和大家介绍一下这两个组件。</p>
+<h3 id="4-2-InternalResourceViewResolver"><a href="#4-2-InternalResourceViewResolver" class="headerlink" title="4.2 InternalResourceViewResolver"></a>4.2 InternalResourceViewResolver</h3><p>当我们使用 JSP 时，可能会用到这个视图解析器。</p>
+<p>InternalResourceViewResolver 主要干了 4 件事：</p>
+<ol>
+<li>通过 requiredViewClass 方法规定了视图。</li>
+</ol>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-keyword">protected</span> Class&lt;?&gt; requiredViewClass() &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> InternalResourceView.class;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>在构造方法中调用 requiredViewClass 方法去确定视图，如果项目中引入了 JSTL，则会将视图调整为 JstlView。</li>
+<li>重写了 instantiateView 方法，会根据实际情况初始化不同的 View：</li>
+</ol>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> AbstractUrlBasedView <span class="hljs-title">instantiateView</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> (getViewClass() == InternalResourceView.class ? <span class="hljs-keyword">new</span> InternalResourceView() :</span><br><span class="line">			(getViewClass() == JstlView.class ? <span class="hljs-keyword">new</span> JstlView() : <span class="hljs-keyword">super</span>.instantiateView()));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>会根据实际情况初始化 InternalResourceView 或者 JstlView，或者调用父类的方法完成 View 的初始化。</p>
+<ol start="4">
+<li>buildView 方法也重写了，如下：</li>
+</ol>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> AbstractUrlBasedView <span class="hljs-title">buildView</span><span class="hljs-params">(String viewName)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	InternalResourceView view = (InternalResourceView) <span class="hljs-keyword">super</span>.buildView(viewName);</span><br><span class="line">	<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.alwaysInclude != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">		view.setAlwaysInclude(<span class="hljs-keyword">this</span>.alwaysInclude);</span><br><span class="line">	&#125;</span><br><span class="line">	view.setPreventDispatchLoop(<span class="hljs-keyword">true</span>);</span><br><span class="line">	<span class="hljs-keyword">return</span> view;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里首先调用父类方法构建出 InternalResourceView，然后配置 alwaysInclude，表示是否允许在使用 forward 的情况下也允许使用 include，最后面的 setPreventDispatchLoop 方法则是防止循环调用。</p>
+<h3 id="4-3-FreeMarkerViewResolver"><a href="#4-3-FreeMarkerViewResolver" class="headerlink" title="4.3 FreeMarkerViewResolver"></a>4.3 FreeMarkerViewResolver</h3><p>FreeMarkerViewResolver 和 UrlBasedViewResolver 之间还隔了一个 AbstractTemplateViewResolver，AbstractTemplateViewResolver 比较简单，里边只是多出来了五个属性而已，这五个属性松哥在之前和大家分享 Freemarker 用法的时候都已经说过了（参见：<a href="https://mp.weixin.qq.com/s/1TZfOBMtrTJ7qKHEduLUEw" target="_blank" rel="noopener">Spring Boot + Freemarker 中的弯弯绕！</a>），这里再和大家啰嗦下：</p>
+<ol>
+<li>exposeRequestAttributes：是否将 RequestAttributes 暴露给 View 使用。</li>
+<li>allowRequestOverride：当 RequestAttributes 和 Model 中的数据同名时，是否允许 RequestAttributes 中的参数覆盖 Model 中的同名参数。</li>
+<li>exposeSessionAttributes：是否将 SessionAttributes 暴露给 View 使用。</li>
+<li>allowSessionOverride：当 SessionAttributes 和 Model 中的数据同名时，是否允许 SessionAttributes 中的参数覆盖 Model 中的同名参数。</li>
+<li>exposeSpringMacroHelpers：是否将 RequestContext 暴露出来供 Spring Macro 使用。</li>
+</ol>
+<p>这就是 AbstractTemplateViewResolver 特性，比较简单，再来看 FreeMarkerViewResolver。</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">FreeMarkerViewResolver</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">AbstractTemplateViewResolver</span> </span>&#123;</span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">FreeMarkerViewResolver</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">		setViewClass(requiredViewClass());</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">FreeMarkerViewResolver</span><span class="hljs-params">(String prefix, String suffix)</span> </span>&#123;</span><br><span class="line">		<span class="hljs-keyword">this</span>();</span><br><span class="line">		setPrefix(prefix);</span><br><span class="line">		setSuffix(suffix);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-meta">@Override</span></span><br><span class="line">	<span class="hljs-keyword">protected</span> Class&lt;?&gt; requiredViewClass() &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> FreeMarkerView.class;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-meta">@Override</span></span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">protected</span> AbstractUrlBasedView <span class="hljs-title">instantiateView</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> (getViewClass() == FreeMarkerView.class ? <span class="hljs-keyword">new</span> FreeMarkerView() : <span class="hljs-keyword">super</span>.instantiateView());</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>FreeMarkerViewResolver 的源码就很简单了，配置一下前后缀、重写 requiredViewClass 方法提供 FreeMarkerView，重写 instantiateView 方法完成 View 的初始化。</p>
+<p>ThymeleafViewResolver 继承自 AbstractCachingViewResolver，具体的工作流程和前面的差不多，因此这里也就不做过多介绍了。需要注意的是，ThymeleafViewResolver#loadView 方法并不会去检查视图模版是否存在，所以有可能会最终会返回一个不存在的视图（参见：<a href="https://mp.weixin.qq.com/s/jr6vXw48ackqoeF7FR5pcw" target="_blank" rel="noopener">SpringMVC 中如何同时存在多个视图解析器</a>一文）。</p>
+<h2 id="5-ViewResolverComposite"><a href="#5-ViewResolverComposite" class="headerlink" title="5.ViewResolverComposite"></a>5.ViewResolverComposite</h2><p>最后我们再来看下 ViewResolverComposite，ViewResolverComposite 其实我们在前面的源码分析中已经多次见到过这种模式了，通过 ViewResolverComposite 来代理其他的 ViewResolver，不同的是，这里的 ViewResolverComposite 还为其他 ViewResolver 做了一些初始化操作。为对应的 ViewResolver 分别配置了 applicationContext 以及 servletContext。这里的代码比较简单，我就不贴出来了，最后在 ViewResolverComposite#resolveViewName 方法中，遍历其他视图解析器进行处理：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-meta">@Nullable</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> View <span class="hljs-title">resolveViewName</span><span class="hljs-params">(String viewName, Locale locale)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">for</span> (ViewResolver viewResolver : <span class="hljs-keyword">this</span>.viewResolvers) &#123;</span><br><span class="line">		View view = viewResolver.resolveViewName(viewName, locale);</span><br><span class="line">		<span class="hljs-keyword">if</span> (view != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> view;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="6-小结"><a href="#6-小结" class="headerlink" title="6.小结"></a>6.小结</h2><p>好啦，今天主要和小伙伴们聊了下 SpringMVC 中视图解析器的工作流程，结合松哥之前的文章<a href="https://mp.weixin.qq.com/s/jr6vXw48ackqoeF7FR5pcw" target="_blank" rel="noopener">SpringMVC 中如何同时存在多个视图解析器</a>，相信大家对于 SpringMVC 中的视图解析器的理解会更进一步。</p>
+<p>好啦，今天就先和大家聊这么多～</p>
+
+                    <!--<div class="asb-post-01">
+                        <div class="mask"></div>
+                        <div class="info" style="display: flex;justify-content:center;flex-direction:column;align-items:center">
+                                <div>扫码关注微信公众号：<span style="color: #E9405A; font-weight: bold;">江南一点雨</span></div>
+                                <div>
+                                    <span>发送 </span><span class="token" style="color: #e9415a; font-weight: bold; font-size: 17px; margin-bottom: 45px;">290992</span>
+                                </div>
+                                <div>
+                                    即可<span style="color: #e9415a; font-weight: bold;">立即永久</span>解锁本站全部文章（注意区分大小写哦）
+                                </div>
+                            <div>
+                                <img class="code-img" style="width: 300px;display:unset" src="https://www.javaboy.org/images/sb/javaboy.jpg">
+                            </div>
+                        </div>
+                    </div>-->
+                </div>
+        
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/SSM/">SSM</a>, <a class="has-link-grey -link" href="/tags/SpringMVC/">SpringMVC</a>
+                </div>
+            </div>
+        </div>
+		<div class="level is-size-6">
+						<p>喜欢这篇文章吗？扫码关注公众号<b>【江南一点雨】</b>，<b>【江南一点雨】</b>专注于 SPRING BOOT+微服务以及前后端分离技术，每天推送原创技术干货，关注后回复 JAVA，领取松哥为你精心准备的 JAVA 干货!
+</p>
+		</div>
+		<div class="level is-size-7 is-uppercase">
+<img class="menu-label has-text-centered" src="http://www.javaboy.org/images/sb/javaboy.jpg" alt>
+		</div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">觉得不错，可以给小编加个鸡腿</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="https://www.javaboy.org/images/sb/weixin_pay.png" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2021/0401/springmvc-handleradapter.html">
+                <span class="level-item">SpringMVC 九大组件之 HandlerAdapter 深入分析</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+	<section id="comments"></section>
+	<script src="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/gitment.browser.js"></script>
+	<!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/default.css"/>-->
+	<link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+	<script>
+		if (document.getElementById('comments')) {
+			var gitment = new Gitment({
+				id: '2021/0402/springmvc-viewresolver.html'.length>50?'2021/0402/springmvc-viewresolver.html'.substring(0,50):'2021/0402/springmvc-viewresolver.html',
+				owner: 'lenve',
+				repo: 'javaboy_comment',
+				oauth: {
+					client_id: 'ecc1a65d7b7baf6a495c',
+					client_secret: '427ecd90ada169afa77fc164509449905dd37f67',
+				},
+			})
+			gitment.render('comments')
+		}
+	</script>
+	
+    </div>
+</div>
+<style>
+.lock {
+    position: relative;
+    overflow: hidden;
+    padding-bottom: 30px;
+}
+.asb-post-01 {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    display: block;
+    z-index: 10000;
+    margin-bottom: 0;
+}
+.asb-post-01 .info {
+    background: white;
+    height: 370px;
+}
+.asb-post-01 .mask {
+    height: 240px;
+    width: 100%;
+    background: -webkit-gradient(linear, 0 top, 0 bottom, from(rgba(255, 255, 255, 0)), to(#fff));
+}
+</style>
+<!--<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script>
+function getCookie(name) {
+	var value = "; " + document.cookie;
+	var parts = value.split("; " + name + "=");
+	if (parts.length == 2)
+		return parts.pop().split(";").shift();
+}
+
+function getToken() {
+	let value = getCookie('UM_distinctid');
+	if (!value) {
+		return defaultToken;
+	}
+	return value.substring(value.length - 6).toUpperCase();
+}
+
+
+
+// 文章所在容器的选择器
+// var articleSelector = 'article.article-content';
+
+// DOM 完全就绪时执行
+$(function() {
+    // 找到文章所在的容器
+    var $article = $("#content");
+    console.log($article)
+	if ($article.length > 0) {
+		// 文章的实际高度
+		var article = $article[0], height = article.clientHeight;
+		// 文章隐藏后的高度
+		var halfHeight = height * 0.3;
+		
+		// 篇幅短一点的文章就不需要解锁了
+		if (halfHeight > 800) {
+			
+            // 获取口令
+            var mytoken = window.localStorage.getItem("javaboytoken")
+            var token;
+            if(mytoken){
+                token=mytoken
+            }else{
+                token = 'B'+getToken();
+                window.localStorage.setItem("javaboytoken",token)
+            }
+			$('.asb-post-01').find('.token').text(token);
+			
+var _lock = function() {
+	$article.css('height', halfHeight + 'px');
+	$article.addClass('lock');
+	$('.asb-post-01').css('display', 'block');
+}
+
+var _unlock = function() {
+	$article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+
+// 查询后端的结果
+var _detect = function() {
+	$.ajax({
+		url : 'http://blog-wx.itboyhub.com/wx/checktoken',
+		method : 'GET',
+		data : {
+			token : token
+		},
+		success : function(data) {
+			if (data.locked === true) {
+				_lock();
+			} else {
+				_unlock();
+			}
+		},
+		error : function(data) {
+			_unlock();
+		}
+	})
+}
+
+_detect();
+setInterval(function() {
+    _detect();
+}, 5000);
+}else{
+    $article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+    }
+});
+</script>-->
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="江南一点雨">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>China· ShenZhen</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        418
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        58
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        112
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/lenve" target="_blank">
+                扫码关注微信公众号</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="Github" href="https://github.com/lenve">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="envelope" href="mailto:wangsong0210@gmail.com">
+                
+                <i class="fa fa-envelope"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="RSS" href="/atom.xml">
+                
+                <i class="fas fa-rss"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/2019/">
+            <span class="level-start">
+                <span class="level-item">2019</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Blog/">
+            <span class="level-start">
+                <span class="level-item">Blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Chrome/">
+            <span class="level-start">
+                <span class="level-item">Chrome</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Docker/">
+            <span class="level-start">
+                <span class="level-item">Docker</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/ElasticSearch/">
+            <span class="level-start">
+                <span class="level-item">ElasticSearch</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/FastDFS/">
+            <span class="level-start">
+                <span class="level-item">FastDFS</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Git/">
+            <span class="level-start">
+                <span class="level-item">Git</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/GitHub/">
+            <span class="level-start">
+                <span class="level-item">GitHub</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/HUAWEI/">
+            <span class="level-start">
+                <span class="level-item">HUAWEI</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IDEA/">
+            <span class="level-start">
+                <span class="level-item">IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IntelliJ-IDEA/">
+            <span class="level-start">
+                <span class="level-item">IntelliJ IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Java/">
+            <span class="level-start">
+                <span class="level-item">Java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/JavaWeb/">
+            <span class="level-start">
+                <span class="level-item">JavaWeb</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MacBookPro/">
+            <span class="level-start">
+                <span class="level-item">MacBookPro</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Maven/">
+            <span class="level-start">
+                <span class="level-item">Maven</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MongoDB/">
+            <span class="level-start">
+                <span class="level-item">MongoDB</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MyBatis/">
+            <span class="level-start">
+                <span class="level-item">MyBatis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MySQL/">
+            <span class="level-start">
+                <span class="level-item">MySQL</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">10</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Nginx/">
+            <span class="level-start">
+                <span class="level-item">Nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/OAuth2/">
+            <span class="level-start">
+                <span class="level-item">OAuth2</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">11</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Redis/">
+            <span class="level-start">
+                <span class="level-item">Redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Resume/">
+            <span class="level-start">
+                <span class="level-item">Resume</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SSM/">
+            <span class="level-start">
+                <span class="level-item">SSM</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">20</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring/">
+            <span class="level-start">
+                <span class="level-item">Spring</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">13</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Boot/">
+            <span class="level-start">
+                <span class="level-item">Spring Boot</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">127</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Cloud/">
+            <span class="level-start">
+                <span class="level-item">Spring Cloud</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Security/">
+            <span class="level-start">
+                <span class="level-item">Spring Security</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">54</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringBoot/">
+            <span class="level-start">
+                <span class="level-item">SpringBoot</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringMVC/">
+            <span class="level-start">
+                <span class="level-item">SpringMVC</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringSecurity/">
+            <span class="level-start">
+                <span class="level-item">SpringSecurity</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Transaction/">
+            <span class="level-start">
+                <span class="level-item">Transaction</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/blog/">
+            <span class="level-start">
+                <span class="level-item">blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/docker/">
+            <span class="level-start">
+                <span class="level-item">docker</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/domain/">
+            <span class="level-start">
+                <span class="level-item">domain</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/hexo/">
+            <span class="level-start">
+                <span class="level-item">hexo</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/idea/">
+            <span class="level-start">
+                <span class="level-item">idea</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/java/">
+            <span class="level-start">
+                <span class="level-item">java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/life/">
+            <span class="level-start">
+                <span class="level-item">life</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/mail/">
+            <span class="level-start">
+                <span class="level-item">mail</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/nginx/">
+            <span class="level-start">
+                <span class="level-item">nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/redis/">
+            <span class="level-start">
+                <span class="level-item">redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/transaction/">
+            <span class="level-start">
+                <span class="level-item">transaction</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vhr/">
+            <span class="level-start">
+                <span class="level-item">vhr</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vue/">
+            <span class="level-start">
+                <span class="level-item">vue</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/weixin/">
+            <span class="level-start">
+                <span class="level-item">weixin</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/侃侃而谈/">
+            <span class="level-start">
+                <span class="level-item">侃侃而谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">16</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/前后端分离/">
+            <span class="level-start">
+                <span class="level-item">前后端分离</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/外包/">
+            <span class="level-start">
+                <span class="level-item">外包</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/学习资源/">
+            <span class="level-start">
+                <span class="level-item">学习资源</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">7</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/工具/">
+            <span class="level-start">
+                <span class="level-item">工具</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微人事/">
+            <span class="level-start">
+                <span class="level-item">微人事</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微服务/">
+            <span class="level-start">
+                <span class="level-item">微服务</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/杂谈/">
+            <span class="level-start">
+                <span class="level-item">杂谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/生活/">
+            <span class="level-start">
+                <span class="level-item">生活</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/程序人生/">
+            <span class="level-start">
+                <span class="level-item">程序人生</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/资料/">
+            <span class="level-start">
+                <span class="level-item">资料</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/面试/">
+            <span class="level-start">
+                <span class="level-item">面试</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/项目实战/">
+            <span class="level-start">
+                <span class="level-item">项目实战</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/2019-article/" style="font-size: 10px;">2019-article</a> <a href="/tags/Actuator/" style="font-size: 10px;">Actuator</a> <a href="/tags/Blog/" style="font-size: 10px;">Blog</a> <a href="/tags/Bug/" style="font-size: 10px;">Bug</a> <a href="/tags/CAS/" style="font-size: 11.67px;">CAS</a> <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 10.56px;">Chrome</a> <a href="/tags/Docker/" style="font-size: 11.67px;">Docker</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/ElasticSearch/" style="font-size: 11.67px;">ElasticSearch</a> <a href="/tags/ElasticSerach/" style="font-size: 10px;">ElasticSerach</a> <a href="/tags/Eureka/" style="font-size: 10px;">Eureka</a> <a href="/tags/FastDFS/" style="font-size: 11.11px;">FastDFS</a> <a href="/tags/Flyway/" style="font-size: 10px;">Flyway</a> <a href="/tags/Freemarker/" style="font-size: 11.11px;">Freemarker</a> <a href="/tags/Git/" style="font-size: 13.89px;">Git</a> <a href="/tags/GitHub/" style="font-size: 10.56px;">GitHub</a> <a href="/tags/Https/" style="font-size: 10px;">Https</a> <a href="/tags/IDEA/" style="font-size: 13.33px;">IDEA</a> <a href="/tags/IDEA，EasyCode/" style="font-size: 10px;">IDEA，EasyCode</a> <a href="/tags/IntelliJ-IDEA/" style="font-size: 11.11px;">IntelliJ IDEA</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/Java/" style="font-size: 11.11px;">Java</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 10.56px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 11.11px;">Jpa</a> <a href="/tags/LiveReload/" style="font-size: 10px;">LiveReload</a> <a href="/tags/Log/" style="font-size: 10px;">Log</a> <a href="/tags/MacBook/" style="font-size: 10px;">MacBook</a> <a href="/tags/MacBookPro/" style="font-size: 10px;">MacBookPro</a> <a href="/tags/Mail/" style="font-size: 10px;">Mail</a> <a href="/tags/Maven/" style="font-size: 12.22px;">Maven</a> <a href="/tags/MongoDB/" style="font-size: 17.78px;">MongoDB</a> <a href="/tags/MyBatis/" style="font-size: 14.44px;">MyBatis</a> <a href="/tags/MyCat/" style="font-size: 11.67px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 15px;">MySQL</a> <a href="/tags/Nacos/" style="font-size: 10px;">Nacos</a> <a href="/tags/Nginx/" style="font-size: 10.56px;">Nginx</a> <a href="/tags/OAuth2/" style="font-size: 15.56px;">OAuth2</a> <a href="/tags/PicGo/" style="font-size: 10px;">PicGo</a> <a href="/tags/Plugin/" style="font-size: 10px;">Plugin</a> <a href="/tags/RabbitMQ/" style="font-size: 10.56px;">RabbitMQ</a> <a href="/tags/Redis/" style="font-size: 18.89px;">Redis</a> <a href="/tags/Resume/" style="font-size: 10px;">Resume</a> <a href="/tags/SSM/" style="font-size: 17.22px;">SSM</a> <a href="/tags/Shiro/" style="font-size: 10px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 16.67px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Cloud/" style="font-size: 11.67px;">Spring Cloud</a> <a href="/tags/Spring-Data/" style="font-size: 10.56px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 19.44px;">Spring Security</a> <a href="/tags/SpringBoot/" style="font-size: 15.56px;">SpringBoot</a> <a href="/tags/SpringMVC/" style="font-size: 18.33px;">SpringMVC</a> <a href="/tags/SpringSecurity/" style="font-size: 10px;">SpringSecurity</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Swagger3/" style="font-size: 10px;">Swagger3</a> <a href="/tags/Tencent/" style="font-size: 10px;">Tencent</a> <a href="/tags/Thymeleaf/" style="font-size: 10.56px;">Thymeleaf</a> <a href="/tags/Transaction/" style="font-size: 10px;">Transaction</a> <a href="/tags/Video/" style="font-size: 10px;">Video</a> <a href="/tags/ViewResolver/" style="font-size: 10px;">ViewResolver</a> <a href="/tags/Vue/" style="font-size: 16.11px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/blog/" style="font-size: 10.56px;">blog</a> <a href="/tags/docker/" style="font-size: 13.89px;">docker</a> <a href="/tags/domain/" style="font-size: 10px;">domain</a> <a href="/tags/es/" style="font-size: 12.22px;">es</a> <a href="/tags/hdz/" style="font-size: 10px;">hdz</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/huawei/" style="font-size: 10px;">huawei</a> <a href="/tags/i18n/" style="font-size: 10px;">i18n</a> <a href="/tags/idea/" style="font-size: 10px;">idea</a> <a href="/tags/java/" style="font-size: 10px;">java</a> <a href="/tags/life/" style="font-size: 16.11px;">life</a> <a href="/tags/mail/" style="font-size: 10px;">mail</a> <a href="/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/router/" style="font-size: 10px;">router</a> <a href="/tags/transaction/" style="font-size: 10.56px;">transaction</a> <a href="/tags/vhr/" style="font-size: 12.78px;">vhr</a> <a href="/tags/vue/" style="font-size: 10px;">vue</a> <a href="/tags/vuepress/" style="font-size: 10px;">vuepress</a> <a href="/tags/weixin/" style="font-size: 11.11px;">weixin</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/七牛云/" style="font-size: 10px;">七牛云</a> <a href="/tags/中间件/" style="font-size: 10px;">中间件</a> <a href="/tags/侃侃而谈/" style="font-size: 15.56px;">侃侃而谈</a> <a href="/tags/分布式锁/" style="font-size: 10px;">分布式锁</a> <a href="/tags/前后端分离/" style="font-size: 12.22px;">前后端分离</a> <a href="/tags/单体应用/" style="font-size: 10px;">单体应用</a> <a href="/tags/外包/" style="font-size: 10.56px;">外包</a> <a href="/tags/学习资源/" style="font-size: 12.22px;">学习资源</a> <a href="/tags/工具/" style="font-size: 10.56px;">工具</a> <a href="/tags/干货汇总/" style="font-size: 10px;">干货汇总</a> <a href="/tags/微人事/" style="font-size: 10.56px;">微人事</a> <a href="/tags/微服务/" style="font-size: 10.56px;">微服务</a> <a href="/tags/杂谈/" style="font-size: 12.78px;">杂谈</a> <a href="/tags/条件注解/" style="font-size: 10px;">条件注解</a> <a href="/tags/源码解析/" style="font-size: 11.67px;">源码解析</a> <a href="/tags/源码解读/" style="font-size: 13.33px;">源码解读</a> <a href="/tags/生活/" style="font-size: 11.11px;">生活</a> <a href="/tags/私活/" style="font-size: 10px;">私活</a> <a href="/tags/程序人生/" style="font-size: 10.56px;">程序人生</a> <a href="/tags/程序员/" style="font-size: 10px;">程序员</a> <a href="/tags/腾讯/" style="font-size: 10px;">腾讯</a> <a href="/tags/自学/" style="font-size: 10px;">自学</a> <a href="/tags/视频/" style="font-size: 10px;">视频</a> <a href="/tags/视频教程/" style="font-size: 10px;">视频教程</a> <a href="/tags/资料/" style="font-size: 10px;">资料</a> <a href="/tags/逆向工程/" style="font-size: 10.56px;">逆向工程</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow  ">
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-04-02T06:54:42.000Z">2021-04-02</time></div>
+                    <a href="/2021/0402/springmvc-viewresolver.html" class="has-link-black-ter is-size-6">SpringMVC 九大组件之 ViewResolver 深入分析</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-04-01T06:54:57.000Z">2021-04-01</time></div>
+                    <a href="/2021/0401/springmvc-handleradapter.html" class="has-link-black-ter is-size-6">SpringMVC 九大组件之 HandlerAdapter 深入分析</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-03-31T06:58:00.000Z">2021-03-31</time></div>
+                    <a href="/2021/0331/springmvc-handlermethod.html" class="has-link-black-ter is-size-6">Spring Boot 定义接口的方法是否可以声明为 private？</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-03-30T06:58:11.000Z">2021-03-30</time></div>
+                    <a href="/2021/0330/sessionattribute.html" class="has-link-black-ter is-size-6">接口参数 Model 中的数据放在 session 中还是 request 中？</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-03-26T06:58:28.000Z">2021-03-26</time></div>
+                    <a href="/2021/0326/springmvc-handlermapping.html" class="has-link-black-ter is-size-6">SpringMVC 九大组件之 HandlerMapping 深入分析</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">13</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">5</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">8</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">7</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">4</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">9</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">22</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">21</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">23</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">25</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">25</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">20</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">40</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">17</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">22</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">12</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">43</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">16</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">26</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+            
+
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            友链
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itboyhub.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">江南一点雨-国内站(速度快)</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itboyhub.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.ityouknow.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">纯洁的微笑</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.ityouknow.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://bugstack.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">bugstack虫洞栈</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">bugstack.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itwanger.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">沉默王二</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itwanger.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://tanqingbo.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">IT码农</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">tanqingbo.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.cxyxiaowu.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">五分钟学算法</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.cxyxiaowu.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.justdojava.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 极客技术</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.justdojava.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cxytiandi.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">猿天地</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cxytiandi.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://vimjc.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Vim教程网</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">vimjc.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://muggle.javaboy.org/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">muggle</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">muggle.javaboy.org</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://crossoverjie.top/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">crossoverJie&#39;s Blog</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">crossoverjie.top</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cmsblogs.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 技术驿站</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cmsblogs.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://maizitoday.github.io/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">麦子的博客</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">maizitoday.github.io</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.haoservice.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">码农code之路</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.haoservice.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.jitwxs.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Jitwxs</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.jitwxs.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.gameboys.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 烂笔头</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.gameboys.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.a2data.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">A2Data</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.a2data.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.itechyou.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">I Tech You, 我教你！</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itechyou.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="SpringMVC 九大组件之 ViewResolver 深入分析" height="28">
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2021 江南一点雨&nbsp;
+				<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><!--
+PV <span id="busuanzi_value_site_pv"></span>&nbsp;|&nbsp;<i class="fa fa-user-md"></i>  UV <span id="busuanzi_value_site_uv"></span>&nbsp;-->
+				<script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? "https://" : "http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1276890692'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s96.cnzz.com/z_stat.php%3Fid%3D1276890692%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+				<a href="http://www.beian.miit.gov.cn/" style="color: black;">粤ICP备19111220号</a>
+                <!--Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么...">
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>
