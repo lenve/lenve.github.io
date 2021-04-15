@@ -1,0 +1,1821 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head><meta name="generator" content="Hexo 3.8.0">
+    <meta charset="utf-8">
+<title>什么年代了，你还不知道 Servlet3.0 中的文件上传方式？ - 江南一点雨</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+
+
+    <meta name="description" content="其实文件上传这块松哥之前和大家聊过很多次了，这次因为最近正在进行 SpringMVC 的源码分析，所以又再次把这个话题拉出来“鞭尸”，不过这次松哥想从源码角度来聊聊这个话题。">
+<meta name="keywords" content="SpringMVC,SSM">
+<meta property="og:type" content="article">
+<meta property="og:title" content="什么年代了，你还不知道 Servlet3.0 中的文件上传方式？">
+<meta property="og:url" content="http://www.javaboy.org/2021/0415/servlet3.0-fileupload.html">
+<meta property="og:site_name" content="江南一点雨">
+<meta property="og:description" content="其实文件上传这块松哥之前和大家聊过很多次了，这次因为最近正在进行 SpringMVC 的源码分析，所以又再次把这个话题拉出来“鞭尸”，不过这次松哥想从源码角度来聊聊这个话题。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="http://www.javaboy.org/images/og_image.png">
+<meta property="og:updated_time" content="2021-04-15T09:31:39.747Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="什么年代了，你还不知道 Servlet3.0 中的文件上传方式？">
+<meta name="twitter:description" content="其实文件上传这块松哥之前和大家聊过很多次了，这次因为最近正在进行 SpringMVC 的源码分析，所以又再次把这个话题拉出来“鞭尸”，不过这次松哥想从源码角度来聊聊这个话题。">
+<meta name="twitter:image" content="http://www.javaboy.org/images/og_image.png">
+
+
+
+
+
+
+
+<link rel="icon" href="https://www.javaboy.org/favicon.ico">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-2-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+                
+                <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="什么年代了，你还不知道 Servlet3.0 中的文件上传方式？" height="28">
+                
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item" href="/">江南一点雨</a>
+                
+                <a class="navbar-item" href="/archives">归档</a>
+                
+                <a class="navbar-item" href="/fronted-backend">前后端分离</a>
+                
+                <a class="navbar-item" href="http://spring.javaboy.org">Spring</a>
+                
+                <a class="navbar-item" href="http://springmvc.javaboy.org">SpringMVC</a>
+                
+                <a class="navbar-item" href="http://mybatis.javaboy.org">MyBatis</a>
+                
+                <a class="navbar-item" href="http://springboot.javaboy.org">Spring Boot</a>
+                
+                <a class="navbar-item" href="http://www.javaboy.org/springsecurity">Spring Security</a>
+                
+                <a class="navbar-item" href="http://maven.javaboy.org">Maven</a>
+                
+                <a class="navbar-item" href="/redis">Redis</a>
+                
+                <a class="navbar-item" href="/mongodb">MongoDB</a>
+                
+                <a class="navbar-item" href="/mysql">MySQL</a>
+                
+                <a class="navbar-item" href="/docker">Docker</a>
+                
+                <a class="navbar-item" href="/git">Git</a>
+                
+                <a class="navbar-item" href="/about">About</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                
+                
+                <a class="navbar-item search" style="height: 40px;line-height: 60px;width: 180px;margin: 12px 15px;box-sizing: border-box;border: 1px solid #dedede;border-radius: 20px;display: flex;justify-content: space-between;padding-left: 12px;padding-right: 10px" title="搜索" href="javascript:;">
+                    <!--<div style="border: 1px solid #dedede;border-radius: 10px;">-->
+                    <div>搜索</div>
+                        <i class="fas fa-search"></i>
+                    <!--</div>-->
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2021-04-15T09:30:35.000Z">2021-04-15</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    18 分钟 读完 (大约 2711 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                什么年代了，你还不知道 Servlet3.0 中的文件上传方式？
+            
+        </h1>
+        
+            <div class="content" id="content">
+                    <p>其实文件上传这块松哥之前和大家聊过很多次了，这次因为最近正在进行 SpringMVC 的源码分析，所以又再次把这个话题拉出来“鞭尸”，不过这次松哥想从源码角度来聊聊这个话题。</p>
+<a id="more"></a>
+<p>理解源码的前提是先会用，所以我们还是先来看看用法，然后再来分析源码。</p>
+<h2 id="1-两种文件解析方案"><a href="#1-两种文件解析方案" class="headerlink" title="1.两种文件解析方案"></a>1.两种文件解析方案</h2><p>对于上传文件的请求，SpringMVC 中目前共有两种不同的解析方案：</p>
+<ul>
+<li>StandardServletMultipartResolver</li>
+<li>CommonsMultipartResolver</li>
+</ul>
+<p>StandardServletMultipartResolver 支持 Servlet3.0 中标准的文件上传方案，使用非常简单；CommonsMultipartResolver 则需要结合 Apache Commons fileupload 组件一起使用，这种方式兼容低版本的 Servlet。</p>
+<p><strong>StandardServletMultipartResolver</strong></p>
+<p>先来回顾下 StandardServletMultipartResolver 的用法。</p>
+<p>使用 StandardServletMultipartResolver，可以直接通过 HttpServletRequest 自带的 getPart 方法获取上传文件并保存，这是一种标准的操作方式，这种方式也不用添加任何额外的依赖，只需要确保 Servlet 的版本在 3.0 之上即可。</p>
+<p>首先我们需要为 Servlet 配置 <code>multipart-config</code>，哪个 Servlet 负责处理上传文件，就为哪个 Servlet 配置 <code>multipart-config</code>。在 SpringMVC 中，我们的请求都是通过 DispatcherServlet 进行分发的，所以我们就为 DispatcherServlet 配置 <code>multipart-config</code>。</p>
+<p>配置方式如下：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">servlet</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">servlet-name</span>&gt;</span>springmvc<span class="hljs-tag">&lt;/<span class="hljs-name">servlet-name</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">servlet-class</span>&gt;</span>org.springframework.web.servlet.DispatcherServlet<span class="hljs-tag">&lt;/<span class="hljs-name">serv</span></span></span><br><span class="line">    &lt;init-param&gt;</span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">param-name</span>&gt;</span>contextConfigLocation<span class="hljs-tag">&lt;/<span class="hljs-name">param-name</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">param-value</span>&gt;</span>classpath:spring-servlet.xml<span class="hljs-tag">&lt;/<span class="hljs-name">param-value</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">init-param</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">multipart-config</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">location</span>&gt;</span>/tmp<span class="hljs-tag">&lt;/<span class="hljs-name">location</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">max-file-size</span>&gt;</span>1024<span class="hljs-tag">&lt;/<span class="hljs-name">max-file-size</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">max-request-size</span>&gt;</span>10240<span class="hljs-tag">&lt;/<span class="hljs-name">max-request-size</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">multipart-config</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">servlet</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">servlet-mapping</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">servlet-name</span>&gt;</span>springmvc<span class="hljs-tag">&lt;/<span class="hljs-name">servlet-name</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">url-pattern</span>&gt;</span>/<span class="hljs-tag">&lt;/<span class="hljs-name">url-pattern</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">servlet-mapping</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>然后在 SpringMVC 的配置文件中提供一个 StandardServletMultipartResolver 实例，注意该实例的 id 必须为 multipartResolver（具体原因参见：<a href="https://mp.weixin.qq.com/s/IeMOfnXhOX5RCf4i5Xsdzw" target="_blank" rel="noopener">SpringMVC 初始化流程分析</a>一文）。</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"org.springframework.web.multipart.support.StandardServletMultipartResolver"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"multipartResolver"</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>配置完成后，我们就可以开发一个文件上传接口了，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@RestController</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">FileUploadController</span> </span>&#123;</span><br><span class="line">    SimpleDateFormat sdf = <span class="hljs-keyword">new</span> SimpleDateFormat(<span class="hljs-string">"/yyyy/MM/dd/"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@PostMapping</span>(<span class="hljs-string">"/upload"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">fileUpload</span><span class="hljs-params">(MultipartFile file, HttpServletRequest req)</span> </span>&#123;</span><br><span class="line">        String format = sdf.format(<span class="hljs-keyword">new</span> Date());</span><br><span class="line">        String realPath = req.getServletContext().getRealPath(<span class="hljs-string">"/img"</span>) + format;</span><br><span class="line">        File folder = <span class="hljs-keyword">new</span> File(realPath);</span><br><span class="line">        <span class="hljs-keyword">if</span> (!folder.exists()) &#123;</span><br><span class="line">            folder.mkdirs();</span><br><span class="line">        &#125;</span><br><span class="line">        String oldName = file.getOriginalFilename();</span><br><span class="line">        String newName = UUID.randomUUID().toString() + oldName.substring(oldName.lastIndexOf(<span class="hljs-string">"."</span>));</span><br><span class="line">        <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">            file.transferTo(<span class="hljs-keyword">new</span> File(folder, newName));</span><br><span class="line">            <span class="hljs-keyword">return</span> req.getScheme() + <span class="hljs-string">"://"</span> + req.getRemoteHost() + <span class="hljs-string">":"</span> + req.getServerPort() + <span class="hljs-string">"/img"</span> + format + newName;</span><br><span class="line">        &#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-string">"error"</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@PostMapping</span>(<span class="hljs-string">"/upload2"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">fileUpload2</span><span class="hljs-params">(HttpServletRequest req)</span> <span class="hljs-keyword">throws</span> IOException, ServletException </span>&#123;</span><br><span class="line">        StandardServletMultipartResolver resolver = <span class="hljs-keyword">new</span> StandardServletMultipartResolver();</span><br><span class="line">        MultipartFile file = resolver.resolveMultipart(req).getFile(<span class="hljs-string">"file"</span>);</span><br><span class="line">        String format = sdf.format(<span class="hljs-keyword">new</span> Date());</span><br><span class="line">        String realPath = req.getServletContext().getRealPath(<span class="hljs-string">"/img"</span>) + format;</span><br><span class="line">        File folder = <span class="hljs-keyword">new</span> File(realPath);</span><br><span class="line">        <span class="hljs-keyword">if</span> (!folder.exists()) &#123;</span><br><span class="line">            folder.mkdirs();</span><br><span class="line">        &#125;</span><br><span class="line">        String oldName = file.getOriginalFilename();</span><br><span class="line">        String newName = UUID.randomUUID().toString() + oldName.substring(oldName.lastIndexOf(<span class="hljs-string">"."</span>));</span><br><span class="line">        <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">            file.transferTo(<span class="hljs-keyword">new</span> File(folder, newName));</span><br><span class="line">            <span class="hljs-keyword">return</span> req.getScheme() + <span class="hljs-string">"://"</span> + req.getRemoteHost() + <span class="hljs-string">":"</span> + req.getServerPort() + <span class="hljs-string">"/img"</span> + format + newName;</span><br><span class="line">        &#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-string">"error"</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@PostMapping</span>(<span class="hljs-string">"/upload3"</span>)</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">fileUpload3</span><span class="hljs-params">(HttpServletRequest req)</span> <span class="hljs-keyword">throws</span> IOException, ServletException </span>&#123;</span><br><span class="line">        String other_param = req.getParameter(<span class="hljs-string">"other_param"</span>);</span><br><span class="line">        System.out.println(<span class="hljs-string">"other_param = "</span> + other_param);</span><br><span class="line">        String format = sdf.format(<span class="hljs-keyword">new</span> Date());</span><br><span class="line">        String realPath = req.getServletContext().getRealPath(<span class="hljs-string">"/img"</span>) + format;</span><br><span class="line">        File folder = <span class="hljs-keyword">new</span> File(realPath);</span><br><span class="line">        <span class="hljs-keyword">if</span> (!folder.exists()) &#123;</span><br><span class="line">            folder.mkdirs();</span><br><span class="line">        &#125;</span><br><span class="line">        Part filePart = req.getPart(<span class="hljs-string">"file"</span>);</span><br><span class="line">        String oldName = filePart.getSubmittedFileName();</span><br><span class="line">        String newName = UUID.randomUUID().toString() + oldName.substring(oldName.lastIndexOf(<span class="hljs-string">"."</span>));</span><br><span class="line">        <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">            filePart.write(realPath + newName);</span><br><span class="line">            <span class="hljs-keyword">return</span> req.getScheme() + <span class="hljs-string">"://"</span> + req.getRemoteHost() + <span class="hljs-string">":"</span> + req.getServerPort() + <span class="hljs-string">"/img"</span> + format + newName;</span><br><span class="line">        &#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-string">"error"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我这里一共提供了三个文件上传接口，其实最终都是通过 StandardServletMultipartResolver 进行处理的。</p>
+<ol>
+<li>第一个接口是我们在 SpringMVC 框架中常见的一种文件上传处理方式，直接在参数中写上 MultipartFile，这个 MultipartFile 其实就是从当前请求中解析出来的，具体负责参数解析工作的就是 RequestParamMethodArgumentResolver。</li>
+<li>第二个接口其实是一种古老的文件上传实现方案，参数就是普通的 HttpServletRequest，然后在参数里边，我们再手动利用 StandardServletMultipartResolver 实例进行解析（<strong>这种情况可以不用自己 new 一个 StandardServletMultipartResolver 实例，直接将 Spring 容器中的注入进来即可</strong>）。</li>
+<li>第三个接口我们就利用了 Servlet3.0 的 API，调用 getPart 获取文件，然后再调用对象的 write 方法将文件写出去即可。</li>
+</ol>
+<p>大致上一看，感觉办法还挺多，其实仔细看，万变不离其宗，一会我们看完源码，相信小伙伴们还能变化出更多写法。</p>
+<p><strong>CommonsMultipartResolver</strong></p>
+<p>CommonsMultipartResolver 估计很多人都比较熟悉，这个兼容性很好，就是有点过时了。使用 CommonsMultipartResolver 需要我们首先引入 commons-fileupload 依赖：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>commons-fileupload<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>commons-fileupload<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>1.4<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>然后在 SpringMVC 的配置文件中提供 CommonsMultipartResolver 实例，如下：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"org.springframework.web.multipart.commons.CommonsMultipartResolver"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"multipartResolver"</span>&gt;</span>--&gt;</span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>接下来开发文件上传接口就行了：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@PostMapping</span>(<span class="hljs-string">"/upload"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">fileUpload</span><span class="hljs-params">(MultipartFile file, HttpServletRequest req)</span> </span>&#123;</span><br><span class="line">    String format = sdf.format(<span class="hljs-keyword">new</span> Date());</span><br><span class="line">    String realPath = req.getServletContext().getRealPath(<span class="hljs-string">"/img"</span>) + format;</span><br><span class="line">    File folder = <span class="hljs-keyword">new</span> File(realPath);</span><br><span class="line">    <span class="hljs-keyword">if</span> (!folder.exists()) &#123;</span><br><span class="line">        folder.mkdirs();</span><br><span class="line">    &#125;</span><br><span class="line">    String oldName = file.getOriginalFilename();</span><br><span class="line">    String newName = UUID.randomUUID().toString() + oldName.substring(oldName.lastIndexOf(<span class="hljs-string">"."</span>));</span><br><span class="line">    <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">        file.transferTo(<span class="hljs-keyword">new</span> File(folder, newName));</span><br><span class="line">        <span class="hljs-keyword">return</span> req.getScheme() + <span class="hljs-string">"://"</span> + req.getRemoteHost() + <span class="hljs-string">":"</span> + req.getServerPort() + <span class="hljs-string">"/img"</span> + format + newName;</span><br><span class="line">    &#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-keyword">return</span> <span class="hljs-string">"error"</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个就没啥好说，比较容易。</p>
+<p>文件上传这块松哥之前在视频中也和大家分享过，公号后台回复 ssm 可以查看视频详情。</p>
+<p>用法掌握了，接下来我们来看原理。</p>
+<h2 id="2-StandardServletMultipartResolver"><a href="#2-StandardServletMultipartResolver" class="headerlink" title="2.StandardServletMultipartResolver"></a>2.StandardServletMultipartResolver</h2><p>不废话，直接来看看源码：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">StandardServletMultipartResolver</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">MultipartResolver</span> </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">private</span> <span class="hljs-keyword">boolean</span> resolveLazily = <span class="hljs-keyword">false</span>;</span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setResolveLazily</span><span class="hljs-params">(<span class="hljs-keyword">boolean</span> resolveLazily)</span> </span>&#123;</span><br><span class="line">		<span class="hljs-keyword">this</span>.resolveLazily = resolveLazily;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-meta">@Override</span></span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">isMultipart</span><span class="hljs-params">(HttpServletRequest request)</span> </span>&#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> StringUtils.startsWithIgnoreCase(request.getContentType(), <span class="hljs-string">"multipart/"</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-meta">@Override</span></span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">public</span> MultipartHttpServletRequest <span class="hljs-title">resolveMultipart</span><span class="hljs-params">(HttpServletRequest request)</span> <span class="hljs-keyword">throws</span> MultipartException </span>&#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> StandardMultipartHttpServletRequest(request, <span class="hljs-keyword">this</span>.resolveLazily);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-meta">@Override</span></span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">cleanupMultipart</span><span class="hljs-params">(MultipartHttpServletRequest request)</span> </span>&#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> (!(request <span class="hljs-keyword">instanceof</span> AbstractMultipartHttpServletRequest) ||</span><br><span class="line">				((AbstractMultipartHttpServletRequest) request).isResolved()) &#123;</span><br><span class="line">			<span class="hljs-keyword">try</span> &#123;</span><br><span class="line">				<span class="hljs-keyword">for</span> (Part part : request.getParts()) &#123;</span><br><span class="line">					<span class="hljs-keyword">if</span> (request.getFile(part.getName()) != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">						part.delete();</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里满打满算就四个方法，其中一个还是 set 方法，我们来看另外三个功能性方法：</p>
+<ol>
+<li>isMultipart：这个方法主要是用来判断当前请求是不是文件上传请求，这里的判断思路很简单，就看请求的 content-type 是不是以 <code>multipart/</code> 开头，如果是，则这就是一个文件上传请求，否则就不是文件上传请求。</li>
+<li>resolveMultipart：这个方法负责将当前请求封装一个 StandardMultipartHttpServletRequest 对象然后返回。</li>
+<li>cleanupMultipart：这个方法负责善后，主要完成了缓存的清理工作。</li>
+</ol>
+<p>在这个过程中涉及到 StandardMultipartHttpServletRequest 对象，我们也来稍微说一下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">StandardMultipartHttpServletRequest</span><span class="hljs-params">(HttpServletRequest request, <span class="hljs-keyword">boolean</span> lazyParsing)</span></span></span><br><span class="line"><span class="hljs-function">		<span class="hljs-keyword">throws</span> MultipartException </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">super</span>(request);</span><br><span class="line">	<span class="hljs-keyword">if</span> (!lazyParsing) &#123;</span><br><span class="line">		parseRequest(request);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">parseRequest</span><span class="hljs-params">(HttpServletRequest request)</span> </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">try</span> &#123;</span><br><span class="line">		Collection&lt;Part&gt; parts = request.getParts();</span><br><span class="line">		<span class="hljs-keyword">this</span>.multipartParameterNames = <span class="hljs-keyword">new</span> LinkedHashSet&lt;&gt;(parts.size());</span><br><span class="line">		MultiValueMap&lt;String, MultipartFile&gt; files = <span class="hljs-keyword">new</span> LinkedMultiValueMap&lt;&gt;(parts.size());</span><br><span class="line">		<span class="hljs-keyword">for</span> (Part part : parts) &#123;</span><br><span class="line">			String headerValue = part.getHeader(HttpHeaders.CONTENT_DISPOSITION);</span><br><span class="line">			ContentDisposition disposition = ContentDisposition.parse(headerValue);</span><br><span class="line">			String filename = disposition.getFilename();</span><br><span class="line">			<span class="hljs-keyword">if</span> (filename != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">				<span class="hljs-keyword">if</span> (filename.startsWith(<span class="hljs-string">"=?"</span>) &amp;&amp; filename.endsWith(<span class="hljs-string">"?="</span>)) &#123;</span><br><span class="line">					filename = MimeDelegate.decode(filename);</span><br><span class="line">				&#125;</span><br><span class="line">				files.add(part.getName(), <span class="hljs-keyword">new</span> StandardMultipartFile(part, filename));</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">				<span class="hljs-keyword">this</span>.multipartParameterNames.add(part.getName());</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		setMultipartFiles(files);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">		handleParseFailure(ex);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>StandardMultipartHttpServletRequest 对象在构建的过程中，会自动进行请求解析，调用 getParts 方法获取所有的项，然后进行判断，将文件和普通参数分别保存下来备用。</p>
+<p>这块的逻辑比较简单。</p>
+<h2 id="3-CommonsMultipartResolver"><a href="#3-CommonsMultipartResolver" class="headerlink" title="3.CommonsMultipartResolver"></a>3.CommonsMultipartResolver</h2><p>再来看 CommonsMultipartResolver。</p>
+<p>先来看它的 isMultipart 方法：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">isMultipart</span><span class="hljs-params">(HttpServletRequest request)</span> </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> ServletFileUpload.isMultipartContent(request);</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">isMultipartContent</span><span class="hljs-params">(</span></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-params">        HttpServletRequest request)</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">if</span> (!POST_METHOD.equalsIgnoreCase(request.getMethod())) &#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-keyword">return</span> FileUploadBase.isMultipartContent(<span class="hljs-keyword">new</span> ServletRequestContext(request));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>ServletFileUpload.isMultipartContent 方法其实就在我们引入的 <code>commons-fileupload</code> 包中。它的判断逻辑分两步：首先检查是不是 POST 请求，然后检查 content-type 是不是以 <code>multipart/</code> 开始。</p>
+<p>再来看它的 resolveMultipart 方法：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> MultipartHttpServletRequest <span class="hljs-title">resolveMultipart</span><span class="hljs-params">(<span class="hljs-keyword">final</span> HttpServletRequest request)</span> <span class="hljs-keyword">throws</span> MultipartException </span>&#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.resolveLazily) &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> DefaultMultipartHttpServletRequest(request) &#123;</span><br><span class="line">			<span class="hljs-meta">@Override</span></span><br><span class="line">			<span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">initializeMultipart</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">				MultipartParsingResult parsingResult = parseRequest(request);</span><br><span class="line">				setMultipartFiles(parsingResult.getMultipartFiles());</span><br><span class="line">				setMultipartParameters(parsingResult.getMultipartParameters());</span><br><span class="line">				setMultipartParameterContentTypes(parsingResult.getMultipartParameterContentTypes());</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		MultipartParsingResult parsingResult = parseRequest(request);</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> DefaultMultipartHttpServletRequest(request, parsingResult.getMultipartFiles(),</span><br><span class="line">				parsingResult.getMultipartParameters(), parsingResult.getMultipartParameterContentTypes());</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>根据 resolveLazily 属性值，选择两种不同的策略将当前对象重新构建成一个 DefaultMultipartHttpServletRequest 对象。如果 resolveLazily 为 true，则在 initializeMultipart 方法中进行请求解析，否则先解析，再构建 DefaultMultipartHttpServletRequest 对象。</p>
+<p>具体的解析方法如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> MultipartParsingResult <span class="hljs-title">parseRequest</span><span class="hljs-params">(HttpServletRequest request)</span> <span class="hljs-keyword">throws</span> MultipartException </span>&#123;</span><br><span class="line">	String encoding = determineEncoding(request);</span><br><span class="line">	FileUpload fileUpload = prepareFileUpload(encoding);</span><br><span class="line">	<span class="hljs-keyword">try</span> &#123;</span><br><span class="line">		List&lt;FileItem&gt; fileItems = ((ServletFileUpload) fileUpload).parseRequest(request);</span><br><span class="line">		<span class="hljs-keyword">return</span> parseFileItems(fileItems, encoding);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">catch</span> (FileUploadBase.SizeLimitExceededException ex) &#123;</span><br><span class="line">		<span class="hljs-comment">//...</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">protected</span> MultipartParsingResult <span class="hljs-title">parseFileItems</span><span class="hljs-params">(List&lt;FileItem&gt; fileItems, String encoding)</span> </span>&#123;</span><br><span class="line">	MultiValueMap&lt;String, MultipartFile&gt; multipartFiles = <span class="hljs-keyword">new</span> LinkedMultiValueMap&lt;&gt;();</span><br><span class="line">	Map&lt;String, String[]&gt; multipartParameters = <span class="hljs-keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">	Map&lt;String, String&gt; multipartParameterContentTypes = <span class="hljs-keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">	<span class="hljs-keyword">for</span> (FileItem fileItem : fileItems) &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> (fileItem.isFormField()) &#123;</span><br><span class="line">			String value;</span><br><span class="line">			String partEncoding = determineEncoding(fileItem.getContentType(), encoding);</span><br><span class="line">			<span class="hljs-keyword">try</span> &#123;</span><br><span class="line">				value = fileItem.getString(partEncoding);</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">catch</span> (UnsupportedEncodingException ex) &#123;</span><br><span class="line">				value = fileItem.getString();</span><br><span class="line">			&#125;</span><br><span class="line">			String[] curParam = multipartParameters.get(fileItem.getFieldName());</span><br><span class="line">			<span class="hljs-keyword">if</span> (curParam == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">				multipartParameters.put(fileItem.getFieldName(), <span class="hljs-keyword">new</span> String[] &#123;value&#125;);</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">				String[] newParam = StringUtils.addStringToArray(curParam, value);</span><br><span class="line">				multipartParameters.put(fileItem.getFieldName(), newParam);</span><br><span class="line">			&#125;</span><br><span class="line">			multipartParameterContentTypes.put(fileItem.getFieldName(), fileItem.getContentType());</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			CommonsMultipartFile file = createMultipartFile(fileItem);</span><br><span class="line">			multipartFiles.add(file.getName(), file);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> MultipartParsingResult(multipartFiles, multipartParameters, multipartParameterContentTypes);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里的解析就是首先获取到 FileItem 集合，然后调用 parseFileItems 方法进行进一步的解析。在进一步的解析中，会首先判断这是文件还是普通参数，如果是普通参数，则保存到 multipartParameters 中，具体保存过程中还会判断是否为数组，然后再将参数的 ContentType 保存到 multipartParameterContentTypes 中，文件则保存到 multipartFiles 中，最后由三个 Map 构成一个 MultipartParsingResult 对象并返回。</p>
+<p>至此，StandardServletMultipartResolver 和 CommonsMultipartResolver 源码就和大家说完了，可以看到，还是比较容易的。</p>
+<h2 id="4-解析流程"><a href="#4-解析流程" class="headerlink" title="4.解析流程"></a>4.解析流程</h2><p>最后，我们再来梳理一下解析流程。</p>
+<p>以如下接口为例（因为在实际开发中一般都是通过如下方式上传文件）：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@PostMapping</span>(<span class="hljs-string">"/upload"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">fileUpload</span><span class="hljs-params">(MultipartFile file, HttpServletRequest req)</span> </span>&#123;</span><br><span class="line">    String format = sdf.format(<span class="hljs-keyword">new</span> Date());</span><br><span class="line">    String realPath = req.getServletContext().getRealPath(<span class="hljs-string">"/img"</span>) + format;</span><br><span class="line">    File folder = <span class="hljs-keyword">new</span> File(realPath);</span><br><span class="line">    <span class="hljs-keyword">if</span> (!folder.exists()) &#123;</span><br><span class="line">        folder.mkdirs();</span><br><span class="line">    &#125;</span><br><span class="line">    String oldName = file.getOriginalFilename();</span><br><span class="line">    String newName = UUID.randomUUID().toString() + oldName.substring(oldName.lastIndexOf(<span class="hljs-string">"."</span>));</span><br><span class="line">    <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">        file.transferTo(<span class="hljs-keyword">new</span> File(folder, newName));</span><br><span class="line">        <span class="hljs-keyword">return</span> req.getScheme() + <span class="hljs-string">"://"</span> + req.getRemoteHost() + <span class="hljs-string">":"</span> + req.getServerPort() + <span class="hljs-string">"/img"</span> + format + newName;</span><br><span class="line">    &#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-keyword">return</span> <span class="hljs-string">"error"</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里 MultipartFile 对象主要就是在参数解析器中获取的，关于参数解析器，大家可以参考：<a href="https://mp.weixin.qq.com/s/qsS6Dwr6eXx07i5dhn8FEA" target="_blank" rel="noopener">深入分析 SpringMVC 参数解析器</a> 一文，这里涉及到的参数解析器是 RequestParamMethodArgumentResolver。</p>
+<p>在 RequestParamMethodArgumentResolver#resolveName 方法中有如下一行代码：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">if</span> (servletRequest != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">	Object mpArg = MultipartResolutionDelegate.resolveMultipartArgument(name, parameter, servletRequest);</span><br><span class="line">	<span class="hljs-keyword">if</span> (mpArg != MultipartResolutionDelegate.UNRESOLVABLE) &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> mpArg;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个方法会进行请求解析，返回 MultipartFile 对象或者 MultipartFile 数组。</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Nullable</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> Object <span class="hljs-title">resolveMultipartArgument</span><span class="hljs-params">(String name, MethodParameter parameter, HttpServletRequest request)</span></span></span><br><span class="line"><span class="hljs-function">		<span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	MultipartHttpServletRequest multipartRequest =</span><br><span class="line">			WebUtils.getNativeRequest(request, MultipartHttpServletRequest.class);</span><br><span class="line">	<span class="hljs-keyword">boolean</span> isMultipart = (multipartRequest != <span class="hljs-keyword">null</span> || isMultipartContent(request));</span><br><span class="line">	<span class="hljs-keyword">if</span> (MultipartFile.class == parameter.getNestedParameterType()) &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> (!isMultipart) &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> (multipartRequest == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			multipartRequest = <span class="hljs-keyword">new</span> StandardMultipartHttpServletRequest(request);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">return</span> multipartRequest.getFile(name);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (isMultipartFileCollection(parameter)) &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> (!isMultipart) &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> (multipartRequest == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			multipartRequest = <span class="hljs-keyword">new</span> StandardMultipartHttpServletRequest(request);</span><br><span class="line">		&#125;</span><br><span class="line">		List&lt;MultipartFile&gt; files = multipartRequest.getFiles(name);</span><br><span class="line">		<span class="hljs-keyword">return</span> (!files.isEmpty() ? files : <span class="hljs-keyword">null</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (isMultipartFileArray(parameter)) &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> (!isMultipart) &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> (multipartRequest == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">			multipartRequest = <span class="hljs-keyword">new</span> StandardMultipartHttpServletRequest(request);</span><br><span class="line">		&#125;</span><br><span class="line">		List&lt;MultipartFile&gt; files = multipartRequest.getFiles(name);</span><br><span class="line">		<span class="hljs-keyword">return</span> (!files.isEmpty() ? files.toArray(<span class="hljs-keyword">new</span> MultipartFile[<span class="hljs-number">0</span>]) : <span class="hljs-keyword">null</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (Part.class == parameter.getNestedParameterType()) &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> (!isMultipart) &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">return</span> request.getPart(name);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (isPartCollection(parameter)) &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> (!isMultipart) &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		List&lt;Part&gt; parts = resolvePartList(request, name);</span><br><span class="line">		<span class="hljs-keyword">return</span> (!parts.isEmpty() ? parts : <span class="hljs-keyword">null</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (isPartArray(parameter)) &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> (!isMultipart) &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		List&lt;Part&gt; parts = resolvePartList(request, name);</span><br><span class="line">		<span class="hljs-keyword">return</span> (!parts.isEmpty() ? parts.toArray(<span class="hljs-keyword">new</span> Part[<span class="hljs-number">0</span>]) : <span class="hljs-keyword">null</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> UNRESOLVABLE;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先获取 multipartRequest 对象，然后再从中获取文件或者文件数组。如果我们使用 StandardServletMultipartResolver 做文件上传，这里获取到的 multipartRequest 就是 StandardMultipartHttpServletRequest；如果我们使用 CommonsMultipartResolver 做文件上传，这里获取到的 multipartRequest 就是 DefaultMultipartHttpServletRequest。</p>
+<h2 id="5-小结"><a href="#5-小结" class="headerlink" title="5.小结"></a>5.小结</h2><p>好啦，今天就和大家简单分析了下两个文件上传组件的源码，至此，SpringMVC 九大组件我们已经分析了 7 个啦，还剩两个，即将完结，完结后松哥会整理成 pdf 分享给大家。</p>
+
+                    <!--<div class="asb-post-01">
+                        <div class="mask"></div>
+                        <div class="info" style="display: flex;justify-content:center;flex-direction:column;align-items:center">
+                                <div>扫码关注微信公众号：<span style="color: #E9405A; font-weight: bold;">江南一点雨</span></div>
+                                <div>
+                                    <span>发送 </span><span class="token" style="color: #e9415a; font-weight: bold; font-size: 17px; margin-bottom: 45px;">290992</span>
+                                </div>
+                                <div>
+                                    即可<span style="color: #e9415a; font-weight: bold;">立即永久</span>解锁本站全部文章（注意区分大小写哦）
+                                </div>
+                            <div>
+                                <img class="code-img" style="width: 300px;display:unset" src="https://www.javaboy.org/images/sb/javaboy.jpg">
+                            </div>
+                        </div>
+                    </div>-->
+                </div>
+        
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/SSM/">SSM</a>, <a class="has-link-grey -link" href="/tags/SpringMVC/">SpringMVC</a>
+                </div>
+            </div>
+        </div>
+		<div class="level is-size-6">
+						<p>喜欢这篇文章吗？扫码关注公众号<b>【江南一点雨】</b>，<b>【江南一点雨】</b>专注于 SPRING BOOT+微服务以及前后端分离技术，每天推送原创技术干货，关注后回复 JAVA，领取松哥为你精心准备的 JAVA 干货!
+</p>
+		</div>
+		<div class="level is-size-7 is-uppercase">
+<img class="menu-label has-text-centered" src="http://www.javaboy.org/images/sb/javaboy.jpg" alt>
+		</div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">觉得不错，可以给小编加个鸡腿</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="https://www.javaboy.org/images/sb/weixin_pay.png" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2021/0414/spring-boot-starter.html">
+                <span class="level-item">Spring Boot 项目总是创建失败，这几个备选方案一定要收藏</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+	<section id="comments"></section>
+	<script src="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/gitment.browser.js"></script>
+	<!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/default.css"/>-->
+	<link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+	<script>
+		if (document.getElementById('comments')) {
+			var gitment = new Gitment({
+				id: '2021/0415/servlet3.0-fileupload.html'.length>50?'2021/0415/servlet3.0-fileupload.html'.substring(0,50):'2021/0415/servlet3.0-fileupload.html',
+				owner: 'lenve',
+				repo: 'javaboy_comment',
+				oauth: {
+					client_id: 'ecc1a65d7b7baf6a495c',
+					client_secret: '427ecd90ada169afa77fc164509449905dd37f67',
+				},
+			})
+			gitment.render('comments')
+		}
+	</script>
+	
+    </div>
+</div>
+<style>
+.lock {
+    position: relative;
+    overflow: hidden;
+    padding-bottom: 30px;
+}
+.asb-post-01 {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    display: block;
+    z-index: 10000;
+    margin-bottom: 0;
+}
+.asb-post-01 .info {
+    background: white;
+    height: 370px;
+}
+.asb-post-01 .mask {
+    height: 240px;
+    width: 100%;
+    background: -webkit-gradient(linear, 0 top, 0 bottom, from(rgba(255, 255, 255, 0)), to(#fff));
+}
+</style>
+<!--<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script>
+function getCookie(name) {
+	var value = "; " + document.cookie;
+	var parts = value.split("; " + name + "=");
+	if (parts.length == 2)
+		return parts.pop().split(";").shift();
+}
+
+function getToken() {
+	let value = getCookie('UM_distinctid');
+	if (!value) {
+		return defaultToken;
+	}
+	return value.substring(value.length - 6).toUpperCase();
+}
+
+
+
+// 文章所在容器的选择器
+// var articleSelector = 'article.article-content';
+
+// DOM 完全就绪时执行
+$(function() {
+    // 找到文章所在的容器
+    var $article = $("#content");
+    console.log($article)
+	if ($article.length > 0) {
+		// 文章的实际高度
+		var article = $article[0], height = article.clientHeight;
+		// 文章隐藏后的高度
+		var halfHeight = height * 0.3;
+		
+		// 篇幅短一点的文章就不需要解锁了
+		if (halfHeight > 800) {
+			
+            // 获取口令
+            var mytoken = window.localStorage.getItem("javaboytoken")
+            var token;
+            if(mytoken){
+                token=mytoken
+            }else{
+                token = 'B'+getToken();
+                window.localStorage.setItem("javaboytoken",token)
+            }
+			$('.asb-post-01').find('.token').text(token);
+			
+var _lock = function() {
+	$article.css('height', halfHeight + 'px');
+	$article.addClass('lock');
+	$('.asb-post-01').css('display', 'block');
+}
+
+var _unlock = function() {
+	$article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+
+// 查询后端的结果
+var _detect = function() {
+	$.ajax({
+		url : 'http://blog-wx.itboyhub.com/wx/checktoken',
+		method : 'GET',
+		data : {
+			token : token
+		},
+		success : function(data) {
+			if (data.locked === true) {
+				_lock();
+			} else {
+				_unlock();
+			}
+		},
+		error : function(data) {
+			_unlock();
+		}
+	})
+}
+
+_detect();
+setInterval(function() {
+    _detect();
+}, 5000);
+}else{
+    $article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+    }
+});
+</script>-->
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="江南一点雨">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>China· ShenZhen</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        424
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        59
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        113
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/lenve" target="_blank">
+                扫码关注微信公众号</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="Github" href="https://github.com/lenve">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="envelope" href="mailto:wangsong0210@gmail.com">
+                
+                <i class="fa fa-envelope"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="RSS" href="/atom.xml">
+                
+                <i class="fas fa-rss"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/2019/">
+            <span class="level-start">
+                <span class="level-item">2019</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Blog/">
+            <span class="level-start">
+                <span class="level-item">Blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Chrome/">
+            <span class="level-start">
+                <span class="level-item">Chrome</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Docker/">
+            <span class="level-start">
+                <span class="level-item">Docker</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/ElasticSearch/">
+            <span class="level-start">
+                <span class="level-item">ElasticSearch</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/FastDFS/">
+            <span class="level-start">
+                <span class="level-item">FastDFS</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Git/">
+            <span class="level-start">
+                <span class="level-item">Git</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/GitHub/">
+            <span class="level-start">
+                <span class="level-item">GitHub</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/HUAWEI/">
+            <span class="level-start">
+                <span class="level-item">HUAWEI</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IDEA/">
+            <span class="level-start">
+                <span class="level-item">IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IntelliJ-IDEA/">
+            <span class="level-start">
+                <span class="level-item">IntelliJ IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Java/">
+            <span class="level-start">
+                <span class="level-item">Java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/JavaWeb/">
+            <span class="level-start">
+                <span class="level-item">JavaWeb</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MacBookPro/">
+            <span class="level-start">
+                <span class="level-item">MacBookPro</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Maven/">
+            <span class="level-start">
+                <span class="level-item">Maven</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MongoDB/">
+            <span class="level-start">
+                <span class="level-item">MongoDB</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MyBatis/">
+            <span class="level-start">
+                <span class="level-item">MyBatis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MySQL/">
+            <span class="level-start">
+                <span class="level-item">MySQL</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">10</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Nginx/">
+            <span class="level-start">
+                <span class="level-item">Nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/OAuth2/">
+            <span class="level-start">
+                <span class="level-item">OAuth2</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">11</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Redis/">
+            <span class="level-start">
+                <span class="level-item">Redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Resume/">
+            <span class="level-start">
+                <span class="level-item">Resume</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SSM/">
+            <span class="level-start">
+                <span class="level-item">SSM</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">23</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Shiro/">
+            <span class="level-start">
+                <span class="level-item">Shiro</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring/">
+            <span class="level-start">
+                <span class="level-item">Spring</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">13</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Boot/">
+            <span class="level-start">
+                <span class="level-item">Spring Boot</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">127</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Cloud/">
+            <span class="level-start">
+                <span class="level-item">Spring Cloud</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Security/">
+            <span class="level-start">
+                <span class="level-item">Spring Security</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">54</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringBoot/">
+            <span class="level-start">
+                <span class="level-item">SpringBoot</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">9</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringMVC/">
+            <span class="level-start">
+                <span class="level-item">SpringMVC</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringSecurity/">
+            <span class="level-start">
+                <span class="level-item">SpringSecurity</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Transaction/">
+            <span class="level-start">
+                <span class="level-item">Transaction</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/blog/">
+            <span class="level-start">
+                <span class="level-item">blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/docker/">
+            <span class="level-start">
+                <span class="level-item">docker</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/domain/">
+            <span class="level-start">
+                <span class="level-item">domain</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/hexo/">
+            <span class="level-start">
+                <span class="level-item">hexo</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/idea/">
+            <span class="level-start">
+                <span class="level-item">idea</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/java/">
+            <span class="level-start">
+                <span class="level-item">java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/life/">
+            <span class="level-start">
+                <span class="level-item">life</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/mail/">
+            <span class="level-start">
+                <span class="level-item">mail</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/nginx/">
+            <span class="level-start">
+                <span class="level-item">nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/redis/">
+            <span class="level-start">
+                <span class="level-item">redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/transaction/">
+            <span class="level-start">
+                <span class="level-item">transaction</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vhr/">
+            <span class="level-start">
+                <span class="level-item">vhr</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vue/">
+            <span class="level-start">
+                <span class="level-item">vue</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/weixin/">
+            <span class="level-start">
+                <span class="level-item">weixin</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/侃侃而谈/">
+            <span class="level-start">
+                <span class="level-item">侃侃而谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">16</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/前后端分离/">
+            <span class="level-start">
+                <span class="level-item">前后端分离</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/外包/">
+            <span class="level-start">
+                <span class="level-item">外包</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/学习资源/">
+            <span class="level-start">
+                <span class="level-item">学习资源</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">7</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/工具/">
+            <span class="level-start">
+                <span class="level-item">工具</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微人事/">
+            <span class="level-start">
+                <span class="level-item">微人事</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微服务/">
+            <span class="level-start">
+                <span class="level-item">微服务</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/杂谈/">
+            <span class="level-start">
+                <span class="level-item">杂谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/生活/">
+            <span class="level-start">
+                <span class="level-item">生活</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/程序人生/">
+            <span class="level-start">
+                <span class="level-item">程序人生</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/资料/">
+            <span class="level-start">
+                <span class="level-item">资料</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/面试/">
+            <span class="level-start">
+                <span class="level-item">面试</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/项目实战/">
+            <span class="level-start">
+                <span class="level-item">项目实战</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/2019-article/" style="font-size: 10px;">2019-article</a> <a href="/tags/Actuator/" style="font-size: 10px;">Actuator</a> <a href="/tags/Blog/" style="font-size: 10px;">Blog</a> <a href="/tags/Bug/" style="font-size: 10px;">Bug</a> <a href="/tags/CAS/" style="font-size: 11.67px;">CAS</a> <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 10.56px;">Chrome</a> <a href="/tags/Docker/" style="font-size: 11.67px;">Docker</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/ElasticSearch/" style="font-size: 11.67px;">ElasticSearch</a> <a href="/tags/ElasticSerach/" style="font-size: 10px;">ElasticSerach</a> <a href="/tags/Eureka/" style="font-size: 10px;">Eureka</a> <a href="/tags/FastDFS/" style="font-size: 11.11px;">FastDFS</a> <a href="/tags/Flyway/" style="font-size: 10px;">Flyway</a> <a href="/tags/Freemarker/" style="font-size: 11.11px;">Freemarker</a> <a href="/tags/Git/" style="font-size: 13.89px;">Git</a> <a href="/tags/GitHub/" style="font-size: 10.56px;">GitHub</a> <a href="/tags/Https/" style="font-size: 10px;">Https</a> <a href="/tags/IDEA/" style="font-size: 13.33px;">IDEA</a> <a href="/tags/IDEA，EasyCode/" style="font-size: 10px;">IDEA，EasyCode</a> <a href="/tags/IntelliJ-IDEA/" style="font-size: 11.11px;">IntelliJ IDEA</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/Java/" style="font-size: 11.67px;">Java</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 10.56px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 11.11px;">Jpa</a> <a href="/tags/LiveReload/" style="font-size: 10px;">LiveReload</a> <a href="/tags/Log/" style="font-size: 10px;">Log</a> <a href="/tags/Lombok/" style="font-size: 10px;">Lombok</a> <a href="/tags/MacBook/" style="font-size: 10px;">MacBook</a> <a href="/tags/MacBookPro/" style="font-size: 10px;">MacBookPro</a> <a href="/tags/Mail/" style="font-size: 10px;">Mail</a> <a href="/tags/Maven/" style="font-size: 12.22px;">Maven</a> <a href="/tags/MongoDB/" style="font-size: 17.78px;">MongoDB</a> <a href="/tags/MyBatis/" style="font-size: 14.44px;">MyBatis</a> <a href="/tags/MyCat/" style="font-size: 11.67px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 15px;">MySQL</a> <a href="/tags/Nacos/" style="font-size: 10px;">Nacos</a> <a href="/tags/Nginx/" style="font-size: 10.56px;">Nginx</a> <a href="/tags/OAuth2/" style="font-size: 15.56px;">OAuth2</a> <a href="/tags/PicGo/" style="font-size: 10px;">PicGo</a> <a href="/tags/Plugin/" style="font-size: 10px;">Plugin</a> <a href="/tags/RabbitMQ/" style="font-size: 10.56px;">RabbitMQ</a> <a href="/tags/Redis/" style="font-size: 18.89px;">Redis</a> <a href="/tags/Resume/" style="font-size: 10px;">Resume</a> <a href="/tags/SSM/" style="font-size: 18.33px;">SSM</a> <a href="/tags/Shiro/" style="font-size: 10.56px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 17.22px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Cloud/" style="font-size: 11.67px;">Spring Cloud</a> <a href="/tags/Spring-Data/" style="font-size: 10.56px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 19.44px;">Spring Security</a> <a href="/tags/SpringBoot/" style="font-size: 16.11px;">SpringBoot</a> <a href="/tags/SpringMVC/" style="font-size: 18.89px;">SpringMVC</a> <a href="/tags/SpringSecurity/" style="font-size: 10px;">SpringSecurity</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Swagger3/" style="font-size: 10px;">Swagger3</a> <a href="/tags/Tencent/" style="font-size: 10px;">Tencent</a> <a href="/tags/Thymeleaf/" style="font-size: 10.56px;">Thymeleaf</a> <a href="/tags/Transaction/" style="font-size: 10px;">Transaction</a> <a href="/tags/Video/" style="font-size: 10px;">Video</a> <a href="/tags/ViewResolver/" style="font-size: 10px;">ViewResolver</a> <a href="/tags/Vue/" style="font-size: 16.67px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/blog/" style="font-size: 10.56px;">blog</a> <a href="/tags/docker/" style="font-size: 13.89px;">docker</a> <a href="/tags/domain/" style="font-size: 10px;">domain</a> <a href="/tags/es/" style="font-size: 12.22px;">es</a> <a href="/tags/hdz/" style="font-size: 10px;">hdz</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/huawei/" style="font-size: 10px;">huawei</a> <a href="/tags/i18n/" style="font-size: 10px;">i18n</a> <a href="/tags/idea/" style="font-size: 10px;">idea</a> <a href="/tags/java/" style="font-size: 10px;">java</a> <a href="/tags/life/" style="font-size: 16.67px;">life</a> <a href="/tags/mail/" style="font-size: 10px;">mail</a> <a href="/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/router/" style="font-size: 10px;">router</a> <a href="/tags/transaction/" style="font-size: 10.56px;">transaction</a> <a href="/tags/vhr/" style="font-size: 12.78px;">vhr</a> <a href="/tags/vue/" style="font-size: 10px;">vue</a> <a href="/tags/vuepress/" style="font-size: 10px;">vuepress</a> <a href="/tags/weixin/" style="font-size: 11.11px;">weixin</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/七牛云/" style="font-size: 10px;">七牛云</a> <a href="/tags/中间件/" style="font-size: 10px;">中间件</a> <a href="/tags/侃侃而谈/" style="font-size: 15.56px;">侃侃而谈</a> <a href="/tags/分布式锁/" style="font-size: 10px;">分布式锁</a> <a href="/tags/前后端分离/" style="font-size: 12.22px;">前后端分离</a> <a href="/tags/单体应用/" style="font-size: 10px;">单体应用</a> <a href="/tags/外包/" style="font-size: 10.56px;">外包</a> <a href="/tags/学习资源/" style="font-size: 12.22px;">学习资源</a> <a href="/tags/工具/" style="font-size: 10.56px;">工具</a> <a href="/tags/干货汇总/" style="font-size: 10px;">干货汇总</a> <a href="/tags/微人事/" style="font-size: 10.56px;">微人事</a> <a href="/tags/微服务/" style="font-size: 10.56px;">微服务</a> <a href="/tags/杂谈/" style="font-size: 12.78px;">杂谈</a> <a href="/tags/条件注解/" style="font-size: 10px;">条件注解</a> <a href="/tags/源码解析/" style="font-size: 11.67px;">源码解析</a> <a href="/tags/源码解读/" style="font-size: 13.33px;">源码解读</a> <a href="/tags/生活/" style="font-size: 11.11px;">生活</a> <a href="/tags/私活/" style="font-size: 10px;">私活</a> <a href="/tags/程序人生/" style="font-size: 10.56px;">程序人生</a> <a href="/tags/程序员/" style="font-size: 10px;">程序员</a> <a href="/tags/腾讯/" style="font-size: 10px;">腾讯</a> <a href="/tags/自学/" style="font-size: 10px;">自学</a> <a href="/tags/视频/" style="font-size: 10px;">视频</a> <a href="/tags/视频教程/" style="font-size: 10px;">视频教程</a> <a href="/tags/资料/" style="font-size: 10px;">资料</a> <a href="/tags/逆向工程/" style="font-size: 10.56px;">逆向工程</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow  ">
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-04-15T09:30:35.000Z">2021-04-15</time></div>
+                    <a href="/2021/0415/servlet3.0-fileupload.html" class="has-link-black-ter is-size-6">什么年代了，你还不知道 Servlet3.0 中的文件上传方式？</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-04-14T09:08:56.000Z">2021-04-14</time></div>
+                    <a href="/2021/0414/spring-boot-starter.html" class="has-link-black-ter is-size-6">Spring Boot 项目总是创建失败，这几个备选方案一定要收藏</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/SpringBoot/">SpringBoot</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-04-14T09:08:36.000Z">2021-04-14</time></div>
+                    <a href="/2021/0414/73d3fb01.html" class="has-link-black-ter is-size-6">SpringMVC 异常处理体系深入分析</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/SSM/">SSM</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-04-10T11:14:40.000Z">2021-04-10</time></div>
+                    <a href="/2021/0410/java-lombok.html" class="has-link-black-ter is-size-6">对不起，我加入敌方战队了</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Java/">Java</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-04-08T07:20:07.000Z">2021-04-08</time></div>
+                    <a href="/2021/0408/shiro-guide.html" class="has-link-black-ter is-size-6">其实我不仅会 Spring Security，Shiro 也略懂一二！</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Shiro/">Shiro</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">8</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">13</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">5</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">8</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">7</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">4</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">9</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">22</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">21</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">23</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">25</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">25</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">20</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">40</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">17</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">22</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">12</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">43</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">16</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">26</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+            
+
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            友链
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itboyhub.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">江南一点雨-国内站(速度快)</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itboyhub.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.ityouknow.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">纯洁的微笑</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.ityouknow.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://bugstack.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">bugstack虫洞栈</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">bugstack.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itwanger.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">沉默王二</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itwanger.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://tanqingbo.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">IT码农</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">tanqingbo.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.cxyxiaowu.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">五分钟学算法</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.cxyxiaowu.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.justdojava.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 极客技术</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.justdojava.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cxytiandi.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">猿天地</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cxytiandi.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://vimjc.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Vim教程网</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">vimjc.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://muggle.javaboy.org/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">muggle</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">muggle.javaboy.org</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://crossoverjie.top/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">crossoverJie&#39;s Blog</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">crossoverjie.top</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cmsblogs.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 技术驿站</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cmsblogs.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://maizitoday.github.io/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">麦子的博客</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">maizitoday.github.io</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.haoservice.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">码农code之路</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.haoservice.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.jitwxs.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Jitwxs</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.jitwxs.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.gameboys.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 烂笔头</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.gameboys.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.a2data.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">A2Data</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.a2data.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.itechyou.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">I Tech You, 我教你！</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itechyou.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="什么年代了，你还不知道 Servlet3.0 中的文件上传方式？" height="28">
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2021 江南一点雨&nbsp;
+				<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><!--
+PV <span id="busuanzi_value_site_pv"></span>&nbsp;|&nbsp;<i class="fa fa-user-md"></i>  UV <span id="busuanzi_value_site_uv"></span>&nbsp;-->
+				<script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? "https://" : "http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1276890692'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s96.cnzz.com/z_stat.php%3Fid%3D1276890692%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+				<a href="http://www.beian.miit.gov.cn/" style="color: black;">粤ICP备19111220号</a>
+                <!--Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么...">
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>
