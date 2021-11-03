@@ -1,0 +1,2231 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head><meta name="generator" content="Hexo 3.8.0">
+    <meta charset="utf-8">
+<title>长文捋明白 Spring 事务！隔离性？传播性？一网打尽！ - 江南一点雨</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+
+
+    <meta name="description" content="[TOC] 事务的重要性不言而喻，Spring 对事务也提供了非常丰富的支持，各种支持的属性应有尽有。 然而很多小伙伴知道，这里有两个属性特别绕：  隔离性 传播性">
+<meta name="keywords" content="Spring,Transaction">
+<meta property="og:type" content="article">
+<meta property="og:title" content="长文捋明白 Spring 事务！隔离性？传播性？一网打尽！">
+<meta property="og:url" content="http://www.javaboy.org/2021/1026/spring_transaction.html">
+<meta property="og:site_name" content="江南一点雨">
+<meta property="og:description" content="[TOC] 事务的重要性不言而喻，Spring 对事务也提供了非常丰富的支持，各种支持的属性应有尽有。 然而很多小伙伴知道，这里有两个属性特别绕：  隔离性 传播性">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="http://www.javaboy.org/images/og_image.png">
+<meta property="og:updated_time" content="2021-11-03T12:36:46.620Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="长文捋明白 Spring 事务！隔离性？传播性？一网打尽！">
+<meta name="twitter:description" content="[TOC] 事务的重要性不言而喻，Spring 对事务也提供了非常丰富的支持，各种支持的属性应有尽有。 然而很多小伙伴知道，这里有两个属性特别绕：  隔离性 传播性">
+<meta name="twitter:image" content="http://www.javaboy.org/images/og_image.png">
+
+
+
+
+
+
+
+<link rel="icon" href="https://www.javaboy.org/favicon.ico">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-2-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+                
+                <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="长文捋明白 Spring 事务！隔离性？传播性？一网打尽！" height="28">
+                
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item" href="/">江南一点雨</a>
+                
+                <a class="navbar-item" href="/archives">归档</a>
+                
+                <a class="navbar-item" href="/fronted-backend">前后端分离</a>
+                
+                <a class="navbar-item" href="http://spring.javaboy.org">Spring</a>
+                
+                <a class="navbar-item" href="http://springmvc.javaboy.org">SpringMVC</a>
+                
+                <a class="navbar-item" href="http://mybatis.javaboy.org">MyBatis</a>
+                
+                <a class="navbar-item" href="http://springboot.javaboy.org">Spring Boot</a>
+                
+                <a class="navbar-item" href="http://www.javaboy.org/springsecurity">Spring Security</a>
+                
+                <a class="navbar-item" href="http://maven.javaboy.org">Maven</a>
+                
+                <a class="navbar-item" href="/redis">Redis</a>
+                
+                <a class="navbar-item" href="/mongodb">MongoDB</a>
+                
+                <a class="navbar-item" href="/mysql">MySQL</a>
+                
+                <a class="navbar-item" href="/docker">Docker</a>
+                
+                <a class="navbar-item" href="/git">Git</a>
+                
+                <a class="navbar-item" href="/about">About</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                
+                
+                <a class="navbar-item search" style="height: 40px;line-height: 60px;width: 180px;margin: 12px 15px;box-sizing: border-box;border: 1px solid #dedede;border-radius: 20px;display: flex;justify-content: space-between;padding-left: 12px;padding-right: 10px" title="搜索" href="javascript:;">
+                    <!--<div style="border: 1px solid #dedede;border-radius: 10px;">-->
+                    <div>搜索</div>
+                        <i class="fas fa-search"></i>
+                    <!--</div>-->
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2021-10-26T12:22:40.000Z">2021-10-26</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Spring/">Spring</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    1 小时 读完 (大约 7884 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                长文捋明白 Spring 事务！隔离性？传播性？一网打尽！
+            
+        </h1>
+        
+            <div class="content" id="content">
+                    <p>[TOC]</p>
+<p>事务的重要性不言而喻，Spring 对事务也提供了非常丰富的支持，各种支持的属性应有尽有。</p>
+<p>然而很多小伙伴知道，这里有两个属性特别绕：</p>
+<ul>
+<li>隔离性</li>
+<li>传播性</li>
+</ul>
+<a id="more"></a>
+<p>有多绕呢？松哥都一直懒得写文章去总结。不过最近有小伙伴问到这个问题，刚好有空，就抽空总结一下，我不会干巴巴的和大家讲概念，接下来的所有内容，松哥都会通过具体的案例来和大家演示。</p>
+<p>好啦，不废话啦，请看大屏幕。</p>
+<h2 id="1-什么是事务"><a href="#1-什么是事务" class="headerlink" title="1. 什么是事务"></a>1. 什么是事务</h2><p>数据库事务是指作为单个逻辑工作单元执行的一系列操作，这些操作要么一起成功，要么一起失败，是一个不可分割的工作单元。</p>
+<p>在我们日常工作中，涉及到事务的场景非常多，一个 service 中往往需要调用不同的 dao 层方法，这些方法要么同时成功要么同时失败，我们需要在 service 层确保这一点。</p>
+<p>说到事务最典型的案例就是转账了：</p>
+<blockquote>
+<p>张三要给李四转账 500 块钱，这里涉及到两个操作，从张三的账户上减去 500 块钱，给李四的账户添加 500 块钱，这两个操作要么同时成功要么同时失败，如何确保他们同时成功或者同时失败呢？答案就是事务。</p>
+</blockquote>
+<p>事务有四大特性（ACID）：</p>
+<p><img src="http://img.itboyhub.com/2021/07/20211012195927.png" alt></p>
+<ul>
+<li><strong>原子性（Atomicity）：</strong> 一个事务（transaction）中的所有操作，要么全部完成，要么全部不完成，不会结束在中间某个环节。事务在执行过程中发生错误，会被回滚（Rollback）到事务开始前的状态，就像这个事务从来没有执行过一样。即，事务不可分割、不可约简。</li>
+<li><strong>一致性（Consistency）：</strong> 在事务开始之前和事务结束以后，数据库的完整性没有被破坏。这表示写入的资料必须完全符合所有的预设约束、触发器、级联回滚等。</li>
+<li><strong>隔离性（Isolation）：</strong> 数据库允许多个并发事务同时对其数据进行读写和修改，隔离性可以防止多个事务并发执行时由于交叉执行而导致数据的不一致。事务隔离分为不同级别，包括未提交读（Read Uncommitted）、提交读（Read Committed）、可重复读（Repeatable Read）和串行化（Serializable）。</li>
+<li><strong>持久性（Durability）:</strong> 事务处理结束后，对数据的修改就是永久的，即便系统故障也不会丢失。</li>
+</ul>
+<p>这就是事务的四大特性。</p>
+<h2 id="2-Spring-中的事务"><a href="#2-Spring-中的事务" class="headerlink" title="2. Spring 中的事务"></a>2. Spring 中的事务</h2><h3 id="2-1-两种用法"><a href="#2-1-两种用法" class="headerlink" title="2.1 两种用法"></a>2.1 两种用法</h3><p>Spring 作为 Java 开发中的基础设施，对于事务也提供了很好的支持，总体上来说，Spring 支持两种类型的事务，声明式事务和编程式事务。</p>
+<p>编程式事务类似于 Jdbc 事务的写法，需要将事务的代码嵌入到业务逻辑中，这样代码的耦合度较高，而声明式事务通过 AOP 的思想能够有效的将事务和业务逻辑代码解耦，因此在实际开发中，声明式事务得到了广泛的应用，而编程式事务则较少使用，考虑到文章内容的完整，本文对两种事务方式都会介绍。</p>
+<h3 id="2-2-三大基础设施"><a href="#2-2-三大基础设施" class="headerlink" title="2.2 三大基础设施"></a>2.2 三大基础设施</h3><p>Spring 中对事务的支持提供了三大基础设施，我们先来了解下。</p>
+<ol>
+<li>PlatformTransactionManager</li>
+<li>TransactionDefinition</li>
+<li>TransactionStatus</li>
+</ol>
+<p>这三个核心类是 Spring 处理事务的核心类。</p>
+<h4 id="2-2-1-PlatformTransactionManager"><a href="#2-2-1-PlatformTransactionManager" class="headerlink" title="2.2.1 PlatformTransactionManager"></a>2.2.1 PlatformTransactionManager</h4><p>PlatformTransactionManager 是事务处理的核心，它有诸多的实现类，如下：</p>
+<p><img src="http://img.itboyhub.com/2021/10/tran/3-1.png" alt></p>
+<p>PlatformTransactionManager 的定义如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">PlatformTransactionManager</span> </span>&#123;</span><br><span class="line">	<span class="hljs-function">TransactionStatus <span class="hljs-title">getTransaction</span><span class="hljs-params">(@Nullable TransactionDefinition definition)</span></span>;</span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">commit</span><span class="hljs-params">(TransactionStatus status)</span> <span class="hljs-keyword">throws</span> TransactionException</span>;</span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">rollback</span><span class="hljs-params">(TransactionStatus status)</span> <span class="hljs-keyword">throws</span> TransactionException</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到 <code>PlatformTransactionManager</code> 中定义了基本的事务操作方法，这些事务操作方法都是平台无关的，具体的实现都是由不同的子类来实现的。</p>
+<p>这就像 JDBC 一样，SUN 公司制定标准，其他数据库厂商提供具体的实现。这么做的好处就是我们 Java 程序员只需要掌握好这套标准即可，不用去管接口的具体实现。以 <code>PlatformTransactionManager</code> 为例，它有众多实现，如果你使用的是 JDBC 那么可以将 <code>DataSourceTransactionManager</code> 作为事务管理器；如果你使用的是 Hibernate，那么可以将 <code>HibernateTransactionManager</code> 作为事务管理器；如果你使用的是 JPA，那么可以将 <code>JpaTransactionManager</code> 作为事务管理器。<code>DataSourceTransactionManager</code>、<code>HibernateTransactionManager</code> 以及 <code>JpaTransactionManager</code> 都是 <code>PlatformTransactionManager</code> 的具体实现，但是我们并不需要掌握这些具体实现类的用法，我们只需要掌握好 <code>PlatformTransactionManager</code> 的用法即可。</p>
+<p><code>PlatformTransactionManager</code> 中主要有如下三个方法：</p>
+<p><strong>1.getTransaction()</strong></p>
+<p>getTransaction() 是根据传入的 TransactionDefinition 获取一个事务对象，TransactionDefinition 中定义了一些事务的基本规则，例如传播性、隔离级别等。</p>
+<p><strong>2.commit()</strong></p>
+<p>commit() 方法用来提交事务。</p>
+<p><strong>3.rollback()</strong></p>
+<p>rollback() 方法用来回滚事务。</p>
+<h4 id="2-2-2-TransactionDefinition"><a href="#2-2-2-TransactionDefinition" class="headerlink" title="2.2.2 TransactionDefinition"></a>2.2.2 TransactionDefinition</h4><p><code>TransactionDefinition</code> 用来描述事务的具体规则，也称作事务的属性。事务有哪些属性呢？看下图：</p>
+<p><img src="http://img.itboyhub.com/2021/10/tran/20211012204524.png" alt></p>
+<p>可以看到，主要是五种属性：</p>
+<ol>
+<li>隔离性</li>
+<li>传播性</li>
+<li>回滚规则</li>
+<li>超时时间</li>
+<li>是否只读</li>
+</ol>
+<p>这五种属性接下来松哥会和大家详细介绍。</p>
+<p><code>TransactionDefinition</code> 类中的方法如下：</p>
+<p><img src="http://img.itboyhub.com/2021/10/tran/3-3.png" alt></p>
+<p>可以看到一共有五个方法：</p>
+<ol>
+<li>getIsolationLevel()，获取事务的隔离级别</li>
+<li>getName()，获取事务的名称</li>
+<li>getPropagationBehavior()，获取事务的传播性</li>
+<li>getTimeout()，获取事务的超时时间</li>
+<li>isReadOnly()，获取事务是否是只读事务</li>
+</ol>
+<p>TransactionDefinition 也有诸多的实现类，如下：</p>
+<p><img src="http://img.itboyhub.com/2021/10/tran/3-4.png" alt></p>
+<p>如果开发者使用了编程式事务的话，直接使用 <code>DefaultTransactionDefinition</code> 即可。</p>
+<h4 id="2-2-3-TransactionStatus"><a href="#2-2-3-TransactionStatus" class="headerlink" title="2.2.3 TransactionStatus"></a>2.2.3 TransactionStatus</h4><p>TransactionStatus 可以直接理解为事务本身，该接口源码如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">TransactionStatus</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">SavepointManager</span>, <span class="hljs-title">Flushable</span> </span>&#123;</span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">boolean</span> <span class="hljs-title">isNewTransaction</span><span class="hljs-params">()</span></span>;</span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">boolean</span> <span class="hljs-title">hasSavepoint</span><span class="hljs-params">()</span></span>;</span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">setRollbackOnly</span><span class="hljs-params">()</span></span>;</span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">boolean</span> <span class="hljs-title">isRollbackOnly</span><span class="hljs-params">()</span></span>;</span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">flush</span><span class="hljs-params">()</span></span>;</span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">boolean</span> <span class="hljs-title">isCompleted</span><span class="hljs-params">()</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>isNewTransaction() 方法获取当前事务是否是一个新事务。</li>
+<li>hasSavepoint() 方法判断是否存在 savePoint()。</li>
+<li>setRollbackOnly() 方法设置事务必须回滚。</li>
+<li>isRollbackOnly() 方法获取事务只能回滚。</li>
+<li>flush() 方法将底层会话中的修改刷新到数据库，一般用于 Hibernate/JPA 的会话，对如 JDBC 类型的事务无任何影响。</li>
+<li>isCompleted() 方法用来获取是一个事务是否结束。</li>
+</ol>
+<p><strong>这就是 Spring 中支持事务的三大基础设施。</strong></p>
+<h2 id="3-编程式事务"><a href="#3-编程式事务" class="headerlink" title="3. 编程式事务"></a>3. 编程式事务</h2><p>我们先来看看编程式事务怎么玩。</p>
+<p>通过 PlatformTransactionManager 或者 TransactionTemplate 可以实现编程式事务。如果是在 Spring Boot 项目中，这两个对象 Spring Boot 会自动提供，我们直接使用即可。但是如果是在传统的 SSM 项目中，则需要我们通过配置来提供这两个对象，松哥给一个简单的配置参考，如下（简单起见，数据库操作我们使用 JdbcTemplate）：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"org.springframework.jdbc.datasource.DriverManagerDataSource"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"dataSource"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"driverClassName"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"com.mysql.cj.jdbc.Driver"</span>/&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"url"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"jdbc:mysql:///spring_tran?serverTimezone=Asia/Shanghai"</span>/&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"username"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"root"</span>/&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"password"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"123"</span>/&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"org.springframework.jdbc.datasource.DataSourceTransactionManager"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"transactionManager"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"dataSource"</span> <span class="hljs-attr">ref</span>=<span class="hljs-string">"dataSource"</span>/&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"org.springframework.transaction.support.TransactionTemplate"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"transactionTemplate"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"transactionManager"</span> <span class="hljs-attr">ref</span>=<span class="hljs-string">"transactionManager"</span>/&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"org.springframework.jdbc.core.JdbcTemplate"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"jdbcTemplate"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"dataSource"</span> <span class="hljs-attr">ref</span>=<span class="hljs-string">"dataSource"</span>/&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>有了这两个对象，接下来的代码就简单了：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Service</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">TransferService</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Autowired</span></span><br><span class="line">    JdbcTemplate jdbcTemplate;</span><br><span class="line">    <span class="hljs-meta">@Autowired</span></span><br><span class="line">    PlatformTransactionManager txManager;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">transfer</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        DefaultTransactionDefinition definition = <span class="hljs-keyword">new</span> DefaultTransactionDefinition();</span><br><span class="line">        TransactionStatus status = txManager.getTransaction(definition);</span><br><span class="line">        <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">            jdbcTemplate.update(<span class="hljs-string">"update user set account=account+100 where username='zhangsan'"</span>);</span><br><span class="line">            <span class="hljs-keyword">int</span> i = <span class="hljs-number">1</span> / <span class="hljs-number">0</span>;</span><br><span class="line">            jdbcTemplate.update(<span class="hljs-string">"update user set account=account-100 where username='lisi'"</span>);</span><br><span class="line">            txManager.commit(status);</span><br><span class="line">        &#125; <span class="hljs-keyword">catch</span> (DataAccessException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">            txManager.rollback(status);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这段代码很简单，没啥好解释的，在 <code>try...catch...</code> 中进行业务操作，没问题就 commit，有问题就 rollback。如果我们需要配置事务的隔离性、传播性等，可以在 DefaultTransactionDefinition 对象中进行配置。</p>
+<p>上面的代码是通过 PlatformTransactionManager 实现的编程式事务，我们也可以通过 TransactionTemplate 来实现编程式事务，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Service</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">TransferService</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Autowired</span></span><br><span class="line">    JdbcTemplate jdbcTemplate;</span><br><span class="line">    <span class="hljs-meta">@Autowired</span></span><br><span class="line">    TransactionTemplate tranTemplate;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">transfer</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        tranTemplate.execute(<span class="hljs-keyword">new</span> TransactionCallbackWithoutResult() &#123;</span><br><span class="line">            <span class="hljs-meta">@Override</span></span><br><span class="line">            <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">doInTransactionWithoutResult</span><span class="hljs-params">(TransactionStatus status)</span> </span>&#123;</span><br><span class="line">                <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">                    jdbcTemplate.update(<span class="hljs-string">"update user set account=account+100 where username='zhangsan'"</span>);</span><br><span class="line">                    <span class="hljs-keyword">int</span> i = <span class="hljs-number">1</span> / <span class="hljs-number">0</span>;</span><br><span class="line">                    jdbcTemplate.update(<span class="hljs-string">"update user set account=account-100 where username='lisi'"</span>);</span><br><span class="line">                &#125; <span class="hljs-keyword">catch</span> (DataAccessException e) &#123;</span><br><span class="line">                    status.setRollbackOnly();</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>直接注入 TransactionTemplate，然后在 execute 方法中添加回调写核心的业务即可，当抛出异常时，将当前事务标注为只能回滚即可。注意，execute 方法中，如果不需要获取事务执行的结果，则直接使用 TransactionCallbackWithoutResult 类即可，如果要获取事务执行结果，则使用 TransactionCallback 即可。</p>
+<p>这就是两种编程式事务的玩法。</p>
+<p>编程式事务由于代码入侵太严重了，因为在实际开发中使用的很少，我们在项目中更多的是使用声明式事务。</p>
+<h2 id="4-声明式事务"><a href="#4-声明式事务" class="headerlink" title="4. 声明式事务"></a>4. 声明式事务</h2><p>声明式事务如果使用 <code>XML</code> 配置，可以做到无侵入；如果使用 <code>Java</code> 配置，也只有一个 <code>@Transactional</code> 注解侵入而已，相对来说非常容易。</p>
+<p><strong>以下配置针对传统 SSM 项目（因为在 Spring Boot 项目中，事务相关的组件已经配置好了）：</strong></p>
+<h3 id="4-1-XML-配置"><a href="#4-1-XML-配置" class="headerlink" title="4.1 XML 配置"></a>4.1 XML 配置</h3><p>XML 配置声明式事务大致上可以分为三个步骤，如下：</p>
+<ol>
+<li>配置事务管理器</li>
+</ol>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"org.springframework.jdbc.datasource.DriverManagerDataSource"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"dataSource"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"driverClassName"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"com.mysql.cj.jdbc.Driver"</span>/&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"url"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"jdbc:mysql:///spring_tran?serverTimezone=Asia/Shanghai"</span>/&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"username"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"root"</span>/&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"password"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"123"</span>/&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"org.springframework.jdbc.datasource.DataSourceTransactionManager"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"transactionManager"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"dataSource"</span> <span class="hljs-attr">ref</span>=<span class="hljs-string">"dataSource"</span>/&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>配置事务通知</li>
+</ol>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">tx:advice</span> <span class="hljs-attr">transaction-manager</span>=<span class="hljs-string">"transactionManager"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"txAdvice"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">tx:attributes</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">tx:method</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"m3"</span>/&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">tx:method</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"m4"</span>/&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">tx:attributes</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">tx:advice</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<ol start="3">
+<li>配置 AOP</li>
+</ol>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">aop:config</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">aop:pointcut</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"pc1"</span> <span class="hljs-attr">expression</span>=<span class="hljs-string">"execution(* org.javaboy.demo.*.*(..))"</span>/&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">aop:advisor</span> <span class="hljs-attr">advice-ref</span>=<span class="hljs-string">"txAdvice"</span> <span class="hljs-attr">pointcut-ref</span>=<span class="hljs-string">"pc1"</span>/&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">aop:config</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>第二步和第三步中定义出来的方法交集，就是我们要添加事务的方法。</p>
+<p>配置完成后，如下一些方法就自动具备事务了：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserService</span> </span>&#123;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">m3</span><span class="hljs-params">()</span></span>&#123;</span><br><span class="line">        jdbcTemplate.update(<span class="hljs-string">"update user set money=997 where username=?"</span>, <span class="hljs-string">"zhangsan"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="4-2-Java-配置"><a href="#4-2-Java-配置" class="headerlink" title="4.2 Java 配置"></a>4.2 Java 配置</h3><p>我们也可以使用 Java 配置来实现声明式事务：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-meta">@ComponentScan</span></span><br><span class="line"><span class="hljs-comment">//开启事务注解支持</span></span><br><span class="line"><span class="hljs-meta">@EnableTransactionManagement</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">JavaConfig</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function">DataSource <span class="hljs-title">dataSource</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        DriverManagerDataSource ds = <span class="hljs-keyword">new</span> DriverManagerDataSource();</span><br><span class="line">        ds.setPassword(<span class="hljs-string">"123"</span>);</span><br><span class="line">        ds.setUsername(<span class="hljs-string">"root"</span>);</span><br><span class="line">        ds.setUrl(<span class="hljs-string">"jdbc:mysql:///test01?serverTimezone=Asia/Shanghai"</span>);</span><br><span class="line">        ds.setDriverClassName(<span class="hljs-string">"com.mysql.cj.jdbc.Driver"</span>);</span><br><span class="line">        <span class="hljs-keyword">return</span> ds;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function">JdbcTemplate <span class="hljs-title">jdbcTemplate</span><span class="hljs-params">(DataSource dataSource)</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> JdbcTemplate(dataSource);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function">PlatformTransactionManager <span class="hljs-title">transactionManager</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> DataSourceTransactionManager(dataSource());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里要配置的东西其实和 XML 中配置的都差不多，最最关键的就两个：</p>
+<ul>
+<li>事务管理器 PlatformTransactionManager。</li>
+<li>@EnableTransactionManagement 注解开启事务支持。</li>
+</ul>
+<p>配置完成后，接下来，哪个方法需要事务就在哪个方法上添加 <code>@Transactional</code> 注解即可，向下面这样：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Transactional</span>(noRollbackFor = ArithmeticException.class)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">update4</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    jdbcTemplate.update(<span class="hljs-string">"update account set money = ? where username=?;"</span>, <span class="hljs-number">998</span>, <span class="hljs-string">"lisi"</span>);</span><br><span class="line">    <span class="hljs-keyword">int</span> i = <span class="hljs-number">1</span> / <span class="hljs-number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当然这个稍微有点代码入侵，不过问题不大，日常开发中这种方式使用较多。当<code>@Transactional</code> 注解加在类上面的时候，表示该类的所有方法都有事务，该注解加在方法上面的时候，表示该方法有事务。</p>
+<h3 id="4-3-混合配置"><a href="#4-3-混合配置" class="headerlink" title="4.3 混合配置"></a>4.3 混合配置</h3><p>也可以 Java 代码和 XML 混合配置来实现声明式事务，就是一部分配置用 XML 来实现，一部分配置用 Java 代码来实现：</p>
+<p>假设 XML 配置如下：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">beans</span> <span class="hljs-attr">xmlns</span>=<span class="hljs-string">"http://www.springframework.org/schema/beans"</span></span></span><br><span class="line"><span class="hljs-tag">       <span class="hljs-attr">xmlns:xsi</span>=<span class="hljs-string">"http://www.w3.org/2001/XMLSchema-instance"</span></span></span><br><span class="line"><span class="hljs-tag">       <span class="hljs-attr">xmlns:tx</span>=<span class="hljs-string">"http://www.springframework.org/schema/tx"</span></span></span><br><span class="line"><span class="hljs-tag">       <span class="hljs-attr">xsi:schemaLocation</span>=<span class="hljs-string">"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd   http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd"</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="hljs-comment">&lt;!--</span></span><br><span class="line"><span class="hljs-comment">    开启事务的注解配置，添加了这个配置，就可以直接在代码中通过 @Transactional 注解来开启事务了</span></span><br><span class="line"><span class="hljs-comment">    --&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">tx:annotation-driven</span> /&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">beans</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>那么 Java 代码中的配置如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-meta">@ComponentScan</span></span><br><span class="line"><span class="hljs-meta">@ImportResource</span>(locations = <span class="hljs-string">"classpath:applicationContext3.xml"</span>)</span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">JavaConfig</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function">DataSource <span class="hljs-title">dataSource</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        DriverManagerDataSource ds = <span class="hljs-keyword">new</span> DriverManagerDataSource();</span><br><span class="line">        ds.setPassword(<span class="hljs-string">"123"</span>);</span><br><span class="line">        ds.setUsername(<span class="hljs-string">"root"</span>);</span><br><span class="line">        ds.setUrl(<span class="hljs-string">"jdbc:mysql:///test01?serverTimezone=Asia/Shanghai"</span>);</span><br><span class="line">        ds.setDriverClassName(<span class="hljs-string">"com.mysql.cj.jdbc.Driver"</span>);</span><br><span class="line">        <span class="hljs-keyword">return</span> ds;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function">JdbcTemplate <span class="hljs-title">jdbcTemplate</span><span class="hljs-params">(DataSource dataSource)</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> JdbcTemplate(dataSource);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-meta">@Bean</span></span><br><span class="line">    <span class="hljs-function">PlatformTransactionManager <span class="hljs-title">transactionManager</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> DataSourceTransactionManager(dataSource());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Java 配置中通过 @ImportResource 注解导入了 XML 配置，XML 配置中的内容就是开启 <code>@Transactional</code> 注解的支持，所以 Java 配置中省略了 @EnableTransactionManagement 注解。</p>
+<p>这就是声明式事务的几种配置方式。好玩吧！</p>
+<h2 id="5-事务属性"><a href="#5-事务属性" class="headerlink" title="5. 事务属性"></a>5. 事务属性</h2><p>在前面的配置中，我们只是简单说了事务的用法，并没有和大家详细聊一聊事务的一些属性细节，那么接下来我们就来仔细捋一捋事务中的五大属性。</p>
+<h3 id="5-1-隔离性"><a href="#5-1-隔离性" class="headerlink" title="5.1 隔离性"></a>5.1 隔离性</h3><p>首先就是事务的隔离性，也就是事务的隔离级别。</p>
+<p>MySQL 中有四种不同的隔离级别，这四种不同的隔离级别在 Spring 中都得到了很好的支持。Spring 中默认的事务隔离级别是 default，即数据库本身的隔离级别是啥就是啥，default 就能满足我们日常开发中的大部分场景。</p>
+<p>不过如果项目有需要，我们也可以调整事务的隔离级别。</p>
+<p>调整方式如下：</p>
+<h4 id="5-1-1-编程式事务隔离级别"><a href="#5-1-1-编程式事务隔离级别" class="headerlink" title="5.1.1 编程式事务隔离级别"></a>5.1.1 编程式事务隔离级别</h4><p>如果是编程式事务，通过如下方式修改事务的隔离级别：</p>
+<p><strong>TransactionTemplate</strong></p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">transactionTemplate.setIsolationLevel(TransactionDefinition.ISOLATION_SERIALIZABLE);</span><br></pre></td></tr></table></figure>
+<p>TransactionDefinition 中定义了各种隔离级别。</p>
+<p><strong>PlatformTransactionManager</strong></p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">update2</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    <span class="hljs-comment">//创建事务的默认配置</span></span><br><span class="line">    DefaultTransactionDefinition definition = <span class="hljs-keyword">new</span> DefaultTransactionDefinition();</span><br><span class="line">    definition.setIsolationLevel(TransactionDefinition.ISOLATION_SERIALIZABLE);</span><br><span class="line">    TransactionStatus status = platformTransactionManager.getTransaction(definition);</span><br><span class="line">    <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">        jdbcTemplate.update(<span class="hljs-string">"update account set money = ? where username=?;"</span>, <span class="hljs-number">999</span>, <span class="hljs-string">"zhangsan"</span>);</span><br><span class="line">        <span class="hljs-keyword">int</span> i = <span class="hljs-number">1</span> / <span class="hljs-number">0</span>;</span><br><span class="line">        <span class="hljs-comment">//提交事务</span></span><br><span class="line">        platformTransactionManager.commit(status);</span><br><span class="line">    &#125; <span class="hljs-keyword">catch</span> (DataAccessException e) &#123;</span><br><span class="line">          e.printStackTrace();</span><br><span class="line">        <span class="hljs-comment">//回滚</span></span><br><span class="line">        platformTransactionManager.rollback(status);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里是在 DefaultTransactionDefinition 对象中设置事务的隔离级别。</p>
+<h4 id="5-1-2-声明式事务隔离级别"><a href="#5-1-2-声明式事务隔离级别" class="headerlink" title="5.1.2 声明式事务隔离级别"></a>5.1.2 声明式事务隔离级别</h4><p>如果是声明式事务通过如下方式修改隔离级别：</p>
+<p>XML：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">tx:advice</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"txAdvice"</span> <span class="hljs-attr">transaction-manager</span>=<span class="hljs-string">"transactionManager"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">tx:attributes</span>&gt;</span></span><br><span class="line">        <span class="hljs-comment">&lt;!--以 add 开始的方法，添加事务--&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">tx:method</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"add*"</span>/&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">tx:method</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"insert*"</span> <span class="hljs-attr">isolation</span>=<span class="hljs-string">"SERIALIZABLE"</span>/&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">tx:attributes</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">tx:advice</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>Java：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Transactional</span>(isolation = Isolation.SERIALIZABLE)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">update4</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    jdbcTemplate.update(<span class="hljs-string">"update account set money = ? where username=?;"</span>, <span class="hljs-number">998</span>, <span class="hljs-string">"lisi"</span>);</span><br><span class="line">    <span class="hljs-keyword">int</span> i = <span class="hljs-number">1</span> / <span class="hljs-number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>关于事务的隔离级别，如果大家还不熟悉，可以参考松哥之前的文章：<a href="https://mp.weixin.qq.com/s/eTbWDz8NiM8L8BbIrNiLHQ" target="_blank" rel="noopener">四个案例看懂 MySQL 事务隔离级别</a>。</p>
+<h3 id="5-2-传播性"><a href="#5-2-传播性" class="headerlink" title="5.2 传播性"></a>5.2 传播性</h3><p>先来说说何谓事务的传播性：</p>
+<blockquote>
+<p>事务传播行为是为了解决业务层方法之间互相调用的事务问题，当一个事务方法被另一个事务方法调用时，事务该以何种状态存在？例如新方法可能继续在现有事务中运行，也可能开启一个新事务，并在自己的事务中运行，等等，这些规则就涉及到事务的传播性。</p>
+</blockquote>
+<p>关于事务的传播性，Spring 主要定义了如下几种：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-keyword">enum</span> Propagation &#123;</span><br><span class="line">	REQUIRED(TransactionDefinition.PROPAGATION_REQUIRED),</span><br><span class="line">	SUPPORTS(TransactionDefinition.PROPAGATION_SUPPORTS),</span><br><span class="line">	MANDATORY(TransactionDefinition.PROPAGATION_MANDATORY),</span><br><span class="line">	REQUIRES_NEW(TransactionDefinition.PROPAGATION_REQUIRES_NEW),</span><br><span class="line">	NOT_SUPPORTED(TransactionDefinition.PROPAGATION_NOT_SUPPORTED),</span><br><span class="line">	NEVER(TransactionDefinition.PROPAGATION_NEVER),</span><br><span class="line">	NESTED(TransactionDefinition.PROPAGATION_NESTED);</span><br><span class="line">	<span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> value;</span><br><span class="line">	Propagation(<span class="hljs-keyword">int</span> value) &#123; <span class="hljs-keyword">this</span>.value = value; &#125;</span><br><span class="line">	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">value</span><span class="hljs-params">()</span> </span>&#123; <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.value; &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>具体含义如下：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">传播性</th>
+<th style="text-align:left">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">REQUIRED</td>
+<td style="text-align:left">如果当前存在事务，则加入该事务；如果当前没有事务，则创建一个新的事务</td>
+</tr>
+<tr>
+<td style="text-align:left">SUPPORTS</td>
+<td style="text-align:left">如果当前存在事务，则加入该事务；如果当前没有事务，则以非事务的方式继续运行</td>
+</tr>
+<tr>
+<td style="text-align:left">MANDATORY</td>
+<td style="text-align:left">如果当前存在事务，则加入该事务；如果当前没有事务，则抛出异常</td>
+</tr>
+<tr>
+<td style="text-align:left">REQUIRES_NEW</td>
+<td style="text-align:left">创建一个新的事务，如果当前存在事务，则把当前事务挂起</td>
+</tr>
+<tr>
+<td style="text-align:left">NOT_SUPPORTED</td>
+<td style="text-align:left">以非事务方式运行，如果当前存在事务，则把当前事务挂起</td>
+</tr>
+<tr>
+<td style="text-align:left">NEVER</td>
+<td style="text-align:left">以非事务方式运行，如果当前存在事务，则抛出异常</td>
+</tr>
+<tr>
+<td style="text-align:left">NESTED</td>
+<td style="text-align:left">如果当前存在事务，则创建一个事务作为当前事务的嵌套事务来运行；如果当前没有事务，则该取值等价于 TransactionDefinition.PROPAGATION_REQUIRED</td>
+</tr>
+</tbody>
+</table>
+<p>一共是七种传播性，具体配置也简单：</p>
+<p><strong>TransactionTemplate中的配置</strong></p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);</span><br></pre></td></tr></table></figure>
+<p><strong>PlatformTransactionManager中的配置</strong></p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">update2</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    <span class="hljs-comment">//创建事务的默认配置</span></span><br><span class="line">    DefaultTransactionDefinition definition = <span class="hljs-keyword">new</span> DefaultTransactionDefinition();</span><br><span class="line">    definition.setIsolationLevel(TransactionDefinition.ISOLATION_SERIALIZABLE);</span><br><span class="line">    definition.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);</span><br><span class="line">    TransactionStatus status = platformTransactionManager.getTransaction(definition);</span><br><span class="line">    <span class="hljs-keyword">try</span> &#123;</span><br><span class="line">        jdbcTemplate.update(<span class="hljs-string">"update account set money = ? where username=?;"</span>, <span class="hljs-number">999</span>, <span class="hljs-string">"zhangsan"</span>);</span><br><span class="line">        <span class="hljs-keyword">int</span> i = <span class="hljs-number">1</span> / <span class="hljs-number">0</span>;</span><br><span class="line">        <span class="hljs-comment">//提交事务</span></span><br><span class="line">        platformTransactionManager.commit(status);</span><br><span class="line">    &#125; <span class="hljs-keyword">catch</span> (DataAccessException e) &#123;</span><br><span class="line">          e.printStackTrace();</span><br><span class="line">        <span class="hljs-comment">//回滚</span></span><br><span class="line">        platformTransactionManager.rollback(status);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>声明式事务的配置（XML）</strong></p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">tx:advice</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"txAdvice"</span> <span class="hljs-attr">transaction-manager</span>=<span class="hljs-string">"transactionManager"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">tx:attributes</span>&gt;</span></span><br><span class="line">        <span class="hljs-comment">&lt;!--以 add 开始的方法，添加事务--&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">tx:method</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"add*"</span>/&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">tx:method</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"insert*"</span> <span class="hljs-attr">isolation</span>=<span class="hljs-string">"SERIALIZABLE"</span> <span class="hljs-attr">propagation</span>=<span class="hljs-string">"REQUIRED"</span>/&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">tx:attributes</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">tx:advice</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p><strong>声明式事务的配置（Java）</strong></p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Transactional</span>(noRollbackFor = ArithmeticException.class,propagation = Propagation.REQUIRED)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">update4</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    jdbcTemplate.update(<span class="hljs-string">"update account set money = ? where username=?;"</span>, <span class="hljs-number">998</span>, <span class="hljs-string">"lisi"</span>);</span><br><span class="line">    <span class="hljs-keyword">int</span> i = <span class="hljs-number">1</span> / <span class="hljs-number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>用就是这么来用，至于七种传播的具体含义，松哥来和大家一个一个说。</p>
+<h4 id="5-2-1-REQUIRED"><a href="#5-2-1-REQUIRED" class="headerlink" title="5.2.1 REQUIRED"></a>5.2.1 REQUIRED</h4><p>REQUIRED 表示如果当前存在事务，则加入该事务；如果当前没有事务，则创建一个新的事务。</p>
+<p>例如我有如下一段代码：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Service</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AccountService</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Autowired</span></span><br><span class="line">    JdbcTemplate jdbcTemplate;</span><br><span class="line">    <span class="hljs-meta">@Transactional</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handle1</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        jdbcTemplate.update(<span class="hljs-string">"update user set money = ? where id=?;"</span>, <span class="hljs-number">1</span>, <span class="hljs-number">2</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-meta">@Service</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AccountService2</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Autowired</span></span><br><span class="line">    JdbcTemplate jdbcTemplate;</span><br><span class="line">    <span class="hljs-meta">@Autowired</span></span><br><span class="line">    AccountService accountService;</span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handle2</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">        jdbcTemplate.update(<span class="hljs-string">"update user set money = ? where username=?;"</span>, <span class="hljs-number">1</span>, <span class="hljs-string">"zhangsan"</span>);</span><br><span class="line">        accountService.handle1();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我在 handle2 方法中调用 handle1。</p>
+<p>那么：</p>
+<ol>
+<li>如果 handle2 方法本身是有事务的，则 handle1 方法就会加入到 handle2 方法所在的事务中，这样两个方法将处于同一个事务中，一起成功或者一起失败（不管是 handle2 还是 handle1 谁抛异常，都会导致整体回滚）。</li>
+<li>如果 handle2 方法本身是没有事务的，则 handle1 方法就会自己开启一个新的事务，自己玩。</li>
+</ol>
+<p>举一个简单的例子：handle2 方法有事务，handle1 方法也有事务（小伙伴们根据前面的讲解自行配置事务），项目打印出来的事务日志如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Creating new transaction with name [org.javaboy.spring_tran02.AccountService2.handle2]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Acquired Connection [HikariProxyConnection@875256468 wrapping com.mysql.cj.jdbc.ConnectionImpl@9753d50] for JDBC transaction</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Switching JDBC Connection [HikariProxyConnection@875256468 wrapping com.mysql.cj.jdbc.ConnectionImpl@9753d50] to manual commit</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL update</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL statement [update user set money = ? where username=?;]</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Participating in existing transaction</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL update</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL statement [update user set money = ? where id=?;]</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Initiating transaction commit</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Committing JDBC transaction on Connection [HikariProxyConnection@875256468 wrapping com.mysql.cj.jdbc.ConnectionImpl@9753d50]</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Releasing JDBC Connection [HikariProxyConnection@875256468 wrapping com.mysql.cj.jdbc.ConnectionImpl@9753d50] after transaction</span><br></pre></td></tr></table></figure>
+<p>从日志中可以看到，前前后后一共就开启了一个事务，日志中有这么一句：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Participating in existing transaction</span><br></pre></td></tr></table></figure>
+<p>这个就说明 handle1 方法没有自己开启事务，而是加入到 handle2 方法的事务中了。</p>
+<h4 id="5-2-2-REQUIRES-NEW"><a href="#5-2-2-REQUIRES-NEW" class="headerlink" title="5.2.2 REQUIRES_NEW"></a>5.2.2 REQUIRES_NEW</h4><p>REQUIRES_NEW 表示创建一个新的事务，如果当前存在事务，则把<strong>当前事务挂起</strong>。换言之，不管外部方法是否有事务，REQUIRES_NEW 都会开启自己的事务。</p>
+<p>这块松哥要多说两句，有的小伙伴可能觉得 REQUIRES_NEW 和 REQUIRED 太像了，似乎没啥区别。其实你要是单纯看最终回滚效果，可能确实看不到啥区别。但是，大家注意松哥上面的加粗，在 REQUIRES_NEW 中可能会同时存在两个事务，外部方法的事务被挂起，内部方法的事务独自运行，而在 REQUIRED 中则不会出现这种情况，如果内外部方法传播性都是 REQUIRED，那么最终也只是一个事务。</p>
+<p>还是上面那个例子，假设 handle1 和 handle2 方法都有事务，handle2 方法的事务传播性是 REQUIRED，而 handle1 方法的事务传播性是 REQUIRES_NEW，那么最终打印出来的事务日志如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Creating new transaction with name [org.javaboy.spring_tran02.AccountService2.handle2]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Acquired Connection [HikariProxyConnection@422278016 wrapping com.mysql.cj.jdbc.ConnectionImpl@732405c2] for JDBC transaction</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Switching JDBC Connection [HikariProxyConnection@422278016 wrapping com.mysql.cj.jdbc.ConnectionImpl@732405c2] to manual commit</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL update</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL statement [update user set money = ? where username=?;]</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Suspending current transaction, creating new transaction with name [org.javaboy.spring_tran02.AccountService.handle1]</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Acquired Connection [HikariProxyConnection@247691344 wrapping com.mysql.cj.jdbc.ConnectionImpl@14ad4b95] for JDBC transaction</span><br><span class="line">com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@14ad4b95</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Switching JDBC Connection [HikariProxyConnection@247691344 wrapping com.mysql.cj.jdbc.ConnectionImpl@14ad4b95] to manual commit</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL update</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL statement [update user set money = ? where id=?;]</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Initiating transaction commit</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Committing JDBC transaction on Connection [HikariProxyConnection@247691344 wrapping com.mysql.cj.jdbc.ConnectionImpl@14ad4b95]</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Releasing JDBC Connection [HikariProxyConnection@247691344 wrapping com.mysql.cj.jdbc.ConnectionImpl@14ad4b95] after transaction</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Resuming suspended transaction after completion of inner transaction</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Initiating transaction commit</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Committing JDBC transaction on Connection [HikariProxyConnection@422278016 wrapping com.mysql.cj.jdbc.ConnectionImpl@732405c2]</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Releasing JDBC Connection [HikariProxyConnection@422278016 wrapping com.mysql.cj.jdbc.ConnectionImpl@732405c2] after transaction</span><br></pre></td></tr></table></figure>
+<p>分析这段日志我们可以看到：</p>
+<ol>
+<li>首先为 handle2 方法开启了一个事务。</li>
+<li>执行完 handle2 方法的 SQL 之后，事务被刮起（Suspending）。</li>
+<li>为 handle1 方法开启了一个新的事务。</li>
+<li>执行 handle1 方法的 SQL。</li>
+<li>提交 handle1 方法的事务。</li>
+<li>恢复被挂起的事务（Resuming）。</li>
+<li>提交 handle2 方法的事务。</li>
+</ol>
+<p>从这段日志中大家可以非常明确的看到 REQUIRES_NEW 和 REQUIRED 的区别。</p>
+<p>松哥再来简单总结下(假设 handle1 方法的事务传播性是 REQUIRES_NEW)：</p>
+<ol>
+<li>如果 handle2 方法没有事务，handle1 方法自己开启一个事务自己玩。</li>
+<li>如果 handle2 方法有事务，handle1 方法还是会开启一个事务。此时，如果 handle2 发生了异常进行回滚，并不会导致 handle1 方法回滚，因为 handle1 方法是独立的事务；如果 handle1 方法发生了异常导致回滚，并且 handle1 方法的异常没有被捕获处理传到了 handle2 方法中，那么也会导致 handle2 方法回滚。</li>
+</ol>
+<blockquote>
+<p>这个地方小伙伴们要稍微注意一下，我们测试的时候，由于是两个更新 SQL，如果更新的查询字段不是索引字段，那么 InnoDB 将使用表锁，这样就会发生死锁（handle2 方法执行时开启表锁，导致 handle1 方法陷入等待中，而必须 handle1 方法执行完，handle2 才能释放锁）。所以，在上面的测试中，我们要将 username 字段设置为索引字段，这样默认就使用行锁了。</p>
+</blockquote>
+<h4 id="5-2-3-NESTED"><a href="#5-2-3-NESTED" class="headerlink" title="5.2.3 NESTED"></a>5.2.3 NESTED</h4><p>NESTED 表示如果当前存在事务，则创建一个事务作为当前事务的嵌套事务来运行；如果当前没有事务，则该取值等价于 TransactionDefinition.PROPAGATION_REQUIRED。</p>
+<p>假设 handle2 方法有事务，handle1 方法也有事务且传播性为 NESTED，那么最终执行的事务日志如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Creating new transaction with name [org.javaboy.demo.AccountService2.handle2]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Acquired Connection [HikariProxyConnection@2025689131 wrapping com.mysql.cj.jdbc.ConnectionImpl@2ed3628e] for JDBC transaction</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Switching JDBC Connection [HikariProxyConnection@2025689131 wrapping com.mysql.cj.jdbc.ConnectionImpl@2ed3628e] to manual commit</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL update</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL statement [update user set money = ? where username=?;]</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Creating nested transaction with name [org.javaboy.demo.AccountService.handle1]</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL update</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL statement [update user set money = ? where id=?;]</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Releasing transaction savepoint</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Initiating transaction commit</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Committing JDBC transaction on Connection [HikariProxyConnection@2025689131 wrapping com.mysql.cj.jdbc.ConnectionImpl@2ed3628e]</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Releasing JDBC Connection [HikariProxyConnection@2025689131 wrapping com.mysql.cj.jdbc.ConnectionImpl@2ed3628e] after transaction</span><br></pre></td></tr></table></figure>
+<p>关键一句在 <code>Creating nested transaction</code>。</p>
+<p>此时，NESTED 修饰的内部方法（handle1）属于外部事务的子事务，外部主事务回滚的话，子事务也会回滚，而内部子事务可以单独回滚而不影响外部主事务和其他子事务（需要处理掉内部子事务的异常）。</p>
+<h4 id="5-2-4-MANDATORY"><a href="#5-2-4-MANDATORY" class="headerlink" title="5.2.4 MANDATORY"></a>5.2.4 MANDATORY</h4><p>MANDATORY 表示如果当前存在事务，则加入该事务；如果当前没有事务，则抛出异常。</p>
+<p>这个好理解，我举两个例子：</p>
+<p>假设 handle2 方法有事务，handle1 方法也有事务且传播性为 MANDATORY，那么最终执行的事务日志如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Creating new transaction with name [org.javaboy.demo.AccountService2.handle2]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Acquired Connection [HikariProxyConnection@768820610 wrapping com.mysql.cj.jdbc.ConnectionImpl@14840df2] for JDBC transaction</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Switching JDBC Connection [HikariProxyConnection@768820610 wrapping com.mysql.cj.jdbc.ConnectionImpl@14840df2] to manual commit</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL update</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL statement [update user set money = ? where username=?;]</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Participating in existing transaction</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL update</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL statement [update user set money = ? where id=?;]</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Initiating transaction commit</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Committing JDBC transaction on Connection [HikariProxyConnection@768820610 wrapping com.mysql.cj.jdbc.ConnectionImpl@14840df2]</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Releasing JDBC Connection [HikariProxyConnection@768820610 wrapping com.mysql.cj.jdbc.ConnectionImpl@14840df2] after transaction</span><br></pre></td></tr></table></figure>
+<p>从这段日志可以看出：</p>
+<ol>
+<li>首先给 handle2 方法开启事务。</li>
+<li>执行 handle2 方法的 SQL。</li>
+<li>handle1 方法加入到已经存在的事务中。</li>
+<li>执行 handle1 方法的 SQL。</li>
+<li>提交事务。</li>
+</ol>
+<p>假设 handle2 方法无事务，handle1 方法有事务且传播性为 MANDATORY，那么最终执行时会抛出如下异常：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">No existing transaction found for transaction marked with propagation &apos;mandatory&apos;</span><br></pre></td></tr></table></figure>
+<p>由于没有已经存在的事务，所以出错了。</p>
+<h4 id="5-2-5-SUPPORTS"><a href="#5-2-5-SUPPORTS" class="headerlink" title="5.2.5 SUPPORTS"></a>5.2.5 SUPPORTS</h4><p>SUPPORTS 表示如果当前存在事务，则加入该事务；如果当前没有事务，则以非事务的方式继续运行。</p>
+<p>这个也简单，举两个例子大家就明白了。</p>
+<p>假设 handle2 方法有事务，handle1 方法也有事务且传播性为 SUPPORTS，那么最终事务执行日志如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Creating new transaction with name [org.javaboy.demo.AccountService2.handle2]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Acquired Connection [HikariProxyConnection@1780573324 wrapping com.mysql.cj.jdbc.ConnectionImpl@44eafcbc] for JDBC transaction</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Switching JDBC Connection [HikariProxyConnection@1780573324 wrapping com.mysql.cj.jdbc.ConnectionImpl@44eafcbc] to manual commit</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL update</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL statement [update user set money = ? where username=?;]</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Participating in existing transaction</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL update</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL statement [update user set money = ? where id=?;]</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Initiating transaction commit</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Committing JDBC transaction on Connection [HikariProxyConnection@1780573324 wrapping com.mysql.cj.jdbc.ConnectionImpl@44eafcbc]</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Releasing JDBC Connection [HikariProxyConnection@1780573324 wrapping com.mysql.cj.jdbc.ConnectionImpl@44eafcbc] after transaction</span><br></pre></td></tr></table></figure>
+<p>这段日志很简单，没啥好说的，认准 <code>Participating in existing transaction</code> 表示加入到已经存在的事务中即可。</p>
+<p>假设 handle2 方法无事务，handle1 方法有事务且传播性为 SUPPORTS，这个最终就不会开启事务了，也没有相关日志。</p>
+<h4 id="5-2-6-NOT-SUPPORTED"><a href="#5-2-6-NOT-SUPPORTED" class="headerlink" title="5.2.6 NOT_SUPPORTED"></a>5.2.6 NOT_SUPPORTED</h4><p>NOT_SUPPORTED 表示以非事务方式运行，如果当前存在事务，则把当前事务挂起。</p>
+<p>假设 handle2 方法有事务，handle1 方法也有事务且传播性为 NOT_SUPPORTED，那么最终事务执行日志如下：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Creating new transaction with name [org.javaboy.demo.AccountService2.handle2]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Acquired Connection [HikariProxyConnection@1365886554 wrapping com.mysql.cj.jdbc.ConnectionImpl@3198938b] for JDBC transaction</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Switching JDBC Connection [HikariProxyConnection@1365886554 wrapping com.mysql.cj.jdbc.ConnectionImpl@3198938b] to manual commit</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL update</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL statement [update user set money = ? where username=?;]</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Suspending current transaction</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL update</span><br><span class="line">o.s.jdbc.core.JdbcTemplate               : Executing prepared SQL statement [update user set money = ? where id=?;]</span><br><span class="line">o.s.jdbc.datasource.DataSourceUtils      : Fetching JDBC Connection from DataSource</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Resuming suspended transaction after completion of inner transaction</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Initiating transaction commit</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Committing JDBC transaction on Connection [HikariProxyConnection@1365886554 wrapping com.mysql.cj.jdbc.ConnectionImpl@3198938b]</span><br><span class="line">o.s.jdbc.support.JdbcTransactionManager  : Releasing JDBC Connection [HikariProxyConnection@1365886554 wrapping com.mysql.cj.jdbc.ConnectionImpl@3198938b] after transaction</span><br></pre></td></tr></table></figure>
+<p>这段日志大家认准这两句就行了 ： <code>Suspending current transaction</code> 表示挂起当前事务；<code>Resuming suspended transaction</code> 表示恢复挂起的事务。 </p>
+<h4 id="5-2-7-NEVER"><a href="#5-2-7-NEVER" class="headerlink" title="5.2.7 NEVER"></a>5.2.7 NEVER</h4><p>NEVER 表示以非事务方式运行，如果当前存在事务，则抛出异常。</p>
+<p>假设 handle2 方法有事务，handle1 方法也有事务且传播性为 NEVER，那么最终会抛出如下异常：</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Existing transaction found for transaction marked with propagation &apos;never&apos;</span><br></pre></td></tr></table></figure>
+<h3 id="5-3-回滚规则"><a href="#5-3-回滚规则" class="headerlink" title="5.3 回滚规则"></a>5.3 回滚规则</h3><p>默认情况下，事务只有遇到运行期异常（RuntimeException 的子类）以及 Error 时才会回滚，在遇到检查型（Checked Exception）异常时不会回滚。</p>
+<p>像 1/0，空指针这些是 RuntimeException，而 IOException 则算是 Checked Exception，换言之，默认情况下，如果发生 IOException 并不会导致事务回滚。</p>
+<p>如果我们希望发生 IOException 时也能触发事务回滚，那么可以按照如下方式配置：</p>
+<p>Java 配置：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Transactional</span>(rollbackFor = IOException.class)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handle2</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    jdbcTemplate.update(<span class="hljs-string">"update user set money = ? where username=?;"</span>, <span class="hljs-number">1</span>, <span class="hljs-string">"zhangsan"</span>);</span><br><span class="line">    accountService.handle1();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>XML 配置：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">tx:advice</span> <span class="hljs-attr">transaction-manager</span>=<span class="hljs-string">"transactionManager"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"txAdvice"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">tx:attributes</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">tx:method</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"m3"</span> <span class="hljs-attr">rollback-for</span>=<span class="hljs-string">"java.io.IOException"</span>/&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">tx:attributes</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">tx:advice</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>另外，我们也可以指定在发生某些异常时不回滚，例如当系统抛出 ArithmeticException 异常并不要触发事务回滚，配置方式如下：</p>
+<p>Java 配置：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Transactional</span>(noRollbackFor = ArithmeticException.class)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handle2</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    jdbcTemplate.update(<span class="hljs-string">"update user set money = ? where username=?;"</span>, <span class="hljs-number">1</span>, <span class="hljs-string">"zhangsan"</span>);</span><br><span class="line">    accountService.handle1();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>XML 配置：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">tx:advice</span> <span class="hljs-attr">transaction-manager</span>=<span class="hljs-string">"transactionManager"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"txAdvice"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">tx:attributes</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">tx:method</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"m3"</span> <span class="hljs-attr">no-rollback-for</span>=<span class="hljs-string">"java.lang.ArithmeticException"</span>/&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">tx:attributes</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">tx:advice</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h3 id="5-4-是否只读"><a href="#5-4-是否只读" class="headerlink" title="5.4 是否只读"></a>5.4 是否只读</h3><p>只读事务一般设置在查询方法上，但不是所有的查询方法都需要只读事务，要看具体情况。</p>
+<p>一般来说，如果这个业务方法只有一个查询 SQL，那么就没必要添加事务，强行添加最终效果适得其反。</p>
+<p>但是如果一个业务方法中有多个查询 SQL，情况就不一样了：多个查询 SQL，默认情况下，每个查询 SQL 都会开启一个独立的事务，这样，如果有并发操作修改了数据，那么多个查询 SQL 就会查到不一样的数据。此时，如果我们开启事务，并设置为只读事务，那么多个查询 SQL 将被置于同一个事务中，多条相同的 SQL 在该事务中执行将会获取到相同的查询结果。</p>
+<p>设置事务只读的方式如下：</p>
+<p>Java 配置：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Transactional</span>(readOnly = <span class="hljs-keyword">true</span>)</span><br></pre></td></tr></table></figure>
+<p>XML 配置：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">tx:advice</span> <span class="hljs-attr">transaction-manager</span>=<span class="hljs-string">"transactionManager"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"txAdvice"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">tx:attributes</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">tx:method</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"m3"</span> <span class="hljs-attr">read-only</span>=<span class="hljs-string">"true"</span>/&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">tx:attributes</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">tx:advice</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h3 id="5-5-超时时间"><a href="#5-5-超时时间" class="headerlink" title="5.5 超时时间"></a>5.5 超时时间</h3><p>超时时间是说一个事务允许执行的最长时间，如果超过该时间限制但事务还没有完成，则自动回滚事务。</p>
+<p>事务超时时间配置方式如下(单位为秒)：</p>
+<p>Java 配置：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Transactional</span>(timeout = <span class="hljs-number">10</span>)</span><br></pre></td></tr></table></figure>
+<p>XML 配置：</p>
+<figure class="highlight xml hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">tx:advice</span> <span class="hljs-attr">transaction-manager</span>=<span class="hljs-string">"transactionManager"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"txAdvice"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">tx:attributes</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">tx:method</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"m3"</span> <span class="hljs-attr">read-only</span>=<span class="hljs-string">"true"</span> <span class="hljs-attr">timeout</span>=<span class="hljs-string">"10"</span>/&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">tx:attributes</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">tx:advice</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>在 <code>TransactionDefinition</code> 中以 int 的值来表示超时时间，其单位是秒，默认值为-1。</p>
+<h2 id="6-注意事项"><a href="#6-注意事项" class="headerlink" title="6. 注意事项"></a>6. 注意事项</h2><ol>
+<li>事务只能应用到 public 方法上才会有效。</li>
+<li>事务需要从外部调用，<strong>Spring 自调事务用会失效</strong>。即相同类里边，A 方法没有事务，B 方法有事务，A 方法调用 B 方法，则 B 方法的事务会失效，这点尤其要注意，因为代理模式只拦截通过代理传入的外部方法调用，所以自调用事务是不生效的。</li>
+<li>建议事务注解 @Transactional 一般添加在实现类上，而不要定义在接口上，如果加在接口类或接口方法上时，只有配置基于接口的代理这个注解才会生效。</li>
+</ol>
+<h2 id="7-小结"><a href="#7-小结" class="headerlink" title="7. 小结"></a>7. 小结</h2><p>好啦，这就是松哥和大家分享的 Spring 事务的玩法，不知道小伙伴们搞明白没有？配套视频已经录好，正在上传，敬请期待～</p>
+
+                    <!--<div class="asb-post-01">
+                        <div class="mask"></div>
+                        <div class="info" style="display: flex;justify-content:center;flex-direction:column;align-items:center">
+                                <div>扫码关注微信公众号：<span style="color: #E9405A; font-weight: bold;">江南一点雨</span></div>
+                                <div>
+                                    <span>发送 </span><span class="token" style="color: #e9415a; font-weight: bold; font-size: 17px; margin-bottom: 45px;">290992</span>
+                                </div>
+                                <div>
+                                    即可<span style="color: #e9415a; font-weight: bold;">立即永久</span>解锁本站全部文章（注意区分大小写哦）
+                                </div>
+                            <div>
+                                <img class="code-img" style="width: 300px;display:unset" src="https://www.javaboy.org/images/sb/javaboy.jpg">
+                            </div>
+                        </div>
+                    </div>-->
+                </div>
+        
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Spring/">Spring</a>, <a class="has-link-grey -link" href="/tags/Transaction/">Transaction</a>
+                </div>
+            </div>
+        </div>
+		<div class="level is-size-6">
+						<p>喜欢这篇文章吗？扫码关注公众号<b>【江南一点雨】</b>，<b>【江南一点雨】</b>专注于 SPRING BOOT+微服务以及前后端分离技术，每天推送原创技术干货，关注后回复 JAVA，领取松哥为你精心准备的 JAVA 干货!
+</p>
+		</div>
+		<div class="level is-size-7 is-uppercase">
+<img class="menu-label has-text-centered" src="http://www.javaboy.org/images/sb/javaboy.jpg" alt>
+		</div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">觉得不错，可以给小编加个鸡腿</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="https://www.javaboy.org/images/sb/weixin_pay.png" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2021/1029/spring_transaction_video.html">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">这套视频，诚意满满！</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2021/1025/game.html">
+                <span class="level-item">16年后再逛游戏厅</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+	<section id="comments"></section>
+	<script src="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/gitment.browser.js"></script>
+	<!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/default.css"/>-->
+	<link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+	<script>
+		if (document.getElementById('comments')) {
+			var gitment = new Gitment({
+				id: '2021/1026/spring_transaction.html'.length>50?'2021/1026/spring_transaction.html'.substring(0,50):'2021/1026/spring_transaction.html',
+				owner: 'lenve',
+				repo: 'javaboy_comment',
+				oauth: {
+					client_id: 'ecc1a65d7b7baf6a495c',
+					client_secret: '427ecd90ada169afa77fc164509449905dd37f67',
+				},
+			})
+			gitment.render('comments')
+		}
+	</script>
+	
+    </div>
+</div>
+<style>
+.lock {
+    position: relative;
+    overflow: hidden;
+    padding-bottom: 30px;
+}
+.asb-post-01 {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    display: block;
+    z-index: 10000;
+    margin-bottom: 0;
+}
+.asb-post-01 .info {
+    background: white;
+    height: 370px;
+}
+.asb-post-01 .mask {
+    height: 240px;
+    width: 100%;
+    background: -webkit-gradient(linear, 0 top, 0 bottom, from(rgba(255, 255, 255, 0)), to(#fff));
+}
+</style>
+<!--<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script>
+function getCookie(name) {
+	var value = "; " + document.cookie;
+	var parts = value.split("; " + name + "=");
+	if (parts.length == 2)
+		return parts.pop().split(";").shift();
+}
+
+function getToken() {
+	let value = getCookie('UM_distinctid');
+	if (!value) {
+		return defaultToken;
+	}
+	return value.substring(value.length - 6).toUpperCase();
+}
+
+
+
+// 文章所在容器的选择器
+// var articleSelector = 'article.article-content';
+
+// DOM 完全就绪时执行
+$(function() {
+    // 找到文章所在的容器
+    var $article = $("#content");
+    console.log($article)
+	if ($article.length > 0) {
+		// 文章的实际高度
+		var article = $article[0], height = article.clientHeight;
+		// 文章隐藏后的高度
+		var halfHeight = height * 0.3;
+		
+		// 篇幅短一点的文章就不需要解锁了
+		if (halfHeight > 800) {
+			
+            // 获取口令
+            var mytoken = window.localStorage.getItem("javaboytoken")
+            var token;
+            if(mytoken){
+                token=mytoken
+            }else{
+                token = 'B'+getToken();
+                window.localStorage.setItem("javaboytoken",token)
+            }
+			$('.asb-post-01').find('.token').text(token);
+			
+var _lock = function() {
+	$article.css('height', halfHeight + 'px');
+	$article.addClass('lock');
+	$('.asb-post-01').css('display', 'block');
+}
+
+var _unlock = function() {
+	$article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+
+// 查询后端的结果
+var _detect = function() {
+	$.ajax({
+		url : 'http://blog-wx.itboyhub.com/wx/checktoken',
+		method : 'GET',
+		data : {
+			token : token
+		},
+		success : function(data) {
+			if (data.locked === true) {
+				_lock();
+			} else {
+				_unlock();
+			}
+		},
+		error : function(data) {
+			_unlock();
+		}
+	})
+}
+
+_detect();
+setInterval(function() {
+    _detect();
+}, 5000);
+}else{
+    $article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+    }
+});
+</script>-->
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="江南一点雨">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>China· ShenZhen</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        477
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        69
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        132
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/lenve" target="_blank">
+                扫码关注微信公众号</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="Github" href="https://github.com/lenve">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="envelope" href="mailto:wangsong0210@gmail.com">
+                
+                <i class="fa fa-envelope"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="RSS" href="/atom.xml">
+                
+                <i class="fas fa-rss"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/2019/">
+            <span class="level-start">
+                <span class="level-item">2019</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Blog/">
+            <span class="level-start">
+                <span class="level-item">Blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Chrome/">
+            <span class="level-start">
+                <span class="level-item">Chrome</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Docker/">
+            <span class="level-start">
+                <span class="level-item">Docker</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/ElasticSearch/">
+            <span class="level-start">
+                <span class="level-item">ElasticSearch</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/FastDFS/">
+            <span class="level-start">
+                <span class="level-item">FastDFS</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Git/">
+            <span class="level-start">
+                <span class="level-item">Git</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/GitHub/">
+            <span class="level-start">
+                <span class="level-item">GitHub</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/HUAWEI/">
+            <span class="level-start">
+                <span class="level-item">HUAWEI</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IDEA/">
+            <span class="level-start">
+                <span class="level-item">IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IntelliJ-IDEA/">
+            <span class="level-start">
+                <span class="level-item">IntelliJ IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Java/">
+            <span class="level-start">
+                <span class="level-item">Java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/JavaWeb/">
+            <span class="level-start">
+                <span class="level-item">JavaWeb</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MacBookPro/">
+            <span class="level-start">
+                <span class="level-item">MacBookPro</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Maven/">
+            <span class="level-start">
+                <span class="level-item">Maven</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MongoDB/">
+            <span class="level-start">
+                <span class="level-item">MongoDB</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MyBatis/">
+            <span class="level-start">
+                <span class="level-item">MyBatis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MySQL/">
+            <span class="level-start">
+                <span class="level-item">MySQL</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">21</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Nginx/">
+            <span class="level-start">
+                <span class="level-item">Nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/OAuth2/">
+            <span class="level-start">
+                <span class="level-item">OAuth2</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">11</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/RabbitMQ/">
+            <span class="level-start">
+                <span class="level-item">RabbitMQ</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Redis/">
+            <span class="level-start">
+                <span class="level-item">Redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Resume/">
+            <span class="level-start">
+                <span class="level-item">Resume</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SSM/">
+            <span class="level-start">
+                <span class="level-item">SSM</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">25</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Shiro/">
+            <span class="level-start">
+                <span class="level-item">Shiro</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring/">
+            <span class="level-start">
+                <span class="level-item">Spring</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">16</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Boot/">
+            <span class="level-start">
+                <span class="level-item">Spring Boot</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">127</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Cloud/">
+            <span class="level-start">
+                <span class="level-item">Spring Cloud</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Security/">
+            <span class="level-start">
+                <span class="level-item">Spring Security</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">56</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringBoot/">
+            <span class="level-start">
+                <span class="level-item">SpringBoot</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">9</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringMVC/">
+            <span class="level-start">
+                <span class="level-item">SpringMVC</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringSecurity/">
+            <span class="level-start">
+                <span class="level-item">SpringSecurity</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Transaction/">
+            <span class="level-start">
+                <span class="level-item">Transaction</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/WebFlux/">
+            <span class="level-start">
+                <span class="level-item">WebFlux</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">12</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/blog/">
+            <span class="level-start">
+                <span class="level-item">blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/chrome/">
+            <span class="level-start">
+                <span class="level-item">chrome</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/docker/">
+            <span class="level-start">
+                <span class="level-item">docker</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/domain/">
+            <span class="level-start">
+                <span class="level-item">domain</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/hexo/">
+            <span class="level-start">
+                <span class="level-item">hexo</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/idea/">
+            <span class="level-start">
+                <span class="level-item">idea</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/java/">
+            <span class="level-start">
+                <span class="level-item">java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/layui/">
+            <span class="level-start">
+                <span class="level-item">layui</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/life/">
+            <span class="level-start">
+                <span class="level-item">life</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">9</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/mail/">
+            <span class="level-start">
+                <span class="level-item">mail</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/mysql/">
+            <span class="level-start">
+                <span class="level-item">mysql</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/nginx/">
+            <span class="level-start">
+                <span class="level-item">nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/redis/">
+            <span class="level-start">
+                <span class="level-item">redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/transaction/">
+            <span class="level-start">
+                <span class="level-item">transaction</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vhr/">
+            <span class="level-start">
+                <span class="level-item">vhr</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/video/">
+            <span class="level-start">
+                <span class="level-item">video</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vue/">
+            <span class="level-start">
+                <span class="level-item">vue</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/weixin/">
+            <span class="level-start">
+                <span class="level-item">weixin</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/侃侃而谈/">
+            <span class="level-start">
+                <span class="level-item">侃侃而谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">18</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/分布式事务/">
+            <span class="level-start">
+                <span class="level-item">分布式事务</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/分布式系统/">
+            <span class="level-start">
+                <span class="level-item">分布式系统</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/前后端分离/">
+            <span class="level-start">
+                <span class="level-item">前后端分离</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/外包/">
+            <span class="level-start">
+                <span class="level-item">外包</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/学习资源/">
+            <span class="level-start">
+                <span class="level-item">学习资源</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">7</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/定时任务/">
+            <span class="level-start">
+                <span class="level-item">定时任务</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/工具/">
+            <span class="level-start">
+                <span class="level-item">工具</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微人事/">
+            <span class="level-start">
+                <span class="level-item">微人事</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微服务/">
+            <span class="level-start">
+                <span class="level-item">微服务</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/杂谈/">
+            <span class="level-start">
+                <span class="level-item">杂谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/生活/">
+            <span class="level-start">
+                <span class="level-item">生活</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/程序人生/">
+            <span class="level-start">
+                <span class="level-item">程序人生</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/视频教程/">
+            <span class="level-start">
+                <span class="level-item">视频教程</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/资料/">
+            <span class="level-start">
+                <span class="level-item">资料</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/面试/">
+            <span class="level-start">
+                <span class="level-item">面试</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/项目实战/">
+            <span class="level-start">
+                <span class="level-item">项目实战</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/2019-article/" style="font-size: 10px;">2019-article</a> <a href="/tags/Actuator/" style="font-size: 10px;">Actuator</a> <a href="/tags/Blog/" style="font-size: 10px;">Blog</a> <a href="/tags/Bug/" style="font-size: 10px;">Bug</a> <a href="/tags/CAS/" style="font-size: 11.58px;">CAS</a> <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 11.05px;">Chrome</a> <a href="/tags/Docker/" style="font-size: 11.58px;">Docker</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/ElasticSearch/" style="font-size: 11.58px;">ElasticSearch</a> <a href="/tags/ElasticSerach/" style="font-size: 10px;">ElasticSerach</a> <a href="/tags/Eureka/" style="font-size: 10px;">Eureka</a> <a href="/tags/FastDFS/" style="font-size: 11.05px;">FastDFS</a> <a href="/tags/Flyway/" style="font-size: 10px;">Flyway</a> <a href="/tags/Freemarker/" style="font-size: 11.05px;">Freemarker</a> <a href="/tags/Git/" style="font-size: 13.68px;">Git</a> <a href="/tags/GitHub/" style="font-size: 10.53px;">GitHub</a> <a href="/tags/Https/" style="font-size: 10px;">Https</a> <a href="/tags/I18N/" style="font-size: 10px;">I18N</a> <a href="/tags/IDEA/" style="font-size: 13.16px;">IDEA</a> <a href="/tags/IDEA，EasyCode/" style="font-size: 10px;">IDEA，EasyCode</a> <a href="/tags/IntelliJ-IDEA/" style="font-size: 11.05px;">IntelliJ IDEA</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/Java/" style="font-size: 11.58px;">Java</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 10.53px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 11.05px;">Jpa</a> <a href="/tags/LiveReload/" style="font-size: 10px;">LiveReload</a> <a href="/tags/Log/" style="font-size: 10px;">Log</a> <a href="/tags/Lombok/" style="font-size: 10px;">Lombok</a> <a href="/tags/MacBook/" style="font-size: 10px;">MacBook</a> <a href="/tags/MacBookPro/" style="font-size: 10px;">MacBookPro</a> <a href="/tags/Mail/" style="font-size: 10px;">Mail</a> <a href="/tags/Maven/" style="font-size: 12.63px;">Maven</a> <a href="/tags/MongoDB/" style="font-size: 16.84px;">MongoDB</a> <a href="/tags/MyBatis/" style="font-size: 14.21px;">MyBatis</a> <a href="/tags/MyCat/" style="font-size: 11.58px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 17.89px;">MySQL</a> <a href="/tags/MySQL8/" style="font-size: 10px;">MySQL8</a> <a href="/tags/Nacos/" style="font-size: 10px;">Nacos</a> <a href="/tags/Nginx/" style="font-size: 10.53px;">Nginx</a> <a href="/tags/OAuth2/" style="font-size: 14.74px;">OAuth2</a> <a href="/tags/PicGo/" style="font-size: 10px;">PicGo</a> <a href="/tags/Platform/" style="font-size: 10px;">Platform</a> <a href="/tags/Plugin/" style="font-size: 10px;">Plugin</a> <a href="/tags/RabbitMQ/" style="font-size: 12.63px;">RabbitMQ</a> <a href="/tags/Redis/" style="font-size: 18.42px;">Redis</a> <a href="/tags/Resume/" style="font-size: 10px;">Resume</a> <a href="/tags/SSM/" style="font-size: 17.89px;">SSM</a> <a href="/tags/Shiro/" style="font-size: 10.53px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 17.37px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Cloud/" style="font-size: 11.58px;">Spring Cloud</a> <a href="/tags/Spring-Data/" style="font-size: 10.53px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 19.47px;">Spring Security</a> <a href="/tags/SpringBoot/" style="font-size: 15.26px;">SpringBoot</a> <a href="/tags/SpringMVC/" style="font-size: 18.95px;">SpringMVC</a> <a href="/tags/SpringSecurity/" style="font-size: 10px;">SpringSecurity</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Swagger3/" style="font-size: 10px;">Swagger3</a> <a href="/tags/Tencent/" style="font-size: 10px;">Tencent</a> <a href="/tags/Thymeleaf/" style="font-size: 10.53px;">Thymeleaf</a> <a href="/tags/Transaction/" style="font-size: 11.05px;">Transaction</a> <a href="/tags/Video/" style="font-size: 10px;">Video</a> <a href="/tags/ViewResolver/" style="font-size: 10px;">ViewResolver</a> <a href="/tags/Vue/" style="font-size: 15.79px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/WebFlux/" style="font-size: 15.26px;">WebFlux</a> <a href="/tags/blog/" style="font-size: 10.53px;">blog</a> <a href="/tags/docker/" style="font-size: 13.68px;">docker</a> <a href="/tags/domain/" style="font-size: 10px;">domain</a> <a href="/tags/es/" style="font-size: 12.11px;">es</a> <a href="/tags/hdz/" style="font-size: 10px;">hdz</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/huawei/" style="font-size: 10px;">huawei</a> <a href="/tags/i18n/" style="font-size: 10px;">i18n</a> <a href="/tags/idea/" style="font-size: 10px;">idea</a> <a href="/tags/java/" style="font-size: 10px;">java</a> <a href="/tags/life/" style="font-size: 16.32px;">life</a> <a href="/tags/mail/" style="font-size: 10px;">mail</a> <a href="/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/router/" style="font-size: 10px;">router</a> <a href="/tags/saga/" style="font-size: 10px;">saga</a> <a href="/tags/seata/" style="font-size: 11.58px;">seata</a> <a href="/tags/tcc/" style="font-size: 10px;">tcc</a> <a href="/tags/transaction/" style="font-size: 10.53px;">transaction</a> <a href="/tags/vhr/" style="font-size: 12.63px;">vhr</a> <a href="/tags/video/" style="font-size: 11.05px;">video</a> <a href="/tags/vue/" style="font-size: 10px;">vue</a> <a href="/tags/vuepress/" style="font-size: 10px;">vuepress</a> <a href="/tags/weixin/" style="font-size: 11.05px;">weixin</a> <a href="/tags/xa/" style="font-size: 10px;">xa</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/七牛云/" style="font-size: 10px;">七牛云</a> <a href="/tags/中间件/" style="font-size: 10px;">中间件</a> <a href="/tags/主从复制/" style="font-size: 10px;">主从复制</a> <a href="/tags/事务/" style="font-size: 10px;">事务</a> <a href="/tags/侃侃而谈/" style="font-size: 15.26px;">侃侃而谈</a> <a href="/tags/全局ID/" style="font-size: 10px;">全局ID</a> <a href="/tags/分布式/" style="font-size: 10px;">分布式</a> <a href="/tags/分布式事务/" style="font-size: 12.11px;">分布式事务</a> <a href="/tags/分布式锁/" style="font-size: 10px;">分布式锁</a> <a href="/tags/前后端分离/" style="font-size: 12.11px;">前后端分离</a> <a href="/tags/单体应用/" style="font-size: 10px;">单体应用</a> <a href="/tags/外包/" style="font-size: 10.53px;">外包</a> <a href="/tags/学习资源/" style="font-size: 12.11px;">学习资源</a> <a href="/tags/定时任务/" style="font-size: 10.53px;">定时任务</a> <a href="/tags/工具/" style="font-size: 10.53px;">工具</a> <a href="/tags/干货汇总/" style="font-size: 10px;">干货汇总</a> <a href="/tags/延迟队列/" style="font-size: 10px;">延迟队列</a> <a href="/tags/微人事/" style="font-size: 10.53px;">微人事</a> <a href="/tags/微服务/" style="font-size: 10.53px;">微服务</a> <a href="/tags/杂谈/" style="font-size: 13.16px;">杂谈</a> <a href="/tags/条件注解/" style="font-size: 10px;">条件注解</a> <a href="/tags/死信队列/" style="font-size: 10px;">死信队列</a> <a href="/tags/消息过期/" style="font-size: 10px;">消息过期</a> <a href="/tags/消息驱动/" style="font-size: 10px;">消息驱动</a> <a href="/tags/源码解析/" style="font-size: 11.58px;">源码解析</a> <a href="/tags/源码解读/" style="font-size: 13.16px;">源码解读</a> <a href="/tags/生活/" style="font-size: 11.05px;">生活</a> <a href="/tags/私活/" style="font-size: 10px;">私活</a> <a href="/tags/程序人生/" style="font-size: 10.53px;">程序人生</a> <a href="/tags/程序员/" style="font-size: 10px;">程序员</a> <a href="/tags/腾讯/" style="font-size: 10px;">腾讯</a> <a href="/tags/自学/" style="font-size: 10px;">自学</a> <a href="/tags/视频/" style="font-size: 10.53px;">视频</a> <a href="/tags/视频教程/" style="font-size: 10px;">视频教程</a> <a href="/tags/资料/" style="font-size: 10px;">资料</a> <a href="/tags/逆向工程/" style="font-size: 10.53px;">逆向工程</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow  ">
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-11-02T12:23:31.000Z">2021-11-02</time></div>
+                    <a href="/2021/1102/mysql_batch_insert.html" class="has-link-black-ter is-size-6">10万条数据批量插入，到底怎么做才快？</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/MySQL/">MySQL</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-11-01T12:23:10.000Z">2021-11-01</time></div>
+                    <a href="/2021/1101/coding.html" class="has-link-black-ter is-size-6">由蒸馒头悟出的一点敲代码的道理~</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/侃侃而谈/">侃侃而谈</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-10-29T12:22:56.000Z">2021-10-29</time></div>
+                    <a href="/2021/1029/spring_transaction_video.html" class="has-link-black-ter is-size-6">这套视频，诚意满满！</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring/">Spring</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-10-26T12:22:40.000Z">2021-10-26</time></div>
+                    <a href="/2021/1026/spring_transaction.html" class="has-link-black-ter is-size-6">长文捋明白 Spring 事务！隔离性？传播性？一网打尽！</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring/">Spring</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2021-10-25T12:22:20.000Z">2021-10-25</time></div>
+                    <a href="/2021/1025/game.html" class="has-link-black-ter is-size-6">16年后再逛游戏厅</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/侃侃而谈/">侃侃而谈</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">9</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">8</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">7</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">9</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">4</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">13</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">5</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">8</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">7</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">4</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">9</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">22</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">21</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">23</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">25</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">25</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">20</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">40</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">17</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">22</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">12</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">43</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">16</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">26</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+            
+
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            友链
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itboyhub.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">江南一点雨-国内站(速度快)</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itboyhub.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.ityouknow.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">纯洁的微笑</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.ityouknow.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cxy521.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">程序员一站式导航</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cxy521.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://bugstack.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">bugstack虫洞栈</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">bugstack.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itwanger.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">沉默王二</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itwanger.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://tanqingbo.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">IT码农</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">tanqingbo.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.cxyxiaowu.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">五分钟学算法</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.cxyxiaowu.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.justdojava.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 极客技术</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.justdojava.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cxytiandi.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">猿天地</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cxytiandi.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://vimjc.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Vim教程网</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">vimjc.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://muggle.javaboy.org/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">muggle</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">muggle.javaboy.org</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://crossoverjie.top/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">crossoverJie&#39;s Blog</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">crossoverjie.top</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cmsblogs.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 技术驿站</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cmsblogs.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://maizitoday.github.io/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">麦子的博客</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">maizitoday.github.io</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.haoservice.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">码农code之路</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.haoservice.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.jitwxs.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Jitwxs</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.jitwxs.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.gameboys.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 烂笔头</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.gameboys.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.a2data.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">A2Data</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.a2data.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.itechyou.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">I Tech You, 我教你！</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itechyou.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="长文捋明白 Spring 事务！隔离性？传播性？一网打尽！" height="28">
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2021 江南一点雨&nbsp;
+				<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><!--
+PV <span id="busuanzi_value_site_pv"></span>&nbsp;|&nbsp;<i class="fa fa-user-md"></i>  UV <span id="busuanzi_value_site_uv"></span>&nbsp;-->
+				<script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? "https://" : "http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1276890692'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s96.cnzz.com/z_stat.php%3Fid%3D1276890692%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+				<a href="http://www.beian.miit.gov.cn/" style="color: black;">粤ICP备19111220号</a>
+                <!--Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么...">
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>
