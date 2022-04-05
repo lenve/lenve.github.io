@@ -1,0 +1,2114 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head><meta name="generator" content="Hexo 3.8.0">
+    <meta charset="utf-8">
+<title>哪种分布式事务处理方案效率最高？必然是... - 江南一点雨</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+
+
+    <meta name="description" content="[TOC] 前面几篇文章松哥和大家介绍了 Seata 中四种分布式事务处理方案，相信经过前面的几篇文章的学习，大家对于 Seata 中的分布式事务已经非常了解了。还没看过前面文章的小伙伴，可以先看一下：  五分钟带你体验一把分布式事务！so easy！ 看了那么多博客，还是不懂 TCC，不妨看看这个案例！ XA 事务水很深，小伙子我怕你把握不住！ 你这 Saga 事务保“隔离性”吗？">
+<meta name="keywords" content="分布式事务,消息驱动">
+<meta property="og:type" content="article">
+<meta property="og:title" content="哪种分布式事务处理方案效率最高？必然是...">
+<meta property="og:url" content="http://www.javaboy.org/2021/0903/transaction_rabbitmq.html">
+<meta property="og:site_name" content="江南一点雨">
+<meta property="og:description" content="[TOC] 前面几篇文章松哥和大家介绍了 Seata 中四种分布式事务处理方案，相信经过前面的几篇文章的学习，大家对于 Seata 中的分布式事务已经非常了解了。还没看过前面文章的小伙伴，可以先看一下：  五分钟带你体验一把分布式事务！so easy！ 看了那么多博客，还是不懂 TCC，不妨看看这个案例！ XA 事务水很深，小伙子我怕你把握不住！ 你这 Saga 事务保“隔离性”吗？">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="http://www.javaboy.org/images/og_image.png">
+<meta property="og:updated_time" content="2021-10-20T14:12:10.911Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="哪种分布式事务处理方案效率最高？必然是...">
+<meta name="twitter:description" content="[TOC] 前面几篇文章松哥和大家介绍了 Seata 中四种分布式事务处理方案，相信经过前面的几篇文章的学习，大家对于 Seata 中的分布式事务已经非常了解了。还没看过前面文章的小伙伴，可以先看一下：  五分钟带你体验一把分布式事务！so easy！ 看了那么多博客，还是不懂 TCC，不妨看看这个案例！ XA 事务水很深，小伙子我怕你把握不住！ 你这 Saga 事务保“隔离性”吗？">
+<meta name="twitter:image" content="http://www.javaboy.org/images/og_image.png">
+
+
+
+
+
+
+
+<link rel="icon" href="https://www.javaboy.org/favicon.ico">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-2-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+                
+                <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="哪种分布式事务处理方案效率最高？必然是..." height="28">
+                
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item" href="/">江南一点雨</a>
+                
+                <a class="navbar-item" href="/archives">归档</a>
+                
+                <a class="navbar-item" href="/fronted-backend">前后端分离</a>
+                
+                <a class="navbar-item" href="http://docs.javaboy.org/ssm/">SSM</a>
+                
+                <a class="navbar-item" href="http://springboot.javaboy.org">Spring Boot</a>
+                
+                <a class="navbar-item" href="http://www.javaboy.org/springsecurity">Spring Security</a>
+                
+                <a class="navbar-item" href="/redis">Redis</a>
+                
+                <a class="navbar-item" href="/mongodb">MongoDB</a>
+                
+                <a class="navbar-item" href="/mysql">MySQL</a>
+                
+                <a class="navbar-item" href="/docker">Docker</a>
+                
+                <a class="navbar-item" href="/git">Git</a>
+                
+                <a class="navbar-item" href="/about">About</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                
+                
+                <a class="navbar-item search" style="height: 40px;line-height: 60px;width: 180px;margin: 12px 15px;box-sizing: border-box;border: 1px solid #dedede;border-radius: 20px;display: flex;justify-content: space-between;padding-left: 12px;padding-right: 10px" title="搜索" href="javascript:;">
+                    <!--<div style="border: 1px solid #dedede;border-radius: 10px;">-->
+                    <div>搜索</div>
+                        <i class="fas fa-search"></i>
+                    <!--</div>-->
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2021-09-03T13:37:19.000Z">2021-09-03</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/分布式事务/">分布式事务</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    33 分钟 读完 (大约 4915 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                哪种分布式事务处理方案效率最高？必然是...
+            
+        </h1>
+        
+            <div class="content" id="content">
+                    <p>[TOC]</p>
+<p>前面几篇文章松哥和大家介绍了 Seata 中四种分布式事务处理方案，相信经过前面的几篇文章的学习，大家对于 Seata 中的分布式事务已经非常了解了。还没看过前面文章的小伙伴，可以先看一下：</p>
+<ul>
+<li><a href="https://mp.weixin.qq.com/s/47efAPrm10l1Bxn1zECwvA" target="_blank" rel="noopener">五分钟带你体验一把分布式事务！so easy！</a></li>
+<li><a href="https://mp.weixin.qq.com/s/83-I7hPDuWRTTfrldHJ0VA" target="_blank" rel="noopener">看了那么多博客，还是不懂 TCC，不妨看看这个案例！</a></li>
+<li><a href="https://mp.weixin.qq.com/s/BJHmVkNrvNL87hBT8DM8vg" target="_blank" rel="noopener">XA 事务水很深，小伙子我怕你把握不住！</a></li>
+<li><a href="https://mp.weixin.qq.com/s/cZabAt7JF4QrQHERHHAWjA" target="_blank" rel="noopener">你这 Saga 事务保“隔离性”吗？</a></li>
+</ul>
+<a id="more"></a>
+<p>不过很多小伙伴看完后感觉 Seata 对于分布式事务的处理，代码虽然简单，但是内部花费在网络上的时间消耗太多了，在高并发场景下，这似乎并不是一种很好的解决方案。</p>
+<p>要说哪种分布式事务处理方案效率高，必然绕不开消息中间件！基于消息中间件的两阶段提交方案，通常用在高并发场景下。这种方式通过牺牲数据的强一致性换取性能的大幅提升，不过实现这种方式的成本和复杂度是比较高的，使用时还要看实际业务情况。</p>
+<p>今天松哥想通过一个简单的案例，来和大家聊一聊如何通过消息中间件来处理分布式事务。</p>
+<h2 id="1-思路分析"><a href="#1-思路分析" class="headerlink" title="1. 思路分析"></a>1. 思路分析</h2><p>先来说说整体思路。</p>
+<p>有一个名词叫做消息驱动的微服务，相信很多小伙伴都听说过。怎么理解呢？</p>
+<p>在微服务系统中，服务之间的互相调用，我们可以使用 HTTP 的方式，例如 OpenFeign，也可以使用 RPC 的方式，例如 Dubbo，除了这些方案之外，我们也可以使用消息驱动，这是一种典型的响应式系统设计方案。</p>
+<p>在消息驱动的微服务中，服务之间不再互相直接调用，当服务之间需要通信时，就把通信内容发送到消息中间件上，另一个服务则通过监听消息中间件中的消息队列，来完成相应的业务逻辑调用，过程就是这么个过程，并不难，具体怎么玩，我们继续往下看。</p>
+<h2 id="2-业务分析"><a href="#2-业务分析" class="headerlink" title="2. 业务分析"></a>2. 业务分析</h2><p>折腾了半天，后来松哥在网上找到了一个别人写好的例子，我觉得用来演示这个问题特别合适，所以我就没有自己写案例了，直接用别人的代码，我们来逐个分析，跟前面讲分布式事务 Seata 的方式一致。</p>
+<p>首先我们来看如下一张流程图，这是一个用户购票的案例：</p>
+<p><img src="http://img.itboyhub.com/2021/07/20210829194847.png" alt></p>
+<p>当用户想要购买一张票时：</p>
+<ol>
+<li>向新订单队列中写入一条数据。</li>
+<li>Order Service 负责消费这个队列中的消息，完成订单的创建，然后再向新订单缴费队列中写入一条消息。</li>
+<li>User Service 负责消费新订单缴费队列中的消息，在 User Service 中完成对用户账户余额的划扣，然后向新订单转移票队列中写入一条消息。</li>
+<li>Ticket Service 负责消费新订单转移票队列，在 Ticket Service 中完成票的转移，然后发送一条消息给订单完成队列。</li>
+<li>最后 Order Service 中负责监听订单完成队列，处理完成后的订单。</li>
+</ol>
+<p>这就是一个典型的<strong>消息驱动微服务</strong>，也是一个典型的<strong>响应式系统</strong>。在这个系统中，一共有三个服务，分别是：</p>
+<ul>
+<li>Order Service</li>
+<li>User Service</li>
+<li>Ticket Service</li>
+</ul>
+<p>这三个服务之间不会进行任何形式的直接调用，大家有事都是直接发送到消息中间件，其他服务则从消息中间件中获取自己想要的消息然后进行处理。</p>
+<p>具体到我们的实践中，则多了一个检查票是否够用的流程，如下图：</p>
+<p><img src="http://img.itboyhub.com/2021/07/20210829195014.png" alt></p>
+<p>创建订单时，先由 Ticket 服务检查票是否够用，没问题的话再继续发起订单的创建。其他过程我就不说了。</p>
+<p><strong>另外还需要注意，在售票系统中，由于每张票都不同，例如每张票可能有座位啥的，因此一张票在数据库中往往是被设计成一条记录。</strong></p>
+<h2 id="3-实践"><a href="#3-实践" class="headerlink" title="3. 实践"></a>3. 实践</h2><p>流程我已经说明白了，接下来我们就来看看具体的代码实践。</p>
+<h3 id="3-1-准备数据库"><a href="#3-1-准备数据库" class="headerlink" title="3.1 准备数据库"></a>3.1 准备数据库</h3><p>首先我们准备三个数据库，分别是：</p>
+<ul>
+<li>javaboy_order：订单库，用户创建订单等操作，在这个数据库中完成。</li>
+<li>javaboy_ticket：票务库，这个库中保存着所有的票据信息，每一张票都是一条记录，都保存在这个库中。</li>
+<li>javaboy_user：用户库，这里保存着用户的账户余额以及付款记录等信息。</li>
+</ul>
+<p>每个库中都有各自对应的表，为了操作方便，这些表不用自己创建，将来等项目启动了，利用 JPA 自动创建即可。</p>
+<h3 id="3-2-项目概览"><a href="#3-2-项目概览" class="headerlink" title="3.2 项目概览"></a>3.2 项目概览</h3><p>我们先来整体上看下这个项目，公众号后台回复 <code>mq_tran</code> 可以下载完整代码：</p>
+<p><img src="http://img.itboyhub.com/2021/07/20210831214348.png" alt></p>
+<p>一共有五个服务：</p>
+<ul>
+<li>eureka：注册中心</li>
+<li>order：订单服务</li>
+<li>service：公共模块</li>
+<li>ticket：票务服务</li>
+<li>user：用户服务</li>
+</ul>
+<p>下面分别来说。</p>
+<h3 id="3-3-注册中心"><a href="#3-3-注册中心" class="headerlink" title="3.3 注册中心"></a>3.3 注册中心</h3><p>有人说，都消息驱动了，还要注册中心干嘛？</p>
+<p>消息驱动没错，消息驱动微服务之后每个服务只管把消息往消息中间件上扔，每个服务又只管消费消息中间件上的消息，这个时候对于服务注册中心似乎不是那么强需要。不过在我们这个案例中，消息驱动主要用来处理事务问题，其他常规需求我们还是用 OpenFeign 来处理，所以这里我们依然需要一个注册中心。</p>
+<p>这里的注册中心我就选择常见的 Eureka，省事一些。<strong>由于本文主要是和大家聊分布式事务，所以涉及到微服务的东西我就简单介绍下，不会占用过多篇幅</strong>，如果大家还不熟悉 Spring Cloud 的用法，可以在公众号后台回复 vhr 有一套视频介绍。</p>
+<p>服务注册中心的创建记得加上 Spring Security，将自己的服务注册中心保护起来。</p>
+<p>这块有一个小小的细节和大家多说两句。</p>
+<p>Eureka 用 Spring Security 保护起来之后，以后其他服务注册都是通过 Http Basic 来认证，所以我们要在代码中开启 Http Basic 认证，如下（以前旧版本不需要下面这段代码，但是新版本需要）：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Configuration</span></span><br><span class="line"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SecurityConfig</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">WebSecurityConfigurerAdapter</span> </span>&#123;</span><br><span class="line">    <span class="hljs-meta">@Override</span></span><br><span class="line">    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">configure</span><span class="hljs-params">(HttpSecurity http)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        http.authorizeRequests()</span><br><span class="line">                .anyRequest().authenticated()</span><br><span class="line">                .and()</span><br><span class="line">                .httpBasic()</span><br><span class="line">                .and().formLogin().and().csrf().disable();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="3-4-购票服务"><a href="#3-4-购票服务" class="headerlink" title="3.4 购票服务"></a>3.4 购票服务</h3><p>接下来我们就来看看购票服务。</p>
+<p>购票是从下订单开始，所以我们就先从订单服务 order 开始整个流程的分析。</p>
+<h4 id="3-4-1-新订单处理（order）"><a href="#3-4-1-新订单处理（order）" class="headerlink" title="3.4.1 新订单处理（order）"></a>3.4.1 新订单处理（order）</h4><p>当用户发起一个购票请求后，这个请求发送到 order 服务上，order 服务首先会向 <code>order:new</code> 队列发送一条消息，开启一个订单的处理流程。代码如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Transactional</span></span><br><span class="line"><span class="hljs-meta">@PostMapping</span>(<span class="hljs-string">""</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">create</span><span class="hljs-params">(@RequestBody OrderDTO dto)</span> </span>&#123;</span><br><span class="line">    dto.setUuid(UUID.randomUUID().toString());</span><br><span class="line">    rabbitTemplate.convertAndSend(<span class="hljs-string">"order:new"</span>, dto);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面设置的 UUID 是整个订单在处理过程中的一个唯一标志符，也算是一条主线。</p>
+<p><code>order:new</code> 队列中的消息将被 ticket 服务消费，ticket 服务消费 <code>order:new</code> 中的消息，并进行锁票操作（锁票的目的防止有两个消费同时购买同一张票），锁票成功后，ticket 服务将向 <code>order:locked</code> 队列发送一条消息，表示锁票成功；否则向 <code>order:fail</code> 队列发送一条消息表示锁票失败。</p>
+<p>这里的 OrderDTO 对象将贯穿整个购票过程。</p>
+<h4 id="3-4-2-锁票（ticket）"><a href="#3-4-2-锁票（ticket）" class="headerlink" title="3.4.2 锁票（ticket）"></a>3.4.2 锁票（ticket）</h4><p>锁票操作是在 ticket 服务中完成的，代码如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Transactional</span></span><br><span class="line"><span class="hljs-meta">@RabbitListener</span>(queues = <span class="hljs-string">"order:new"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleTicketLock</span><span class="hljs-params">(OrderDTO msg)</span> </span>&#123;</span><br><span class="line">    LOG.info(<span class="hljs-string">"Get new order for ticket lock:&#123;&#125;"</span>, msg);</span><br><span class="line">    <span class="hljs-keyword">int</span> lockCount = ticketRepository.lockTicket(msg.getCustomerId(), msg.getTicketNum());</span><br><span class="line">    <span class="hljs-keyword">if</span> (lockCount == <span class="hljs-number">0</span>) &#123;</span><br><span class="line">        msg.setStatus(<span class="hljs-string">"TICKET_LOCK_FAIL"</span>);</span><br><span class="line">        rabbitTemplate.convertAndSend(<span class="hljs-string">"order:fail"</span>, msg);</span><br><span class="line">    &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">        msg.setStatus(<span class="hljs-string">"TICKET_LOCKED"</span>);</span><br><span class="line">        rabbitTemplate.convertAndSend(<span class="hljs-string">"order:locked"</span>, msg);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>先调用 lockTicket 方法去数据库中锁票，所谓的锁票就是将要购买的票的 lock_user 字段设置为 customer_id（购买者的 id）。</p>
+<p>如果锁票成功（即数据库修改成功），设置 msg 的状态为 <code>TICKET_LOCKED</code>，同时发送消息到 <code>order:locked</code> 队列，表示锁票成功。</p>
+<p>如果锁票失败（即数据库修改失败），设置 msg 的状态为 <code>TICKET_LOCK_FAIL</code>，同时发送消息到 <code>order:fail</code> 队列，表示锁票失败。</p>
+<h4 id="3-4-2-锁票成功（order）"><a href="#3-4-2-锁票成功（order）" class="headerlink" title="3.4.2 锁票成功（order）"></a>3.4.2 锁票成功（order）</h4><p>接下来，由 order 服务消费 <code>order:locked</code> 队列中的消息，也就是锁票成功后接下来的操作。</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Transactional</span></span><br><span class="line"><span class="hljs-meta">@RabbitListener</span>(queues = <span class="hljs-string">"order:locked"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handle</span><span class="hljs-params">(OrderDTO msg)</span> </span>&#123;</span><br><span class="line">    LOG.info(<span class="hljs-string">"Get new order to create:&#123;&#125;"</span>, msg);</span><br><span class="line">    <span class="hljs-keyword">if</span> (orderRepository.findOneByUuid(msg.getUuid()) != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">        LOG.info(<span class="hljs-string">"Msg already processed:&#123;&#125;"</span>, msg);</span><br><span class="line">    &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">        Order order = newOrder(msg);</span><br><span class="line">        orderRepository.save(order);</span><br><span class="line">        msg.setId(order.getId());</span><br><span class="line">    &#125;</span><br><span class="line">    msg.setStatus(<span class="hljs-string">"NEW"</span>);</span><br><span class="line">    rabbitTemplate.convertAndSend(<span class="hljs-string">"order:pay"</span>, msg);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>锁票成功后，先根据订单的 UUID 去订单数据库查询，是否已经有订单记录了，如果有，说明这条消息已经被处理了，可以防止订单的重复处理（这块主要是解决幂等性问题）。</p>
+<p>如果订单还没有被处理，则创建一个新的订单对象，并保存到数据库中，创建新订单对象的时候，需要设置订单的 status 为 NEW。</p>
+<p>最后设置 msg 的 status 为 NEW，然后向 <code>order:pay</code> 队列发送一条消息开启付款流程，付款是由 user 服务提供的。user 服务中会检查用户的账户余额是否够用，如果不够用，就会发送消息到 <code>order:ticket_error</code> 队列，表示订票失败；如果余额够用，则进行正常的付款操作，并在付款成功后发送消息到 <code>order:ticket_move</code> 队列，开启票的转移。</p>
+<h4 id="3-4-3-缴费（user）"><a href="#3-4-3-缴费（user）" class="headerlink" title="3.4.3 缴费（user）"></a>3.4.3 缴费（user）</h4><p>锁票成功后，接下来就是付费了，付费服务由 user 提供。</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Transactional</span></span><br><span class="line"><span class="hljs-meta">@RabbitListener</span>(queues = <span class="hljs-string">"order:pay"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handle</span><span class="hljs-params">(OrderDTO msg)</span> </span>&#123;</span><br><span class="line">    LOG.info(<span class="hljs-string">"Get new order to pay:&#123;&#125;"</span>, msg);</span><br><span class="line">    <span class="hljs-comment">// 先检查payInfo判断重复消息。</span></span><br><span class="line">    PayInfo pay = payInfoRepository.findOneByOrderId(msg.getId());</span><br><span class="line">    <span class="hljs-keyword">if</span> (pay != <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">        LOG.warn(<span class="hljs-string">"Order already paid, duplicated message."</span>);</span><br><span class="line">        <span class="hljs-keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    Customer customer = customerRepository.getById(msg.getCustomerId());</span><br><span class="line">    <span class="hljs-keyword">if</span> (customer.getDeposit() &lt; msg.getAmount()) &#123;</span><br><span class="line">        LOG.info(<span class="hljs-string">"No enough deposit, need amount:&#123;&#125;"</span>, msg.getAmount());</span><br><span class="line">        msg.setStatus(<span class="hljs-string">"NOT_ENOUGH_DEPOSIT"</span>);</span><br><span class="line">        rabbitTemplate.convertAndSend(<span class="hljs-string">"order:ticket_error"</span>, msg);</span><br><span class="line">        <span class="hljs-keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    pay = <span class="hljs-keyword">new</span> PayInfo();</span><br><span class="line">    pay.setOrderId(msg.getId());</span><br><span class="line">    pay.setAmount(msg.getAmount());</span><br><span class="line">    pay.setStatus(<span class="hljs-string">"PAID"</span>);</span><br><span class="line">    payInfoRepository.save(pay);</span><br><span class="line">    customerRepository.charge(msg.getCustomerId(), msg.getAmount());</span><br><span class="line">    msg.setStatus(<span class="hljs-string">"PAID"</span>);</span><br><span class="line">    rabbitTemplate.convertAndSend(<span class="hljs-string">"order:ticket_move"</span>, msg);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里的执行步骤如下：</p>
+<ol>
+<li>首先根据订单 id 去查找付款信息，检查当前订单是否已经完成付款，如果已经完成服务，则直接 return，这一步也是为了处理幂等性问题。</li>
+<li>根据顾客的 id，查找到顾客的完整信息，包括顾客的账户余额。</li>
+<li>检查顾客的账户余额是否足够支付票价，如果不够，则设置 msg 的 status 为 NOT_ENOUGH_DEPOSIT，同时向 <code>order:ticket_error</code> 队列发送消息，表示订票失败。</li>
+<li>如果顾客账户余额足够支付票价，则创建一个 PayInfo 对象，设置相关的支付信息，并存入 <code>pay_info</code> 表中。</li>
+<li>调用 charge 方法完成顾客账户余额的扣款。</li>
+<li>发送消息到 <code>order:ticket_move</code> 队列中，开启交票操作。</li>
+</ol>
+<h4 id="3-4-4-交票（ticket）"><a href="#3-4-4-交票（ticket）" class="headerlink" title="3.4.4 交票（ticket）"></a>3.4.4 交票（ticket）</h4><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Transactional</span></span><br><span class="line"><span class="hljs-meta">@RabbitListener</span>(queues = <span class="hljs-string">"order:ticket_move"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleTicketMove</span><span class="hljs-params">(OrderDTO msg)</span> </span>&#123;</span><br><span class="line">    LOG.info(<span class="hljs-string">"Get new order for ticket move:&#123;&#125;"</span>, msg);</span><br><span class="line">    <span class="hljs-keyword">int</span> moveCount = ticketRepository.moveTicket(msg.getCustomerId(), msg.getTicketNum());</span><br><span class="line">    <span class="hljs-keyword">if</span> (moveCount == <span class="hljs-number">0</span>) &#123;</span><br><span class="line">        LOG.info(<span class="hljs-string">"Ticket already transferred."</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    msg.setStatus(<span class="hljs-string">"TICKET_MOVED"</span>);</span><br><span class="line">    rabbitTemplate.convertAndSend(<span class="hljs-string">"order:finish"</span>, msg);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>调用 moveTicket 方法完成交票操作，也就是设置 ticket 表中票的 owner 为 customerId。</p>
+<p>交票成功后，发送消息到 <code>order:finish</code> 队列，表示交票完成。</p>
+<h4 id="3-4-5-订单完成（order）"><a href="#3-4-5-订单完成（order）" class="headerlink" title="3.4.5 订单完成（order）"></a>3.4.5 订单完成（order）</h4><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Transactional</span></span><br><span class="line"><span class="hljs-meta">@RabbitListener</span>(queues = <span class="hljs-string">"order:finish"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleFinish</span><span class="hljs-params">(OrderDTO msg)</span> </span>&#123;</span><br><span class="line">    LOG.info(<span class="hljs-string">"Get finished order:&#123;&#125;"</span>, msg);</span><br><span class="line">    Order order = orderRepository.getById(msg.getId());</span><br><span class="line">    order.setStatus(<span class="hljs-string">"FINISH"</span>);</span><br><span class="line">    orderRepository.save(order);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里的处理就比较简单，订单完成后，就设置订单的状态为 FINISH 即可。</p>
+<p>上面介绍的是一条主线，顺利的话，消息顺着这条线走一遍，一个订单就处理完成了。</p>
+<p>不顺利的话，就有各种幺蛾子，我们分别来看。</p>
+<h4 id="3-4-6-锁票失败（order）"><a href="#3-4-6-锁票失败（order）" class="headerlink" title="3.4.6 锁票失败（order）"></a>3.4.6 锁票失败（order）</h4><p>锁票是在 ticket 服务中完成的，如果锁票失败，就会直接向 <code>order:fail</code> 队列发送消息，该队列的消息由 order 服务负责消费。</p>
+<h4 id="3-4-7-扣款失败（ticket）"><a href="#3-4-7-扣款失败（ticket）" class="headerlink" title="3.4.7 扣款失败（ticket）"></a>3.4.7 扣款失败（ticket）</h4><p>扣款操作是在 user 中完成的，扣款失败就会向 <code>order:ticket_error</code> 队列中发送消息，该队列的消息由 ticket 服务负责消费。</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Transactional</span></span><br><span class="line"><span class="hljs-meta">@RabbitListener</span>(queues = <span class="hljs-string">"order:ticket_error"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleError</span><span class="hljs-params">(OrderDTO msg)</span> </span>&#123;</span><br><span class="line">    LOG.info(<span class="hljs-string">"Get order error for ticket unlock:&#123;&#125;"</span>, msg);</span><br><span class="line">    <span class="hljs-keyword">int</span> count = ticketRepository.unMoveTicket(msg.getCustomerId(), msg.getTicketNum());</span><br><span class="line">    <span class="hljs-keyword">if</span> (count == <span class="hljs-number">0</span>) &#123;</span><br><span class="line">        LOG.info(<span class="hljs-string">"Ticket already unlocked:"</span>, msg);</span><br><span class="line">    &#125;</span><br><span class="line">    count = ticketRepository.unLockTicket(msg.getCustomerId(), msg.getTicketNum());</span><br><span class="line">    <span class="hljs-keyword">if</span> (count == <span class="hljs-number">0</span>) &#123;</span><br><span class="line">        LOG.info(<span class="hljs-string">"Ticket already unmoved, or not moved:"</span>, msg);</span><br><span class="line">    &#125;</span><br><span class="line">    rabbitTemplate.convertAndSend(<span class="hljs-string">"order:fail"</span>, msg);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当扣款失败的时候，做三件事：</p>
+<ol>
+<li>撤销票的转移，也就是把票的 owner 字段重新置为 null。</li>
+<li>撤销锁票，也就是把票的 <code>lock_user</code> 字段重新置为 null。</li>
+<li>向 <code>order:fail</code> 队列发送订单失败的消息。</li>
+</ol>
+<h4 id="3-4-8-下单失败（order）"><a href="#3-4-8-下单失败（order）" class="headerlink" title="3.4.8 下单失败（order）"></a>3.4.8 下单失败（order）</h4><p>下单失败的处理在 order 服务中，有三种情况会向 <code>order:fail</code> 队列发送消息：</p>
+<ol>
+<li>锁票失败</li>
+<li>扣款失败（客户账户余额不足）</li>
+<li>订单超时</li>
+</ol>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Transactional</span></span><br><span class="line"><span class="hljs-meta">@RabbitListener</span>(queues = <span class="hljs-string">"order:fail"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleFailed</span><span class="hljs-params">(OrderDTO msg)</span> </span>&#123;</span><br><span class="line">    LOG.info(<span class="hljs-string">"Get failed order:&#123;&#125;"</span>, msg);</span><br><span class="line">    Order order;</span><br><span class="line">    <span class="hljs-keyword">if</span> (msg.getId() == <span class="hljs-keyword">null</span>) &#123;</span><br><span class="line">        order = newOrder(msg);</span><br><span class="line">        order.setReason(<span class="hljs-string">"TICKET_LOCK_FAIL"</span>);</span><br><span class="line">    &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">        order = orderRepository.getById(msg.getId());</span><br><span class="line">        <span class="hljs-keyword">if</span> (msg.getStatus().equals(<span class="hljs-string">"NOT_ENOUGH_DEPOSIT"</span>)) &#123;</span><br><span class="line">            order.setReason(<span class="hljs-string">"NOT_ENOUGH_DEPOSIT"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    order.setStatus(<span class="hljs-string">"FAIL"</span>);</span><br><span class="line">    orderRepository.save(order);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>该方法的具体处理逻辑如下：</p>
+<ol>
+<li>首先查看是否有订单 id，如果连订单 id 都没有，就说明是锁票失败，给订单设置 reason 属性的值为<code>TICKET_LOCK_FAIL</code>。</li>
+<li>如果有订单 id，则根据 id 查询订单信息，并判断订单状态是否为 <code>NOT_ENOUGH_DEPOSIT</code>，这个表示扣款失败，如果订单状态是 <code>NOT_ENOUGH_DEPOSIT</code>，则设置失败的 reason 也为此。</li>
+<li>最后设置订单状态为 FAIL，然后更新数据库中的订单信息即可。</li>
+</ol>
+<h4 id="3-4-9-订单超时（order）"><a href="#3-4-9-订单超时（order）" class="headerlink" title="3.4.9 订单超时（order）"></a>3.4.9 订单超时（order）</h4><p>order 服务中还有一个定时任务，定时去数据库中捞取那些处理失败的订单，如下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">@Scheduled</span>(fixedDelay = <span class="hljs-number">10000L</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">checkInvalidOrder</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    ZonedDateTime checkTime = ZonedDateTime.now().minusMinutes(<span class="hljs-number">1L</span>);</span><br><span class="line">    List&lt;Order&gt; orders = orderRepository.findAllByStatusAndCreatedDateBefore(<span class="hljs-string">"NEW"</span>, checkTime);</span><br><span class="line">    orders.stream().forEach(order -&gt; &#123;</span><br><span class="line">        LOG.error(<span class="hljs-string">"Order timeout:&#123;&#125;"</span>, order);</span><br><span class="line">        OrderDTO dto = <span class="hljs-keyword">new</span> OrderDTO();</span><br><span class="line">        dto.setId(order.getId());</span><br><span class="line">        dto.setTicketNum(order.getTicketNum());</span><br><span class="line">        dto.setUuid(order.getUuid());</span><br><span class="line">        dto.setAmount(order.getAmount());</span><br><span class="line">        dto.setTitle(order.getTitle());</span><br><span class="line">        dto.setCustomerId(order.getCustomerId());</span><br><span class="line">        dto.setStatus(<span class="hljs-string">"TIMEOUT"</span>);</span><br><span class="line">        rabbitTemplate.convertAndSend(<span class="hljs-string">"order:ticket_error"</span>, dto);</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，这里是去数据库中捞取那些状态为 NEW 并且是 1 分钟之前的订单，根据前面的分析，当锁票成功后，就会将订单的状态设置为 NEW 并且存入数据库中。换言之，当锁票成功一分钟之后，这张票还没有卖掉，就设置订单超时，同时向 <code>order:ticket_error</code> 队列发送一条消息，这条消息在 ticket 服务中被消费，最终完成撤销交票、撤销锁票等操作。</p>
+<p>这就是大致的代码处理流程。</p>
+<p>再来回顾一下前面那张图：</p>
+<p><img src="http://img.itboyhub.com/2021/07/20210829195014.png" alt></p>
+<p>结合着代码来看这张图是不是就很容易懂了。</p>
+<h3 id="3-5-测试"><a href="#3-5-测试" class="headerlink" title="3.5 测试"></a>3.5 测试</h3><p>接下来我们来进行一个简单的测试。</p>
+<p>先来一个订票失败的测试，如下：</p>
+<p><img src="http://img.itboyhub.com/2021/07/20210901194732.png" alt></p>
+<p>由于用户只有 1000 块钱，这张票要 10000，所以购票必然失败。请求执行成功后，我们查看 order 表，多了如下一条记录：</p>
+<p><img src="http://img.itboyhub.com/2021/07/20210901194945.png" alt></p>
+<p>可以看到，订单失败的理由就是账户余额不足。此时查看 ticket 和 user 表，发现都完好如初（如果需要，则已经反向补偿了）。</p>
+<p>接下来我们手动给 ticket 表中 lock_user 字段设置一个值，如下：</p>
+<p><img src="http://img.itboyhub.com/2021/07/20210901195235.png" alt></p>
+<p>这个表示这张票已经被人锁定了。</p>
+<p>然后我们发起一次购票请求（这次可以把金额设置到合理范围，其实不设置也行，反正这次失败还没走到付款这一步）：</p>
+<p><img src="http://img.itboyhub.com/2021/07/20210901195356.png" alt></p>
+<p>请求发送成功后，接下来我们去查看 order 表，多了如下一条记录：</p>
+<p><img src="http://img.itboyhub.com/2021/07/20210901195546.png" alt></p>
+<p>可以看到，这次下单失败的理由是锁票失败。此时查看 ticket 和 user 表，发现都完好如初（如果需要，则已经反向补偿了）。</p>
+<p>最后再来一次成功测试，先把 ticket 表中的 <code>lock_user</code> 字段置空，然后发送如下请求：</p>
+<p><img src="http://img.itboyhub.com/2021/07/20210901200004.png" alt></p>
+<p>这次购票成功，查看 ticket 表，发票已经票有所属：</p>
+<p><img src="http://img.itboyhub.com/2021/07/20210901200110.png" alt></p>
+<p>查看订单表：</p>
+<p><img src="http://img.itboyhub.com/2021/07/20210901200403.png" alt></p>
+<p>可以多了一条成功的购票记录。</p>
+<p>查看用户表：</p>
+<p><img src="http://img.itboyhub.com/2021/07/20210901200443.png" alt></p>
+<p>用户账户已扣款。</p>
+<p>查看支付记录表：</p>
+<p><img src="http://img.itboyhub.com/2021/07/20210901200516.png" alt></p>
+<p>可以看到已经有了支付记录。</p>
+<h2 id="4-总结"><a href="#4-总结" class="headerlink" title="4. 总结"></a>4. 总结</h2><p>整体上来说，上面这个案例，技术上并没有什么难的，复杂之处在于设计。一开始要设计好消息的处理流程以及消息处理失败后如何进行补偿，这个是比较考验大家技术的。</p>
+<p>另外上面案例中，消息的发送和消费都用到了 RabbitMQ 中的事务机制（确保消息消费成功）以及 Spring 中的事务机制（确保消息发送和数据保存同时成功），这些我就不再赘述了。</p>
+<p>总之，通过消息中间件处理分布式事务，这种方式通过牺牲数据的强一致性换取性能的大幅提升，但是实现这种方式的成本和复杂度是比较高的，使用时还要看实际业务情况。</p>
+<p>好啦，小伙伴们有什么想说的欢迎留言讨论～</p>
+<p>公众号后台回复 <code>mq_tran</code> 可以下载上面案例的完整代码。</p>
+
+                    <!--<div class="asb-post-01">
+                        <div class="mask"></div>
+                        <div class="info" style="display: flex;justify-content:center;flex-direction:column;align-items:center">
+                                <div>扫码关注微信公众号：<span style="color: #E9405A; font-weight: bold;">江南一点雨</span></div>
+                                <div>
+                                    <span>发送 </span><span class="token" style="color: #e9415a; font-weight: bold; font-size: 17px; margin-bottom: 45px;">290992</span>
+                                </div>
+                                <div>
+                                    即可<span style="color: #e9415a; font-weight: bold;">立即永久</span>解锁本站全部文章（注意区分大小写哦）
+                                </div>
+                            <div>
+                                <img class="code-img" style="width: 300px;display:unset" src="https://www.javaboy.org/images/sb/javaboy.jpg">
+                            </div>
+                        </div>
+                    </div>-->
+                </div>
+        
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/分布式事务/">分布式事务</a>, <a class="has-link-grey -link" href="/tags/消息驱动/">消息驱动</a>
+                </div>
+            </div>
+        </div>
+		<div class="level is-size-6">
+						<p>喜欢这篇文章吗？扫码关注公众号<b>【江南一点雨】</b>，<b>【江南一点雨】</b>专注于 SPRING BOOT+微服务以及前后端分离技术，每天推送原创技术干货，关注后回复 JAVA，领取松哥为你精心准备的 JAVA 干货!
+</p>
+		</div>
+		<div class="level is-size-7 is-uppercase">
+<img class="menu-label has-text-centered" src="http://www.javaboy.org/images/sb/javaboy.jpg" alt>
+		</div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">觉得不错，可以给小编加个鸡腿</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="https://www.javaboy.org/images/sb/weixin_pay.png" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2021/0907/rabbitmq.html">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">RabbitMQ 高可用之如何确保消息成功消费</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2021/0830/mysql_isolation.html">
+                <span class="level-item">四个案例看懂 MySQL 事务隔离级别</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+	<section id="comments"></section>
+	<script src="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/gitment.browser.js"></script>
+	<!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/default.css"/>-->
+	<link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+	<script>
+		if (document.getElementById('comments')) {
+			var gitment = new Gitment({
+				id: '2021/0903/transaction_rabbitmq.html'.length>50?'2021/0903/transaction_rabbitmq.html'.substring(0,50):'2021/0903/transaction_rabbitmq.html',
+				owner: 'lenve',
+				repo: 'javaboy_comment',
+				oauth: {
+					client_id: 'ecc1a65d7b7baf6a495c',
+					client_secret: '427ecd90ada169afa77fc164509449905dd37f67',
+				},
+			})
+			gitment.render('comments')
+		}
+	</script>
+	
+    </div>
+</div>
+<style>
+.lock {
+    position: relative;
+    overflow: hidden;
+    padding-bottom: 30px;
+}
+.asb-post-01 {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    display: block;
+    z-index: 10000;
+    margin-bottom: 0;
+}
+.asb-post-01 .info {
+    background: white;
+    height: 370px;
+}
+.asb-post-01 .mask {
+    height: 240px;
+    width: 100%;
+    background: -webkit-gradient(linear, 0 top, 0 bottom, from(rgba(255, 255, 255, 0)), to(#fff));
+}
+</style>
+<!--<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script>
+function getCookie(name) {
+	var value = "; " + document.cookie;
+	var parts = value.split("; " + name + "=");
+	if (parts.length == 2)
+		return parts.pop().split(";").shift();
+}
+
+function getToken() {
+	let value = getCookie('UM_distinctid');
+	if (!value) {
+		return defaultToken;
+	}
+	return value.substring(value.length - 6).toUpperCase();
+}
+
+
+
+// 文章所在容器的选择器
+// var articleSelector = 'article.article-content';
+
+// DOM 完全就绪时执行
+$(function() {
+    // 找到文章所在的容器
+    var $article = $("#content");
+    console.log($article)
+	if ($article.length > 0) {
+		// 文章的实际高度
+		var article = $article[0], height = article.clientHeight;
+		// 文章隐藏后的高度
+		var halfHeight = height * 0.3;
+		
+		// 篇幅短一点的文章就不需要解锁了
+		if (halfHeight > 800) {
+			
+            // 获取口令
+            var mytoken = window.localStorage.getItem("javaboytoken")
+            var token;
+            if(mytoken){
+                token=mytoken
+            }else{
+                token = 'B'+getToken();
+                window.localStorage.setItem("javaboytoken",token)
+            }
+			$('.asb-post-01').find('.token').text(token);
+			
+var _lock = function() {
+	$article.css('height', halfHeight + 'px');
+	$article.addClass('lock');
+	$('.asb-post-01').css('display', 'block');
+}
+
+var _unlock = function() {
+	$article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+
+// 查询后端的结果
+var _detect = function() {
+	$.ajax({
+		url : 'http://blog-wx.itboyhub.com/wx/checktoken',
+		method : 'GET',
+		data : {
+			token : token
+		},
+		success : function(data) {
+			if (data.locked === true) {
+				_lock();
+			} else {
+				_unlock();
+			}
+		},
+		error : function(data) {
+			_unlock();
+		}
+	})
+}
+
+_detect();
+setInterval(function() {
+    _detect();
+}, 5000);
+}else{
+    $article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+    }
+});
+</script>-->
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="江南一点雨">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>China· ShenZhen</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        499
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        69
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        136
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/lenve" target="_blank">
+                扫码关注微信公众号</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="Github" href="https://github.com/lenve">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="envelope" href="mailto:wangsong0210@gmail.com">
+                
+                <i class="fa fa-envelope"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="RSS" href="/atom.xml">
+                
+                <i class="fas fa-rss"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/2019/">
+            <span class="level-start">
+                <span class="level-item">2019</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Blog/">
+            <span class="level-start">
+                <span class="level-item">Blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Chrome/">
+            <span class="level-start">
+                <span class="level-item">Chrome</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Docker/">
+            <span class="level-start">
+                <span class="level-item">Docker</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/ElasticSearch/">
+            <span class="level-start">
+                <span class="level-item">ElasticSearch</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/FastDFS/">
+            <span class="level-start">
+                <span class="level-item">FastDFS</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Git/">
+            <span class="level-start">
+                <span class="level-item">Git</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">9</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/GitHub/">
+            <span class="level-start">
+                <span class="level-item">GitHub</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/HUAWEI/">
+            <span class="level-start">
+                <span class="level-item">HUAWEI</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IDEA/">
+            <span class="level-start">
+                <span class="level-item">IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">7</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IntelliJ-IDEA/">
+            <span class="level-start">
+                <span class="level-item">IntelliJ IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Java/">
+            <span class="level-start">
+                <span class="level-item">Java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/JavaWeb/">
+            <span class="level-start">
+                <span class="level-item">JavaWeb</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MacBookPro/">
+            <span class="level-start">
+                <span class="level-item">MacBookPro</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Maven/">
+            <span class="level-start">
+                <span class="level-item">Maven</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MongoDB/">
+            <span class="level-start">
+                <span class="level-item">MongoDB</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MyBatis/">
+            <span class="level-start">
+                <span class="level-item">MyBatis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MySQL/">
+            <span class="level-start">
+                <span class="level-item">MySQL</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">30</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Nginx/">
+            <span class="level-start">
+                <span class="level-item">Nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/OAuth2/">
+            <span class="level-start">
+                <span class="level-item">OAuth2</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">11</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/RabbitMQ/">
+            <span class="level-start">
+                <span class="level-item">RabbitMQ</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Redis/">
+            <span class="level-start">
+                <span class="level-item">Redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Resume/">
+            <span class="level-start">
+                <span class="level-item">Resume</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SSM/">
+            <span class="level-start">
+                <span class="level-item">SSM</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">25</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Shiro/">
+            <span class="level-start">
+                <span class="level-item">Shiro</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring/">
+            <span class="level-start">
+                <span class="level-item">Spring</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">16</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Boot/">
+            <span class="level-start">
+                <span class="level-item">Spring Boot</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">127</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Cloud/">
+            <span class="level-start">
+                <span class="level-item">Spring Cloud</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Security/">
+            <span class="level-start">
+                <span class="level-item">Spring Security</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">56</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringBoot/">
+            <span class="level-start">
+                <span class="level-item">SpringBoot</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">14</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringMVC/">
+            <span class="level-start">
+                <span class="level-item">SpringMVC</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringSecurity/">
+            <span class="level-start">
+                <span class="level-item">SpringSecurity</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Transaction/">
+            <span class="level-start">
+                <span class="level-item">Transaction</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/WebFlux/">
+            <span class="level-start">
+                <span class="level-item">WebFlux</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">12</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/blog/">
+            <span class="level-start">
+                <span class="level-item">blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/chrome/">
+            <span class="level-start">
+                <span class="level-item">chrome</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/docker/">
+            <span class="level-start">
+                <span class="level-item">docker</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/domain/">
+            <span class="level-start">
+                <span class="level-item">domain</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/hexo/">
+            <span class="level-start">
+                <span class="level-item">hexo</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/idea/">
+            <span class="level-start">
+                <span class="level-item">idea</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/java/">
+            <span class="level-start">
+                <span class="level-item">java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/layui/">
+            <span class="level-start">
+                <span class="level-item">layui</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/life/">
+            <span class="level-start">
+                <span class="level-item">life</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">9</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/mail/">
+            <span class="level-start">
+                <span class="level-item">mail</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/mysql/">
+            <span class="level-start">
+                <span class="level-item">mysql</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/nginx/">
+            <span class="level-start">
+                <span class="level-item">nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/redis/">
+            <span class="level-start">
+                <span class="level-item">redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/transaction/">
+            <span class="level-start">
+                <span class="level-item">transaction</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vhr/">
+            <span class="level-start">
+                <span class="level-item">vhr</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/video/">
+            <span class="level-start">
+                <span class="level-item">video</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vue/">
+            <span class="level-start">
+                <span class="level-item">vue</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/weixin/">
+            <span class="level-start">
+                <span class="level-item">weixin</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/侃侃而谈/">
+            <span class="level-start">
+                <span class="level-item">侃侃而谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">21</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/分布式事务/">
+            <span class="level-start">
+                <span class="level-item">分布式事务</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/分布式系统/">
+            <span class="level-start">
+                <span class="level-item">分布式系统</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/前后端分离/">
+            <span class="level-start">
+                <span class="level-item">前后端分离</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/外包/">
+            <span class="level-start">
+                <span class="level-item">外包</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/学习资源/">
+            <span class="level-start">
+                <span class="level-item">学习资源</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">7</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/定时任务/">
+            <span class="level-start">
+                <span class="level-item">定时任务</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/工具/">
+            <span class="level-start">
+                <span class="level-item">工具</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微人事/">
+            <span class="level-start">
+                <span class="level-item">微人事</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微服务/">
+            <span class="level-start">
+                <span class="level-item">微服务</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/杂谈/">
+            <span class="level-start">
+                <span class="level-item">杂谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/生活/">
+            <span class="level-start">
+                <span class="level-item">生活</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/程序人生/">
+            <span class="level-start">
+                <span class="level-item">程序人生</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/视频教程/">
+            <span class="level-start">
+                <span class="level-item">视频教程</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/资料/">
+            <span class="level-start">
+                <span class="level-item">资料</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/面试/">
+            <span class="level-start">
+                <span class="level-item">面试</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/项目实战/">
+            <span class="level-start">
+                <span class="level-item">项目实战</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/2019-article/" style="font-size: 10px;">2019-article</a> <a href="/tags/Actuator/" style="font-size: 10px;">Actuator</a> <a href="/tags/Blog/" style="font-size: 10px;">Blog</a> <a href="/tags/Bug/" style="font-size: 10px;">Bug</a> <a href="/tags/CAS/" style="font-size: 11.43px;">CAS</a> <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 10.95px;">Chrome</a> <a href="/tags/Docker/" style="font-size: 11.43px;">Docker</a> <a href="/tags/Druid/" style="font-size: 10px;">Druid</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/ElasticJob/" style="font-size: 10px;">ElasticJob</a> <a href="/tags/ElasticSearch/" style="font-size: 11.43px;">ElasticSearch</a> <a href="/tags/ElasticSerach/" style="font-size: 10px;">ElasticSerach</a> <a href="/tags/Eureka/" style="font-size: 10px;">Eureka</a> <a href="/tags/FastDFS/" style="font-size: 10.95px;">FastDFS</a> <a href="/tags/Flyway/" style="font-size: 10px;">Flyway</a> <a href="/tags/Freemarker/" style="font-size: 10.95px;">Freemarker</a> <a href="/tags/Git/" style="font-size: 14.29px;">Git</a> <a href="/tags/GitHub/" style="font-size: 10.48px;">GitHub</a> <a href="/tags/Https/" style="font-size: 10px;">Https</a> <a href="/tags/I18N/" style="font-size: 10px;">I18N</a> <a href="/tags/IDEA/" style="font-size: 14.29px;">IDEA</a> <a href="/tags/IDEA，EasyCode/" style="font-size: 10px;">IDEA，EasyCode</a> <a href="/tags/IntelliJ-IDEA/" style="font-size: 10.95px;">IntelliJ IDEA</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/Java/" style="font-size: 11.43px;">Java</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 10.48px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 11.9px;">Jpa</a> <a href="/tags/LiveReload/" style="font-size: 10px;">LiveReload</a> <a href="/tags/Log/" style="font-size: 10px;">Log</a> <a href="/tags/Lombok/" style="font-size: 10px;">Lombok</a> <a href="/tags/MacBook/" style="font-size: 10px;">MacBook</a> <a href="/tags/MacBookPro/" style="font-size: 10px;">MacBookPro</a> <a href="/tags/Mail/" style="font-size: 10.48px;">Mail</a> <a href="/tags/Maven/" style="font-size: 12.38px;">Maven</a> <a href="/tags/MongoDB/" style="font-size: 16.67px;">MongoDB</a> <a href="/tags/MyBatis/" style="font-size: 13.81px;">MyBatis</a> <a href="/tags/MyCat/" style="font-size: 11.43px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 19.05px;">MySQL</a> <a href="/tags/MySQL8/" style="font-size: 10px;">MySQL8</a> <a href="/tags/Nacos/" style="font-size: 10px;">Nacos</a> <a href="/tags/Nginx/" style="font-size: 10.48px;">Nginx</a> <a href="/tags/OAuth2/" style="font-size: 14.29px;">OAuth2</a> <a href="/tags/PicGo/" style="font-size: 10px;">PicGo</a> <a href="/tags/Platform/" style="font-size: 10px;">Platform</a> <a href="/tags/Plugin/" style="font-size: 10px;">Plugin</a> <a href="/tags/RabbitMQ/" style="font-size: 12.38px;">RabbitMQ</a> <a href="/tags/Redis/" style="font-size: 18.1px;">Redis</a> <a href="/tags/Resume/" style="font-size: 10px;">Resume</a> <a href="/tags/SSM/" style="font-size: 17.62px;">SSM</a> <a href="/tags/Shiro/" style="font-size: 10.48px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 17.14px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Cloud/" style="font-size: 11.43px;">Spring Cloud</a> <a href="/tags/Spring-Data/" style="font-size: 10.48px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 19.52px;">Spring Security</a> <a href="/tags/SpringBoot/" style="font-size: 15.71px;">SpringBoot</a> <a href="/tags/SpringData/" style="font-size: 10px;">SpringData</a> <a href="/tags/SpringDataJpa/" style="font-size: 10px;">SpringDataJpa</a> <a href="/tags/SpringMVC/" style="font-size: 18.57px;">SpringMVC</a> <a href="/tags/SpringSecurity/" style="font-size: 10px;">SpringSecurity</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Swagger3/" style="font-size: 10px;">Swagger3</a> <a href="/tags/Tencent/" style="font-size: 10px;">Tencent</a> <a href="/tags/Thymeleaf/" style="font-size: 10.48px;">Thymeleaf</a> <a href="/tags/Transaction/" style="font-size: 10.95px;">Transaction</a> <a href="/tags/Video/" style="font-size: 10px;">Video</a> <a href="/tags/ViewResolver/" style="font-size: 10px;">ViewResolver</a> <a href="/tags/Vue/" style="font-size: 15.71px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/WebFlux/" style="font-size: 14.76px;">WebFlux</a> <a href="/tags/blog/" style="font-size: 10.48px;">blog</a> <a href="/tags/docker/" style="font-size: 13.33px;">docker</a> <a href="/tags/domain/" style="font-size: 10px;">domain</a> <a href="/tags/es/" style="font-size: 11.9px;">es</a> <a href="/tags/hdz/" style="font-size: 10px;">hdz</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/huawei/" style="font-size: 10px;">huawei</a> <a href="/tags/i18n/" style="font-size: 10px;">i18n</a> <a href="/tags/idea/" style="font-size: 10px;">idea</a> <a href="/tags/java/" style="font-size: 10px;">java</a> <a href="/tags/life/" style="font-size: 16.19px;">life</a> <a href="/tags/mail/" style="font-size: 10px;">mail</a> <a href="/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/router/" style="font-size: 10px;">router</a> <a href="/tags/saga/" style="font-size: 10px;">saga</a> <a href="/tags/seata/" style="font-size: 11.43px;">seata</a> <a href="/tags/tcc/" style="font-size: 10px;">tcc</a> <a href="/tags/transaction/" style="font-size: 10.48px;">transaction</a> <a href="/tags/vhr/" style="font-size: 12.38px;">vhr</a> <a href="/tags/video/" style="font-size: 10.95px;">video</a> <a href="/tags/vue/" style="font-size: 10px;">vue</a> <a href="/tags/vuepress/" style="font-size: 10px;">vuepress</a> <a href="/tags/weixin/" style="font-size: 10.95px;">weixin</a> <a href="/tags/xa/" style="font-size: 10px;">xa</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/七牛云/" style="font-size: 10px;">七牛云</a> <a href="/tags/中间件/" style="font-size: 10px;">中间件</a> <a href="/tags/主从复制/" style="font-size: 10px;">主从复制</a> <a href="/tags/事务/" style="font-size: 10px;">事务</a> <a href="/tags/侃侃而谈/" style="font-size: 15.24px;">侃侃而谈</a> <a href="/tags/全局ID/" style="font-size: 10px;">全局ID</a> <a href="/tags/分布式/" style="font-size: 10px;">分布式</a> <a href="/tags/分布式事务/" style="font-size: 11.9px;">分布式事务</a> <a href="/tags/分布式锁/" style="font-size: 10px;">分布式锁</a> <a href="/tags/前后端分离/" style="font-size: 11.9px;">前后端分离</a> <a href="/tags/单体应用/" style="font-size: 10px;">单体应用</a> <a href="/tags/外包/" style="font-size: 10.48px;">外包</a> <a href="/tags/学习资源/" style="font-size: 11.9px;">学习资源</a> <a href="/tags/定时任务/" style="font-size: 10.48px;">定时任务</a> <a href="/tags/工具/" style="font-size: 10.48px;">工具</a> <a href="/tags/干货汇总/" style="font-size: 10px;">干货汇总</a> <a href="/tags/延迟队列/" style="font-size: 10px;">延迟队列</a> <a href="/tags/微人事/" style="font-size: 10.48px;">微人事</a> <a href="/tags/微服务/" style="font-size: 10.48px;">微服务</a> <a href="/tags/杂谈/" style="font-size: 12.86px;">杂谈</a> <a href="/tags/条件注解/" style="font-size: 10px;">条件注解</a> <a href="/tags/死信队列/" style="font-size: 10px;">死信队列</a> <a href="/tags/消息过期/" style="font-size: 10px;">消息过期</a> <a href="/tags/消息驱动/" style="font-size: 10px;">消息驱动</a> <a href="/tags/源码解析/" style="font-size: 11.43px;">源码解析</a> <a href="/tags/源码解读/" style="font-size: 12.86px;">源码解读</a> <a href="/tags/生活/" style="font-size: 10.95px;">生活</a> <a href="/tags/私活/" style="font-size: 10px;">私活</a> <a href="/tags/程序人生/" style="font-size: 10.48px;">程序人生</a> <a href="/tags/程序员/" style="font-size: 10px;">程序员</a> <a href="/tags/腾讯/" style="font-size: 10px;">腾讯</a> <a href="/tags/自学/" style="font-size: 10px;">自学</a> <a href="/tags/视频/" style="font-size: 10.48px;">视频</a> <a href="/tags/视频教程/" style="font-size: 10px;">视频教程</a> <a href="/tags/资料/" style="font-size: 10px;">资料</a> <a href="/tags/逆向工程/" style="font-size: 10.48px;">逆向工程</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow  ">
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2022-03-22T10:42:33.000Z">2022-03-22</time></div>
+                    <a href="/2022/0322/mysql_table_partitioning.html" class="has-link-black-ter is-size-6">MySQL 表分区？涨知识了！</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/MySQL/">MySQL</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2022-03-21T10:42:33.000Z">2022-03-21</time></div>
+                    <a href="/2022/0321/mysql_index_type.html" class="has-link-black-ter is-size-6">主键索引就是聚集索引？MySQL 索引类型大梳理</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/MySQL/">MySQL</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2022-03-18T10:42:33.000Z">2022-03-18</time></div>
+                    <a href="/2022/0318/mysql_s_x.html" class="has-link-black-ter is-size-6">S 锁与 X 锁，当前读与快照读！</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/MySQL/">MySQL</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2022-03-16T10:42:33.000Z">2022-03-16</time></div>
+                    <a href="/2022/0316/mysql_master_slave.html" class="has-link-black-ter is-size-6">MySQL 主从复制数据不一致，怎么办？</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/MySQL/">MySQL</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2022-03-15T10:42:33.000Z">2022-03-15</time></div>
+                    <a href="/2022/0315/mysql_binlog_format.html" class="has-link-black-ter is-size-6">666！MySQL 的 binlog 的三种格式这么好玩！</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/MySQL/">MySQL</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2022/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2022</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">10</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2022/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2022</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2022/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2022</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">2</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">9</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">8</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">7</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">9</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">4</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">13</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">5</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">8</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">7</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">4</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">9</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">22</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">21</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">23</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">25</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">25</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">20</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">40</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">17</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">22</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">12</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">43</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">16</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">26</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+            
+
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            友链
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itboyhub.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">江南一点雨-国内站(速度快)</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itboyhub.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.ityouknow.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">纯洁的微笑</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.ityouknow.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cxy521.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">程序员一站式导航</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cxy521.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://bugstack.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">bugstack虫洞栈</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">bugstack.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itwanger.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">沉默王二</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itwanger.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://tanqingbo.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">IT码农</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">tanqingbo.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.cxyxiaowu.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">五分钟学算法</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.cxyxiaowu.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.justdojava.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 极客技术</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.justdojava.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cxytiandi.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">猿天地</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cxytiandi.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://vimjc.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Vim教程网</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">vimjc.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://muggle.javaboy.org/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">muggle</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">muggle.javaboy.org</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://crossoverjie.top/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">crossoverJie&#39;s Blog</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">crossoverjie.top</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cmsblogs.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 技术驿站</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cmsblogs.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://maizitoday.github.io/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">麦子的博客</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">maizitoday.github.io</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.haoservice.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">码农code之路</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.haoservice.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.jitwxs.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Jitwxs</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.jitwxs.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.gameboys.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 烂笔头</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.gameboys.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.a2data.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">A2Data</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.a2data.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.itechyou.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">I Tech You, 我教你！</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itechyou.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="哪种分布式事务处理方案效率最高？必然是..." height="28">
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2022 江南一点雨&nbsp;
+				<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><!--
+PV <span id="busuanzi_value_site_pv"></span>&nbsp;|&nbsp;<i class="fa fa-user-md"></i>  UV <span id="busuanzi_value_site_uv"></span>&nbsp;-->
+				<script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? "https://" : "http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1276890692'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s96.cnzz.com/z_stat.php%3Fid%3D1276890692%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+				<a href="http://www.beian.miit.gov.cn/" style="color: black;">粤ICP备19111220号</a>
+                <!--Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么...">
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>
