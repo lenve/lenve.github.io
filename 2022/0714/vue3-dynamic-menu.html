@@ -1,0 +1,2133 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head><meta name="generator" content="Hexo 3.8.0">
+    <meta charset="utf-8">
+<title>Spring Boot+Vue3 动态菜单实现思路梳理 - 江南一点雨</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+
+
+    <meta name="description" content="关于 Spring Boot + Vue3 的动态菜单，松哥之前已经写了两篇文章了，这两篇文章主要是从代码上和大家分析动态菜单最终的实现方式，但是还是有小伙伴觉得没太看明白，感觉缺乏一个提纲挈领的思路，所以，今天松哥再整一篇文章和大家再来捋一捋这个问题，希望这篇文章能让小伙伴们彻底搞清楚这个问题。">
+<meta name="keywords" content="Vue,TienChin">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring Boot+Vue3 动态菜单实现思路梳理">
+<meta property="og:url" content="http://www.javaboy.org/2022/0714/vue3-dynamic-menu.html">
+<meta property="og:site_name" content="江南一点雨">
+<meta property="og:description" content="关于 Spring Boot + Vue3 的动态菜单，松哥之前已经写了两篇文章了，这两篇文章主要是从代码上和大家分析动态菜单最终的实现方式，但是还是有小伙伴觉得没太看明白，感觉缺乏一个提纲挈领的思路，所以，今天松哥再整一篇文章和大家再来捋一捋这个问题，希望这篇文章能让小伙伴们彻底搞清楚这个问题。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="http://www.javaboy.org/images/og_image.png">
+<meta property="og:updated_time" content="2022-07-19T15:48:38.504Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Spring Boot+Vue3 动态菜单实现思路梳理">
+<meta name="twitter:description" content="关于 Spring Boot + Vue3 的动态菜单，松哥之前已经写了两篇文章了，这两篇文章主要是从代码上和大家分析动态菜单最终的实现方式，但是还是有小伙伴觉得没太看明白，感觉缺乏一个提纲挈领的思路，所以，今天松哥再整一篇文章和大家再来捋一捋这个问题，希望这篇文章能让小伙伴们彻底搞清楚这个问题。">
+<meta name="twitter:image" content="http://www.javaboy.org/images/og_image.png">
+
+
+
+
+
+
+
+<link rel="icon" href="https://www.javaboy.org/favicon.ico">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-2-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+                
+                <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="Spring Boot+Vue3 动态菜单实现思路梳理" height="28">
+                
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item" href="/">江南一点雨</a>
+                
+                <a class="navbar-item" href="/archives">归档</a>
+                
+                <a class="navbar-item" href="/fronted-backend">前后端分离</a>
+                
+                <a class="navbar-item" href="http://docs.javaboy.org/ssm/">SSM</a>
+                
+                <a class="navbar-item" href="http://springboot.javaboy.org">Spring Boot</a>
+                
+                <a class="navbar-item" href="http://www.javaboy.org/springsecurity">Spring Security</a>
+                
+                <a class="navbar-item" href="/redis">Redis</a>
+                
+                <a class="navbar-item" href="/mongodb">MongoDB</a>
+                
+                <a class="navbar-item" href="/mysql">MySQL</a>
+                
+                <a class="navbar-item" href="/docker">Docker</a>
+                
+                <a class="navbar-item" href="/git">Git</a>
+                
+                <a class="navbar-item" href="/about">About</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                
+                
+                <a class="navbar-item search" style="height: 40px;line-height: 60px;width: 180px;margin: 12px 15px;box-sizing: border-box;border: 1px solid #dedede;border-radius: 20px;display: flex;justify-content: space-between;padding-left: 12px;padding-right: 10px" title="搜索" href="javascript:;">
+                    <!--<div style="border: 1px solid #dedede;border-radius: 10px;">-->
+                    <div>搜索</div>
+                        <i class="fas fa-search"></i>
+                    <!--</div>-->
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2022-07-14T15:21:48.000Z">2022-07-14</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/TienChin/">TienChin</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    30 分钟 读完 (大约 4574 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Spring Boot+Vue3 动态菜单实现思路梳理
+            
+        </h1>
+        
+            <div class="content" id="content">
+                    <p>关于 Spring Boot + Vue3 的动态菜单，松哥之前已经写了两篇文章了，这两篇文章主要是从代码上和大家分析动态菜单最终的实现方式，但是还是有小伙伴觉得没太看明白，感觉缺乏一个提纲挈领的思路，所以，今天松哥再整一篇文章和大家再来捋一捋这个问题，希望这篇文章能让小伙伴们彻底搞清楚这个问题。</p>
+<a id="more"></a>
+<h2 id="1-整体思路"><a href="#1-整体思路" class="headerlink" title="1. 整体思路"></a>1. 整体思路</h2><p>首先我们来看整体思路。</p>
+<p>光说思路大家还是云里雾里，我们结合具体的效果图来看：</p>
+<p><img src="http://img.itboyhub.com/2021/10/tran/20220712230354.png" alt></p>
+<p>最终菜单显示效果类似上图，我把这里的菜单分为了四类：</p>
+<ol>
+<li>有父有子：像系统管理那种，既有父菜单，又有子菜单。</li>
+<li>只有一个一级菜单，这种又细分为三种情况：<ol>
+<li>普通的菜单，点击之后在右边主页面打开某个功能页面。</li>
+<li>一个超链接，但不是外链，是一个在当前系统中打开的外部网页，点击之后，会在右边的主页面中新开一个选项卡，这个选项卡中显示的是一个外部网页（本质上是通过 iframe 标签引入的一个外部网页）。</li>
+<li>一个超链接，并且还是一个外链，点击之后，直接在浏览器中打开一个新的选项卡，新的选项卡中展示一个外部链接。</li>
+</ol>
+</li>
+</ol>
+<p>整体上来说，就分为这四种情况。其中 1、2.1、2.3 应该都好理解，2.2 有的小伙伴可能不清楚，我给大家截个图看下就知道了：</p>
+<p><img src="http://img.itboyhub.com/2021/10/tran/20220627235423.png" alt></p>
+<p>四种菜单对应的 JSON 格式分别如下：</p>
+<ol>
+<li>有父有子：</li>
+</ol>
+<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">	<span class="hljs-attr">"name"</span>: <span class="hljs-string">"Monitor"</span>,</span><br><span class="line">	<span class="hljs-attr">"path"</span>: <span class="hljs-string">"/monitor"</span>,</span><br><span class="line">	<span class="hljs-attr">"hidden"</span>: <span class="hljs-literal">false</span>,</span><br><span class="line">	<span class="hljs-attr">"redirect"</span>: <span class="hljs-string">"noRedirect"</span>,</span><br><span class="line">	<span class="hljs-attr">"component"</span>: <span class="hljs-string">"Layout"</span>,</span><br><span class="line">	<span class="hljs-attr">"alwaysShow"</span>: <span class="hljs-literal">true</span>,</span><br><span class="line">	<span class="hljs-attr">"meta"</span>: &#123;</span><br><span class="line">		<span class="hljs-attr">"title"</span>: <span class="hljs-string">"系统监控"</span>,</span><br><span class="line">		<span class="hljs-attr">"icon"</span>: <span class="hljs-string">"monitor"</span>,</span><br><span class="line">		<span class="hljs-attr">"noCache"</span>: <span class="hljs-literal">false</span>,</span><br><span class="line">		<span class="hljs-attr">"link"</span>: <span class="hljs-literal">null</span></span><br><span class="line">	&#125;,</span><br><span class="line">	<span class="hljs-attr">"children"</span>: [&#123;</span><br><span class="line">		<span class="hljs-attr">"name"</span>: <span class="hljs-string">"Online"</span>,</span><br><span class="line">		<span class="hljs-attr">"path"</span>: <span class="hljs-string">"online"</span>,</span><br><span class="line">		<span class="hljs-attr">"hidden"</span>: <span class="hljs-literal">false</span>,</span><br><span class="line">		<span class="hljs-attr">"component"</span>: <span class="hljs-string">"monitor/online/index"</span>,</span><br><span class="line">		<span class="hljs-attr">"meta"</span>: &#123;</span><br><span class="line">			<span class="hljs-attr">"title"</span>: <span class="hljs-string">"在线用户"</span>,</span><br><span class="line">			<span class="hljs-attr">"icon"</span>: <span class="hljs-string">"online"</span>,</span><br><span class="line">			<span class="hljs-attr">"noCache"</span>: <span class="hljs-literal">false</span>,</span><br><span class="line">			<span class="hljs-attr">"link"</span>: <span class="hljs-literal">null</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;, &#123;</span><br><span class="line">		<span class="hljs-attr">"name"</span>: <span class="hljs-string">"Job"</span>,</span><br><span class="line">		<span class="hljs-attr">"path"</span>: <span class="hljs-string">"job"</span>,</span><br><span class="line">		<span class="hljs-attr">"hidden"</span>: <span class="hljs-literal">false</span>,</span><br><span class="line">		<span class="hljs-attr">"component"</span>: <span class="hljs-string">"monitor/job/index"</span>,</span><br><span class="line">		<span class="hljs-attr">"meta"</span>: &#123;</span><br><span class="line">			<span class="hljs-attr">"title"</span>: <span class="hljs-string">"定时任务"</span>,</span><br><span class="line">			<span class="hljs-attr">"icon"</span>: <span class="hljs-string">"job"</span>,</span><br><span class="line">			<span class="hljs-attr">"noCache"</span>: <span class="hljs-literal">false</span>,</span><br><span class="line">			<span class="hljs-attr">"link"</span>: <span class="hljs-literal">null</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>只有一个一级菜单，且一级菜单点击后是一个功能页面：</li>
+</ol>
+<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">	<span class="hljs-attr">"path"</span>: <span class="hljs-string">"/"</span>,</span><br><span class="line">	<span class="hljs-attr">"hidden"</span>: <span class="hljs-literal">false</span>,</span><br><span class="line">	<span class="hljs-attr">"component"</span>: <span class="hljs-string">"Layout"</span>,</span><br><span class="line">	<span class="hljs-attr">"children"</span>: [&#123;</span><br><span class="line">		<span class="hljs-attr">"name"</span>: <span class="hljs-string">"Role"</span>,</span><br><span class="line">		<span class="hljs-attr">"path"</span>: <span class="hljs-string">"role"</span>,</span><br><span class="line">		<span class="hljs-attr">"hidden"</span>: <span class="hljs-literal">false</span>,</span><br><span class="line">		<span class="hljs-attr">"component"</span>: <span class="hljs-string">"system/role/index"</span>,</span><br><span class="line">		<span class="hljs-attr">"meta"</span>: &#123;</span><br><span class="line">			<span class="hljs-attr">"title"</span>: <span class="hljs-string">"角色管理"</span>,</span><br><span class="line">			<span class="hljs-attr">"icon"</span>: <span class="hljs-string">"peoples"</span>,</span><br><span class="line">			<span class="hljs-attr">"noCache"</span>: <span class="hljs-literal">false</span>,</span><br><span class="line">			<span class="hljs-attr">"link"</span>: <span class="hljs-literal">null</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="3">
+<li>只有一个一级菜单，且一级菜单点击之后在当前系统中一个新的选项卡里打开一个网页：</li>
+</ol>
+<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"name"</span>: <span class="hljs-string">"Http://www.javaboy.org"</span>,</span><br><span class="line">    <span class="hljs-attr">"path"</span>: <span class="hljs-string">"/"</span>,</span><br><span class="line">    <span class="hljs-attr">"hidden"</span>: <span class="hljs-literal">false</span>,</span><br><span class="line">    <span class="hljs-attr">"component"</span>: <span class="hljs-string">"Layout"</span>,</span><br><span class="line">    <span class="hljs-attr">"meta"</span>: &#123;</span><br><span class="line">        <span class="hljs-attr">"title"</span>: <span class="hljs-string">"TienChin健身官网"</span>,</span><br><span class="line">        <span class="hljs-attr">"icon"</span>: <span class="hljs-string">"guide"</span>,</span><br><span class="line">        <span class="hljs-attr">"noCache"</span>: <span class="hljs-literal">false</span>,</span><br><span class="line">        <span class="hljs-attr">"link"</span>: <span class="hljs-literal">null</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="hljs-attr">"children"</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="hljs-attr">"name"</span>: <span class="hljs-string">"Www.javaboy.org"</span>,</span><br><span class="line">            <span class="hljs-attr">"path"</span>: <span class="hljs-string">"www.javaboy.org"</span>,</span><br><span class="line">            <span class="hljs-attr">"hidden"</span>: <span class="hljs-literal">false</span>,</span><br><span class="line">            <span class="hljs-attr">"component"</span>: <span class="hljs-string">"InnerLink"</span>,</span><br><span class="line">            <span class="hljs-attr">"meta"</span>: &#123;</span><br><span class="line">                <span class="hljs-attr">"title"</span>: <span class="hljs-string">"TienChin健身官网"</span>,</span><br><span class="line">                <span class="hljs-attr">"icon"</span>: <span class="hljs-string">"guide"</span>,</span><br><span class="line">                <span class="hljs-attr">"noCache"</span>: <span class="hljs-literal">false</span>,</span><br><span class="line">                <span class="hljs-attr">"link"</span>: <span class="hljs-string">"http://www.javaboy.org"</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="4">
+<li>只有一个一级菜单，且一级菜单点击之后在浏览器打开一个新的选项卡：</li>
+</ol>
+<figure class="highlight json hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="hljs-attr">"name"</span>: <span class="hljs-string">"Http://www.javaboy.org"</span>,</span><br><span class="line">    <span class="hljs-attr">"path"</span>: <span class="hljs-string">"http://www.javaboy.org"</span>,</span><br><span class="line">    <span class="hljs-attr">"hidden"</span>: <span class="hljs-literal">false</span>,</span><br><span class="line">    <span class="hljs-attr">"component"</span>: <span class="hljs-string">"Layout"</span>,</span><br><span class="line">    <span class="hljs-attr">"meta"</span>: &#123;</span><br><span class="line">        <span class="hljs-attr">"title"</span>: <span class="hljs-string">"TienChin健身官网"</span>,</span><br><span class="line">        <span class="hljs-attr">"icon"</span>: <span class="hljs-string">"guide"</span>,</span><br><span class="line">        <span class="hljs-attr">"noCache"</span>: <span class="hljs-literal">false</span>,</span><br><span class="line">        <span class="hljs-attr">"link"</span>: <span class="hljs-string">"http://www.javaboy.org"</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>根据以上四种不同的 JSON，我们总结出以下规律：</p>
+<ol>
+<li>父组件都是 Layout，这里的 Layout 就相当于我们 vhr 中的 Home 组件，也就是整个页面的框架。</li>
+<li>如果想在当前系统中，新开选项卡打开一个功能项，那么这个菜单项必然有 children，即使 children 中只有一项菜单。</li>
+<li>如果菜单项是一个外链，那么这个菜单项就不需要有 children 了。</li>
+<li>某种程度上，我们其实可以将 2、3 归为一类，毕竟 3 只是展示内容的组件固定为 InnerLink，2 则视情况而定。</li>
+<li>整体上，可以点击的菜单的 path 都是父菜单的 path + 子菜单的 path，如果菜单项有父有子，那就正常拼接就行了；如果只有一个子菜单，那么父菜单的 path 就是 /；如果是一个外链，那就只有父菜单的 path 了。</li>
+</ol>
+<p>好了，这就是动态菜单的整体设计。</p>
+<h2 id="2-前端渲染"><a href="#2-前端渲染" class="headerlink" title="2. 前端渲染"></a>2. 前端渲染</h2><p>接下来我们再来看一看前端的菜单渲染，前端的动态菜单渲染位于 <code>tienchin-ui/src/layout/components/Sidebar/SidebarItem.vue</code> 文件中：</p>
+<figure class="highlight html hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">template</span>&gt;</span></span><br><span class="line">  <span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">v-if</span>=<span class="hljs-string">"!item.hidden"</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">template</span> <span class="hljs-attr">v-if</span>=<span class="hljs-string">"hasOneShowingChild(item.children, item) &amp;&amp; (!onlyOneChild.children || onlyOneChild.noShowingChildren) &amp;&amp; !item.alwaysShow"</span>&gt;</span></span><br><span class="line">      <span class="hljs-tag">&lt;<span class="hljs-name">app-link</span> <span class="hljs-attr">v-if</span>=<span class="hljs-string">"onlyOneChild.meta"</span> <span class="hljs-attr">:to</span>=<span class="hljs-string">"resolvePath(onlyOneChild.path, onlyOneChild.query)"</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">el-menu-item</span> <span class="hljs-attr">:index</span>=<span class="hljs-string">"resolvePath(onlyOneChild.path)"</span> <span class="hljs-attr">:class</span>=<span class="hljs-string">"&#123; 'submenu-title-noDropdown': !isNest &#125;"</span>&gt;</span></span><br><span class="line">          <span class="hljs-tag">&lt;<span class="hljs-name">svg-icon</span> <span class="hljs-attr">:icon-class</span>=<span class="hljs-string">"onlyOneChild.meta.icon || (item.meta &amp;&amp; item.meta.icon)"</span>/&gt;</span></span><br><span class="line">          <span class="hljs-tag">&lt;<span class="hljs-name">template</span> #<span class="hljs-attr">title</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">span</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"menu-title"</span> <span class="hljs-attr">:title</span>=<span class="hljs-string">"hasTitle(onlyOneChild.meta.title)"</span>&gt;</span>&#123;&#123; onlyOneChild.meta.title &#125;&#125;<span class="hljs-tag">&lt;/<span class="hljs-name">span</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">template</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;/<span class="hljs-name">el-menu-item</span>&gt;</span></span><br><span class="line">      <span class="hljs-tag">&lt;/<span class="hljs-name">app-link</span>&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">template</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">el-sub-menu</span> <span class="hljs-attr">v-else</span> <span class="hljs-attr">ref</span>=<span class="hljs-string">"subMenu"</span> <span class="hljs-attr">:index</span>=<span class="hljs-string">"resolvePath(item.path)"</span> <span class="hljs-attr">popper-append-to-body</span>&gt;</span></span><br><span class="line">      <span class="hljs-tag">&lt;<span class="hljs-name">template</span> <span class="hljs-attr">v-if</span>=<span class="hljs-string">"item.meta"</span> #<span class="hljs-attr">title</span>&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">svg-icon</span> <span class="hljs-attr">:icon-class</span>=<span class="hljs-string">"item.meta &amp;&amp; item.meta.icon"</span> /&gt;</span></span><br><span class="line">        <span class="hljs-tag">&lt;<span class="hljs-name">span</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"menu-title"</span> <span class="hljs-attr">:title</span>=<span class="hljs-string">"hasTitle(item.meta.title)"</span>&gt;</span>&#123;&#123; item.meta.title &#125;&#125;<span class="hljs-tag">&lt;/<span class="hljs-name">span</span>&gt;</span></span><br><span class="line">      <span class="hljs-tag">&lt;/<span class="hljs-name">template</span>&gt;</span></span><br><span class="line"></span><br><span class="line">      <span class="hljs-tag">&lt;<span class="hljs-name">sidebar-item</span></span></span><br><span class="line"><span class="hljs-tag">        <span class="hljs-attr">v-for</span>=<span class="hljs-string">"child in item.children"</span></span></span><br><span class="line"><span class="hljs-tag">        <span class="hljs-attr">:key</span>=<span class="hljs-string">"child.path"</span></span></span><br><span class="line"><span class="hljs-tag">        <span class="hljs-attr">:is-nest</span>=<span class="hljs-string">"true"</span></span></span><br><span class="line"><span class="hljs-tag">        <span class="hljs-attr">:item</span>=<span class="hljs-string">"child"</span></span></span><br><span class="line"><span class="hljs-tag">        <span class="hljs-attr">:base-path</span>=<span class="hljs-string">"resolvePath(child.path)"</span></span></span><br><span class="line"><span class="hljs-tag">        <span class="hljs-attr">class</span>=<span class="hljs-string">"nest-menu"</span></span></span><br><span class="line"><span class="hljs-tag">      /&gt;</span></span><br><span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">el-sub-menu</span>&gt;</span></span><br><span class="line">  <span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span></span><br><span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">template</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>这里涉及到几个方法，具体的方法细节我就不贴出来了，主要和大家说下实现思路。</p>
+<ol>
+<li>先看整体上，这个菜单要是非隐藏的，隐藏的菜单，那么直接一级菜单及其下的子菜单就都不渲染了。</li>
+<li>渲染整体上分两块，上面的 template 主要是渲染只有一个子菜单的情况，也就是第一小节的 2、3、4 三种情况，下面的渲染正常的有父有子的情况，也就是第一小节的菜单 1。</li>
+<li>hasOneShowingChild 主要是判断这个菜单项是否只有一个需要渲染的子菜单，如果有多个子菜单，但是大部分都是隐藏，只有一个需要渲染出来，那也算只有一个子菜单，如果一个菜单项都没有子菜单，那也算一个子菜单，只不过这个子菜单就是他自身，对应第一小节第 4 种情况。在判断的过程中，将唯一需要渲染的菜单的数据赋值给 onlyOneChild 变量，那么最终，如果当前菜单项只有一个子菜单，且这个子菜单没有子菜单（或者有子菜单但是子菜单不用显示），并且当前菜单也不是必须要渲染的，那就将 onlyOneChild 的数据渲染出来。</li>
+<li>对于普通的有父有子的情况，渲染的时候，通过 el-sub-menu 标签进行渲染，但是注意子项是 sidebar-item，sidebar-item 其实就是当前项！换言之，这里的渲染其实还用到了递归（直到没有 children 的时候结束），这样即便菜单有三级四级五级等等，只要不嫌难看，都是可以渲染出来的。</li>
+</ol>
+<h2 id="3-后端菜单生成"><a href="#3-后端菜单生成" class="headerlink" title="3. 后端菜单生成"></a>3. 后端菜单生成</h2><h3 id="3-1-菜单表"><a href="#3-1-菜单表" class="headerlink" title="3.1 菜单表"></a>3.1 菜单表</h3><p>首先我们来看看菜单表的定义，也就是 <code>sys_menu</code>。</p>
+<figure class="highlight sql hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> <span class="hljs-string">`sys_menu`</span> (</span><br><span class="line">  <span class="hljs-string">`menu_id`</span> <span class="hljs-built_in">bigint</span>(<span class="hljs-number">20</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span> AUTO_INCREMENT <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">'菜单ID'</span>,</span><br><span class="line">  <span class="hljs-string">`menu_name`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">50</span>) <span class="hljs-keyword">COLLATE</span> utf8mb4_unicode_ci <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span> <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">'菜单名称'</span>,</span><br><span class="line">  <span class="hljs-string">`parent_id`</span> <span class="hljs-built_in">bigint</span>(<span class="hljs-number">20</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-string">'0'</span> <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">'父菜单ID'</span>,</span><br><span class="line">  <span class="hljs-string">`order_num`</span> <span class="hljs-built_in">int</span>(<span class="hljs-number">4</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-string">'0'</span> <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">'显示顺序'</span>,</span><br><span class="line">  <span class="hljs-string">`path`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">200</span>) <span class="hljs-keyword">COLLATE</span> utf8mb4_unicode_ci <span class="hljs-keyword">DEFAULT</span> <span class="hljs-string">''</span> <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">'路由地址'</span>,</span><br><span class="line">  <span class="hljs-string">`component`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">255</span>) <span class="hljs-keyword">COLLATE</span> utf8mb4_unicode_ci <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span> <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">'组件路径'</span>,</span><br><span class="line">  <span class="hljs-string">`query`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">255</span>) <span class="hljs-keyword">COLLATE</span> utf8mb4_unicode_ci <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span> <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">'路由参数'</span>,</span><br><span class="line">  <span class="hljs-string">`is_frame`</span> <span class="hljs-built_in">int</span>(<span class="hljs-number">1</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-string">'1'</span> <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">'是否为外链（0是 1否）'</span>,</span><br><span class="line">  <span class="hljs-string">`is_cache`</span> <span class="hljs-built_in">int</span>(<span class="hljs-number">1</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-string">'0'</span> <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">'是否缓存（0缓存 1不缓存）'</span>,</span><br><span class="line">  <span class="hljs-string">`menu_type`</span> <span class="hljs-built_in">char</span>(<span class="hljs-number">1</span>) <span class="hljs-keyword">COLLATE</span> utf8mb4_unicode_ci <span class="hljs-keyword">DEFAULT</span> <span class="hljs-string">''</span> <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">'菜单类型（M目录 C菜单 F按钮）'</span>,</span><br><span class="line">  <span class="hljs-string">`visible`</span> <span class="hljs-built_in">char</span>(<span class="hljs-number">1</span>) <span class="hljs-keyword">COLLATE</span> utf8mb4_unicode_ci <span class="hljs-keyword">DEFAULT</span> <span class="hljs-string">'0'</span> <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">'菜单状态（0显示 1隐藏）'</span>,</span><br><span class="line">  <span class="hljs-string">`status`</span> <span class="hljs-built_in">char</span>(<span class="hljs-number">1</span>) <span class="hljs-keyword">COLLATE</span> utf8mb4_unicode_ci <span class="hljs-keyword">DEFAULT</span> <span class="hljs-string">'0'</span> <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">'菜单状态（0正常 1停用）'</span>,</span><br><span class="line">  <span class="hljs-string">`perms`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">100</span>) <span class="hljs-keyword">COLLATE</span> utf8mb4_unicode_ci <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span> <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">'权限标识'</span>,</span><br><span class="line">  <span class="hljs-string">`icon`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">100</span>) <span class="hljs-keyword">COLLATE</span> utf8mb4_unicode_ci <span class="hljs-keyword">DEFAULT</span> <span class="hljs-string">'#'</span> <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">'菜单图标'</span>,</span><br><span class="line">  <span class="hljs-string">`create_by`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">64</span>) <span class="hljs-keyword">COLLATE</span> utf8mb4_unicode_ci <span class="hljs-keyword">DEFAULT</span> <span class="hljs-string">''</span> <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">'创建者'</span>,</span><br><span class="line">  <span class="hljs-string">`create_time`</span> datetime <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span> <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">'创建时间'</span>,</span><br><span class="line">  <span class="hljs-string">`update_by`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">64</span>) <span class="hljs-keyword">COLLATE</span> utf8mb4_unicode_ci <span class="hljs-keyword">DEFAULT</span> <span class="hljs-string">''</span> <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">'更新者'</span>,</span><br><span class="line">  <span class="hljs-string">`update_time`</span> datetime <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span> <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">'更新时间'</span>,</span><br><span class="line">  <span class="hljs-string">`remark`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">500</span>) <span class="hljs-keyword">COLLATE</span> utf8mb4_unicode_ci <span class="hljs-keyword">DEFAULT</span> <span class="hljs-string">''</span> <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">'备注'</span>,</span><br><span class="line">  PRIMARY <span class="hljs-keyword">KEY</span> (<span class="hljs-string">`menu_id`</span>)</span><br><span class="line">) <span class="hljs-keyword">ENGINE</span>=<span class="hljs-keyword">InnoDB</span> AUTO_INCREMENT=<span class="hljs-number">3054</span> <span class="hljs-keyword">DEFAULT</span> <span class="hljs-keyword">CHARSET</span>=utf8mb4 <span class="hljs-keyword">COLLATE</span>=utf8mb4_unicode_ci <span class="hljs-keyword">COMMENT</span>=<span class="hljs-string">'菜单权限表'</span>;</span><br></pre></td></tr></table></figure>
+<p>其实这里很多字段都和我们 vhr 项目项目很相似，我也就不重复啰嗦了，我这里主要和小伙伴们说一个字段，那就是 <code>menu_type</code>。</p>
+<p><code>menu_type</code> 表示一个菜单字段的类型，一个菜单有三种类型，分别是目录（M）、菜单（C）以及按钮（F）。这里所说的目录，相当于我们在 vhr 中所说的一级菜单，菜单相当于我们在 vhr 中所说的二级菜单。</p>
+<p>当用户从前端登录成功后，要去动态加载的菜单的时候，就查询 M 和 C 类型的数据即可，F 类型的数据不是菜单项，查询的时候直接过滤掉即可，通过 <code>menu_type</code> 这个字段可以轻松的过滤掉 F 类型的数据。小伙伴们想想，F 类型的数据过滤掉之后，剩下的数据不就是一级菜单和二级菜单了，那不就和 vhr 又一样了么！</p>
+<p><img src="http://img.itboyhub.com/2021/10/tran/20220626194444.png" alt></p>
+<p>在 vhr 中，考虑到菜单就是只有两级：一级菜单和二级菜单，一级菜单是目录，二级菜单是则是具体的菜单项，没有三级菜单！所以在 vhr 中，查询菜单的时候我直接用了一个一对多的查询，将一级菜单做一的一方，二级菜单做多的一方，这样比较省事。当然灵活度差一点，所以在 TienChin 项目中，这块还是用上了递归。</p>
+<h3 id="3-2-菜单接口"><a href="#3-2-菜单接口" class="headerlink" title="3.2 菜单接口"></a>3.2 菜单接口</h3><p>当用户登录成功之后，会自动请求 <code>/getRouters</code> 接口来获取菜单信息，我们一起来看下：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 获取路由信息</span></span><br><span class="line"><span class="hljs-comment"> *</span></span><br><span class="line"><span class="hljs-comment"> * <span class="hljs-doctag">@return</span> 路由信息</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-meta">@GetMapping</span>(<span class="hljs-string">"getRouters"</span>)</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> AjaxResult <span class="hljs-title">getRouters</span><span class="hljs-params">()</span> </span>&#123;</span><br><span class="line">    Long userId = SecurityUtils.getUserId();</span><br><span class="line">    List&lt;SysMenu&gt; menus = menuService.selectMenuTreeByUserId(userId);</span><br><span class="line">    <span class="hljs-keyword">return</span> AjaxResult.success(menuService.buildMenus(menus));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里的查询实际上分为两个步骤：</p>
+<ol>
+<li>根据用户 id 查询到所有的菜单信息，这一步的查询实际上是比较容易的，就单纯的多张表联合在一起，然后过滤出和当前用户相关并且菜单类型为 M 或者 C 的菜单（类型为 F 的表示按钮，就不要了），查询到菜单信息之后，然后进行一个递归操作，将菜单数据的层级排列出来。</li>
+<li><code>menuService.buildMenus</code> 这一步则是将菜单数据专为前端所需要的路由数据。</li>
+</ol>
+<p>一共就这两个步骤，我们来逐一进行分析。</p>
+<p>先来看查询菜单数据。</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 根据用户ID查询菜单</span></span><br><span class="line"><span class="hljs-comment"> *</span></span><br><span class="line"><span class="hljs-comment"> * <span class="hljs-doctag">@param</span> userId 用户名称</span></span><br><span class="line"><span class="hljs-comment"> * <span class="hljs-doctag">@return</span> 菜单列表</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> List&lt;SysMenu&gt; <span class="hljs-title">selectMenuTreeByUserId</span><span class="hljs-params">(Long userId)</span> </span>&#123;</span><br><span class="line">    List&lt;SysMenu&gt; menus = <span class="hljs-keyword">null</span>;</span><br><span class="line">    <span class="hljs-keyword">if</span> (SecurityUtils.isAdmin(userId)) &#123;</span><br><span class="line">        menus = menuMapper.selectMenuTreeAll();</span><br><span class="line">    &#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">        menus = menuMapper.selectMenuTreeByUserId(userId);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-keyword">return</span> getChildPerms(menus, <span class="hljs-number">0</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 根据父节点的ID获取所有子节点</span></span><br><span class="line"><span class="hljs-comment"> *</span></span><br><span class="line"><span class="hljs-comment"> * <span class="hljs-doctag">@param</span> list     分类表</span></span><br><span class="line"><span class="hljs-comment"> * <span class="hljs-doctag">@param</span> parentId 传入的父节点ID</span></span><br><span class="line"><span class="hljs-comment"> * <span class="hljs-doctag">@return</span> String</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> List&lt;SysMenu&gt; <span class="hljs-title">getChildPerms</span><span class="hljs-params">(List&lt;SysMenu&gt; list, <span class="hljs-keyword">int</span> parentId)</span> </span>&#123;</span><br><span class="line">    List&lt;SysMenu&gt; returnList = <span class="hljs-keyword">new</span> ArrayList&lt;SysMenu&gt;();</span><br><span class="line">    <span class="hljs-keyword">for</span> (Iterator&lt;SysMenu&gt; iterator = list.iterator(); iterator.hasNext(); ) &#123;</span><br><span class="line">        SysMenu t = (SysMenu) iterator.next();</span><br><span class="line">        <span class="hljs-comment">// 一、根据传入的某个父节点ID,遍历该父节点的所有子节点</span></span><br><span class="line">        <span class="hljs-keyword">if</span> (t.getParentId() == parentId) &#123;</span><br><span class="line">            recursionFn(list, t);</span><br><span class="line">            returnList.add(t);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-keyword">return</span> returnList;</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 递归列表</span></span><br><span class="line"><span class="hljs-comment"> *</span></span><br><span class="line"><span class="hljs-comment"> * <span class="hljs-doctag">@param</span> list</span></span><br><span class="line"><span class="hljs-comment"> * <span class="hljs-doctag">@param</span> t</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">recursionFn</span><span class="hljs-params">(List&lt;SysMenu&gt; list, SysMenu t)</span> </span>&#123;</span><br><span class="line">    <span class="hljs-comment">// 得到子节点列表</span></span><br><span class="line">    List&lt;SysMenu&gt; childList = getChildList(list, t);</span><br><span class="line">    t.setChildren(childList);</span><br><span class="line">    <span class="hljs-keyword">for</span> (SysMenu tChild : childList) &#123;</span><br><span class="line">        <span class="hljs-keyword">if</span> (hasChild(list, tChild)) &#123;</span><br><span class="line">            recursionFn(list, tChild);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 得到子节点列表</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">private</span> List&lt;SysMenu&gt; <span class="hljs-title">getChildList</span><span class="hljs-params">(List&lt;SysMenu&gt; list, SysMenu t)</span> </span>&#123;</span><br><span class="line">    List&lt;SysMenu&gt; tlist = <span class="hljs-keyword">new</span> ArrayList&lt;SysMenu&gt;();</span><br><span class="line">    Iterator&lt;SysMenu&gt; it = list.iterator();</span><br><span class="line">    <span class="hljs-keyword">while</span> (it.hasNext()) &#123;</span><br><span class="line">        SysMenu n = (SysMenu) it.next();</span><br><span class="line">        <span class="hljs-keyword">if</span> (n.getParentId().longValue() == t.getMenuId().longValue()) &#123;</span><br><span class="line">            tlist.add(n);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-keyword">return</span> tlist;</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 判断是否有子节点</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">hasChild</span><span class="hljs-params">(List&lt;SysMenu&gt; list, SysMenu t)</span> </span>&#123;</span><br><span class="line">    <span class="hljs-keyword">return</span> getChildList(list, t).size() &gt; <span class="hljs-number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里一共涉及到五个关键方法，我们来逐一进行分析：</p>
+<ol>
+<li>selectMenuTreeByUserId：这个方法的执行比较容易，如果当前用户是管理员，那就不用加过滤条件了，直接查询出所有的类型为 M 和 C 的菜单项即可。</li>
+<li>getChildPerms：这个方法主要是将前面查询出来的菜单数据进行重组，本来都是一个集合中的数据，现在在该方法中处理成树状，处理的核心逻辑就是调用 recursionFn 方法将之进行递归。</li>
+<li>recursionFn：这是最为关键的递归方法了，首先调用 getChildList 获取当前菜单项的 children，然后将获取到的 children 设置给当前菜单项，最后还要遍历获取到的 children，如果这个 children 也是有子菜单的，则继续调用 recursionFn 方法进行处理。</li>
+<li>getChildList：这个是查询某一个菜单的子菜单，这个很容易，如果某一个菜单的 parentId 是当前菜单的 id，那么这个菜单就是当前菜单的子菜单。</li>
+<li>hasChild：这个是判断给定的菜单是否有子菜单，这个逻辑就比较简单了。</li>
+</ol>
+<p>好啦，这个就是整个的查询逻辑，整体上来说是比较容易的，就是查询 M 和 C 类型的菜单，然后再做一个递归操作，将菜单数据变成一个树状数据。</p>
+<p>但是因为 SysMenu 和前后端所需要的路由数据的字段名称对不上，并且格式参数等都不符合前端的要求，所以还需要再做一个转换，这就是 <code>menuService.buildMenus</code> 所做的事情了：</p>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 构建前端路由所需要的菜单</span></span><br><span class="line"><span class="hljs-comment"> *</span></span><br><span class="line"><span class="hljs-comment"> * <span class="hljs-doctag">@param</span> menus 菜单列表</span></span><br><span class="line"><span class="hljs-comment"> * <span class="hljs-doctag">@return</span> 路由列表</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-meta">@Override</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> List&lt;RouterVo&gt; <span class="hljs-title">buildMenus</span><span class="hljs-params">(List&lt;SysMenu&gt; menus)</span> </span>&#123;</span><br><span class="line">    List&lt;RouterVo&gt; routers = <span class="hljs-keyword">new</span> LinkedList&lt;RouterVo&gt;();</span><br><span class="line">    <span class="hljs-keyword">for</span> (SysMenu menu : menus) &#123;</span><br><span class="line">        RouterVo router = <span class="hljs-keyword">new</span> RouterVo();</span><br><span class="line">        router.setHidden(<span class="hljs-string">"1"</span>.equals(menu.getVisible()));</span><br><span class="line">        router.setName(getRouteName(menu));</span><br><span class="line">        router.setPath(getRouterPath(menu));</span><br><span class="line">        router.setComponent(getComponent(menu));</span><br><span class="line">        router.setQuery(menu.getQuery());</span><br><span class="line">        router.setMeta(<span class="hljs-keyword">new</span> MetaVo(menu.getMenuName(), menu.getIcon(), StringUtils.equals(<span class="hljs-string">"1"</span>, menu.getIsCache()), menu.getPath()));</span><br><span class="line">        List&lt;SysMenu&gt; cMenus = menu.getChildren();</span><br><span class="line">        <span class="hljs-keyword">if</span> (!cMenus.isEmpty() &amp;&amp; cMenus.size() &gt; <span class="hljs-number">0</span> &amp;&amp; UserConstants.TYPE_DIR.equals(menu.getMenuType())) &#123;</span><br><span class="line">            router.setAlwaysShow(<span class="hljs-keyword">true</span>);</span><br><span class="line">            router.setRedirect(<span class="hljs-string">"noRedirect"</span>);</span><br><span class="line">            router.setChildren(buildMenus(cMenus));</span><br><span class="line">        &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (isMenuFrame(menu)) &#123;</span><br><span class="line">            router.setMeta(<span class="hljs-keyword">null</span>);</span><br><span class="line">            List&lt;RouterVo&gt; childrenList = <span class="hljs-keyword">new</span> ArrayList&lt;RouterVo&gt;();</span><br><span class="line">            RouterVo children = <span class="hljs-keyword">new</span> RouterVo();</span><br><span class="line">            children.setPath(menu.getPath());</span><br><span class="line">            children.setComponent(menu.getComponent());</span><br><span class="line">            children.setName(StringUtils.capitalize(menu.getPath()));</span><br><span class="line">            children.setMeta(<span class="hljs-keyword">new</span> MetaVo(menu.getMenuName(), menu.getIcon(), StringUtils.equals(<span class="hljs-string">"1"</span>, menu.getIsCache()), menu.getPath()));</span><br><span class="line">            children.setQuery(menu.getQuery());</span><br><span class="line">            childrenList.add(children);</span><br><span class="line">            router.setChildren(childrenList);</span><br><span class="line">        &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (menu.getParentId().intValue() == <span class="hljs-number">0</span> &amp;&amp; isInnerLink(menu)) &#123;</span><br><span class="line">            router.setMeta(<span class="hljs-keyword">new</span> MetaVo(menu.getMenuName(), menu.getIcon()));</span><br><span class="line">            router.setPath(<span class="hljs-string">"/"</span>);</span><br><span class="line">            List&lt;RouterVo&gt; childrenList = <span class="hljs-keyword">new</span> ArrayList&lt;RouterVo&gt;();</span><br><span class="line">            RouterVo children = <span class="hljs-keyword">new</span> RouterVo();</span><br><span class="line">            String routerPath = innerLinkReplaceEach(menu.getPath());</span><br><span class="line">            children.setPath(routerPath);</span><br><span class="line">            children.setComponent(UserConstants.INNER_LINK);</span><br><span class="line">            children.setName(StringUtils.capitalize(routerPath));</span><br><span class="line">            children.setMeta(<span class="hljs-keyword">new</span> MetaVo(menu.getMenuName(), menu.getIcon(), menu.getPath()));</span><br><span class="line">            childrenList.add(children);</span><br><span class="line">            router.setChildren(childrenList);</span><br><span class="line">        &#125;</span><br><span class="line">        routers.add(router);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-keyword">return</span> routers;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从这个方法的执行逻辑上我们可以看到，这里的菜单数据一共分为了四种情况，其实刚好就和我们第一小节所介绍的情况相对应。</p>
+<p>整体上来看，分支语句外面设置了组件的最基本的属性。三个分支语句：</p>
+<ol>
+<li>第一个分支，处理普通的有父有子的情况。</li>
+<li>第二个分支，处理第一小节第二种情况。</li>
+<li>第三个分支，处理第一小节第三种情况。</li>
+<li>如果三个分支都没进去，那就是第一小节的第四种情况，以及各个子菜单的情况了。</li>
+</ol>
+<p>好了，基于这样大的思路，再来看各个属性的具体设置，就很容易了。</p>
+<ol>
+<li>首先是可见性 hidden，这个没啥好说的。</li>
+<li>接下来是菜单的 name 属性，name 属性分为了两种情况：路由的 name 属性是菜单表中的 path 字段值且首字母大写（菜单 1、3、4）；如果在一级菜单中，出现了一个菜单 C（本来这一级别只有 M），并且还不是外链，那么就设置菜单的 name 为空字符串（相当于此时不需要 name 属性了，对应菜单 2 的情况）。</li>
+<li>接下来是路由的 path，设置 path 的时候也分好种情况，松哥对照着代码来和大家说一下：</li>
+</ol>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 获取路由地址</span></span><br><span class="line"><span class="hljs-comment"> *</span></span><br><span class="line"><span class="hljs-comment"> * <span class="hljs-doctag">@param</span> menu 菜单信息</span></span><br><span class="line"><span class="hljs-comment"> * <span class="hljs-doctag">@return</span> 路由地址</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">getRouterPath</span><span class="hljs-params">(SysMenu menu)</span> </span>&#123;</span><br><span class="line">    String routerPath = menu.getPath();</span><br><span class="line">    <span class="hljs-comment">// 内链打开外网方式</span></span><br><span class="line">    <span class="hljs-keyword">if</span> (menu.getParentId().intValue() != <span class="hljs-number">0</span> &amp;&amp; isInnerLink(menu)) &#123;</span><br><span class="line">        routerPath = innerLinkReplaceEach(routerPath);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-comment">// 非外链并且是一级目录（类型为目录）</span></span><br><span class="line">    <span class="hljs-keyword">if</span> (<span class="hljs-number">0</span> == menu.getParentId().intValue() &amp;&amp; UserConstants.TYPE_DIR.equals(menu.getMenuType())</span><br><span class="line">            &amp;&amp; UserConstants.NO_FRAME.equals(menu.getIsFrame())) &#123;</span><br><span class="line">        routerPath = <span class="hljs-string">"/"</span> + menu.getPath();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-comment">// 非外链并且是一级目录（类型为菜单）</span></span><br><span class="line">    <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (isMenuFrame(menu)) &#123;</span><br><span class="line">        routerPath = <span class="hljs-string">"/"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-keyword">return</span> routerPath;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>a. 首先获取从数据库中查询到的 path 属性。<br>b. 如果当前组件不是一级菜单，并且是在内部组件中展示，那么除去这个 path 里边的 http 或者 https（对应菜单 3 的 children 的情况）。<br>c. 如果当前组件是一级菜单并且是 M 型并且不是外链，那么就在原有的 path 上加上 / 前缀（对应菜单 1 的一级菜单的 path 情况）。<br>d. 如果当前组件是一级菜单，且是 C 型菜单，那么设置 path 为 /（对应菜单 2、3 中一级菜单的 path 情况）。<br>e. 其他情况，菜单都是从数据库查到什么返回什么。</p>
+<ol start="4">
+<li>接下来是设置前端 component，这个菜单项用哪个 component 组件显示出来。</li>
+</ol>
+<figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">/**</span></span><br><span class="line"><span class="hljs-comment"> * 获取组件信息</span></span><br><span class="line"><span class="hljs-comment"> *</span></span><br><span class="line"><span class="hljs-comment"> * <span class="hljs-doctag">@param</span> menu 菜单信息</span></span><br><span class="line"><span class="hljs-comment"> * <span class="hljs-doctag">@return</span> 组件信息</span></span><br><span class="line"><span class="hljs-comment"> */</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">getComponent</span><span class="hljs-params">(SysMenu menu)</span> </span>&#123;</span><br><span class="line">    String component = UserConstants.LAYOUT;</span><br><span class="line">    <span class="hljs-keyword">if</span> (StringUtils.isNotEmpty(menu.getComponent()) &amp;&amp; !isMenuFrame(menu)) &#123;</span><br><span class="line">        component = menu.getComponent();</span><br><span class="line">    &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (StringUtils.isEmpty(menu.getComponent()) &amp;&amp; menu.getParentId().intValue() != <span class="hljs-number">0</span> &amp;&amp; isInnerLink(menu)) &#123;</span><br><span class="line">        component = UserConstants.INNER_LINK;</span><br><span class="line">    &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (StringUtils.isEmpty(menu.getComponent()) &amp;&amp; isParentView(menu)) &#123;</span><br><span class="line">        component = UserConstants.PARENT_VIEW;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-keyword">return</span> component;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>a. 首先默认的组件是 Layout（菜单1、2、3、4 的一级菜单）。<br>b. 如果配置的时候就有 component，并且当前菜单项也不是外链，那么就使用配置的 component（菜单 1、2 的子菜单情况）。<br>c. 如果不是一级菜单（是一个子菜单），并且是一个在当前系统展示的外链，那么就使用 InnerLink 这个组件（这个组件中有一个 iframe 标签可以把外链展示出来，如菜单 4 的子菜单情况）。<br>d. 如果配置的时候没有设置组件并且菜单类型是 M（二级菜单中还有三级菜单的情况），那么就设置显示组件为 ParentView。</p>
+<p>component 就分为这几种情况。</p>
+<ol start="5">
+<li>接下来就是 query 和 meta 这两个参数就没啥好说的。</li>
+</ol>
+<p>接下来就是三个分支的情况了。</p>
+<p>其他属性都比较容易，我就不啰嗦啦～</p>
+<p>好啦，Vue3+Spring Boot 动态菜单管理，最近整了好几篇了，就先说这么多吧，小伙伴们有问题欢迎留言讨论！</p>
+
+                    <!--<div class="asb-post-01">
+                        <div class="mask"></div>
+                        <div class="info" style="display: flex;justify-content:center;flex-direction:column;align-items:center">
+                                <div>扫码关注微信公众号：<span style="color: #E9405A; font-weight: bold;">江南一点雨</span></div>
+                                <div>
+                                    <span>发送 </span><span class="token" style="color: #e9415a; font-weight: bold; font-size: 17px; margin-bottom: 45px;">290992</span>
+                                </div>
+                                <div>
+                                    即可<span style="color: #e9415a; font-weight: bold;">立即永久</span>解锁本站全部文章（注意区分大小写哦）
+                                </div>
+                            <div>
+                                <img class="code-img" style="width: 300px;display:unset" src="https://www.javaboy.org/images/sb/javaboy.jpg">
+                            </div>
+                        </div>
+                    </div>-->
+                </div>
+        
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/TienChin/">TienChin</a>, <a class="has-link-grey -link" href="/tags/Vue/">Vue</a>
+                </div>
+            </div>
+        </div>
+		<div class="level is-size-6">
+						<p>喜欢这篇文章吗？扫码关注公众号<b>【江南一点雨】</b>，<b>【江南一点雨】</b>专注于 SPRING BOOT+微服务以及前后端分离技术，每天推送原创技术干货，关注后回复 JAVA，领取松哥为你精心准备的 JAVA 干货!
+</p>
+		</div>
+		<div class="level is-size-7 is-uppercase">
+<img class="menu-label has-text-centered" src="http://www.javaboy.org/images/sb/javaboy.jpg" alt>
+		</div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">觉得不错，可以给小编加个鸡腿</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="https://www.javaboy.org/images/sb/weixin_pay.png" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2022/0715/nodejs-nvm.html">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">如何随意切换 NodeJs 版本？</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2022/0711/dynamic-menu.html">
+                <span class="level-item">TienChin 项目动态菜单接口分析</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+	<section id="comments"></section>
+	<script src="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/gitment.browser.js"></script>
+	<!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/default.css"/>-->
+	<link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+	<script>
+		if (document.getElementById('comments')) {
+			var gitment = new Gitment({
+				id: '2022/0714/vue3-dynamic-menu.html'.length>50?'2022/0714/vue3-dynamic-menu.html'.substring(0,50):'2022/0714/vue3-dynamic-menu.html',
+				owner: 'lenve',
+				repo: 'javaboy_comment',
+				oauth: {
+					client_id: 'ecc1a65d7b7baf6a495c',
+					client_secret: '427ecd90ada169afa77fc164509449905dd37f67',
+				},
+			})
+			gitment.render('comments')
+		}
+	</script>
+	
+    </div>
+</div>
+<style>
+.lock {
+    position: relative;
+    overflow: hidden;
+    padding-bottom: 30px;
+}
+.asb-post-01 {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    display: block;
+    z-index: 10000;
+    margin-bottom: 0;
+}
+.asb-post-01 .info {
+    background: white;
+    height: 370px;
+}
+.asb-post-01 .mask {
+    height: 240px;
+    width: 100%;
+    background: -webkit-gradient(linear, 0 top, 0 bottom, from(rgba(255, 255, 255, 0)), to(#fff));
+}
+</style>
+<!--<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script>
+function getCookie(name) {
+	var value = "; " + document.cookie;
+	var parts = value.split("; " + name + "=");
+	if (parts.length == 2)
+		return parts.pop().split(";").shift();
+}
+
+function getToken() {
+	let value = getCookie('UM_distinctid');
+	if (!value) {
+		return defaultToken;
+	}
+	return value.substring(value.length - 6).toUpperCase();
+}
+
+
+
+// 文章所在容器的选择器
+// var articleSelector = 'article.article-content';
+
+// DOM 完全就绪时执行
+$(function() {
+    // 找到文章所在的容器
+    var $article = $("#content");
+    console.log($article)
+	if ($article.length > 0) {
+		// 文章的实际高度
+		var article = $article[0], height = article.clientHeight;
+		// 文章隐藏后的高度
+		var halfHeight = height * 0.3;
+		
+		// 篇幅短一点的文章就不需要解锁了
+		if (halfHeight > 800) {
+			
+            // 获取口令
+            var mytoken = window.localStorage.getItem("javaboytoken")
+            var token;
+            if(mytoken){
+                token=mytoken
+            }else{
+                token = 'B'+getToken();
+                window.localStorage.setItem("javaboytoken",token)
+            }
+			$('.asb-post-01').find('.token').text(token);
+			
+var _lock = function() {
+	$article.css('height', halfHeight + 'px');
+	$article.addClass('lock');
+	$('.asb-post-01').css('display', 'block');
+}
+
+var _unlock = function() {
+	$article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+
+// 查询后端的结果
+var _detect = function() {
+	$.ajax({
+		url : 'http://blog-wx.itboyhub.com/wx/checktoken',
+		method : 'GET',
+		data : {
+			token : token
+		},
+		success : function(data) {
+			if (data.locked === true) {
+				_lock();
+			} else {
+				_unlock();
+			}
+		},
+		error : function(data) {
+			_unlock();
+		}
+	})
+}
+
+_detect();
+setInterval(function() {
+    _detect();
+}, 5000);
+}else{
+    $article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+    }
+});
+</script>-->
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="江南一点雨">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>China· ShenZhen</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        579
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        71
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        142
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/lenve" target="_blank">
+                扫码关注微信公众号</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="Github" href="https://github.com/lenve">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="envelope" href="mailto:wangsong0210@gmail.com">
+                
+                <i class="fa fa-envelope"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="RSS" href="/atom.xml">
+                
+                <i class="fas fa-rss"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/2019/">
+            <span class="level-start">
+                <span class="level-item">2019</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Blog/">
+            <span class="level-start">
+                <span class="level-item">Blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Chrome/">
+            <span class="level-start">
+                <span class="level-item">Chrome</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Docker/">
+            <span class="level-start">
+                <span class="level-item">Docker</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/ElasticSearch/">
+            <span class="level-start">
+                <span class="level-item">ElasticSearch</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/FastDFS/">
+            <span class="level-start">
+                <span class="level-item">FastDFS</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Git/">
+            <span class="level-start">
+                <span class="level-item">Git</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">9</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/GitHub/">
+            <span class="level-start">
+                <span class="level-item">GitHub</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/HUAWEI/">
+            <span class="level-start">
+                <span class="level-item">HUAWEI</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IDEA/">
+            <span class="level-start">
+                <span class="level-item">IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IntelliJ-IDEA/">
+            <span class="level-start">
+                <span class="level-item">IntelliJ IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Java/">
+            <span class="level-start">
+                <span class="level-item">Java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/JavaWeb/">
+            <span class="level-start">
+                <span class="level-item">JavaWeb</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MacBookPro/">
+            <span class="level-start">
+                <span class="level-item">MacBookPro</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Maven/">
+            <span class="level-start">
+                <span class="level-item">Maven</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MongoDB/">
+            <span class="level-start">
+                <span class="level-item">MongoDB</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MyBatis/">
+            <span class="level-start">
+                <span class="level-item">MyBatis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MySQL/">
+            <span class="level-start">
+                <span class="level-item">MySQL</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">50</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Nginx/">
+            <span class="level-start">
+                <span class="level-item">Nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/OAuth2/">
+            <span class="level-start">
+                <span class="level-item">OAuth2</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">11</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/RabbitMQ/">
+            <span class="level-start">
+                <span class="level-item">RabbitMQ</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">16</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Redis/">
+            <span class="level-start">
+                <span class="level-item">Redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Resume/">
+            <span class="level-start">
+                <span class="level-item">Resume</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SSM/">
+            <span class="level-start">
+                <span class="level-item">SSM</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">25</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Shiro/">
+            <span class="level-start">
+                <span class="level-item">Shiro</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring/">
+            <span class="level-start">
+                <span class="level-item">Spring</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">16</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Boot/">
+            <span class="level-start">
+                <span class="level-item">Spring Boot</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">127</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Cloud/">
+            <span class="level-start">
+                <span class="level-item">Spring Cloud</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Security/">
+            <span class="level-start">
+                <span class="level-item">Spring Security</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">56</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringBoot/">
+            <span class="level-start">
+                <span class="level-item">SpringBoot</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">20</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringMVC/">
+            <span class="level-start">
+                <span class="level-item">SpringMVC</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringSecurity/">
+            <span class="level-start">
+                <span class="level-item">SpringSecurity</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/TienChin/">
+            <span class="level-start">
+                <span class="level-item">TienChin</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">37</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Transaction/">
+            <span class="level-start">
+                <span class="level-item">Transaction</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/WebFlux/">
+            <span class="level-start">
+                <span class="level-item">WebFlux</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">12</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/blog/">
+            <span class="level-start">
+                <span class="level-item">blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/chrome/">
+            <span class="level-start">
+                <span class="level-item">chrome</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/docker/">
+            <span class="level-start">
+                <span class="level-item">docker</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/domain/">
+            <span class="level-start">
+                <span class="level-item">domain</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/hexo/">
+            <span class="level-start">
+                <span class="level-item">hexo</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/idea/">
+            <span class="level-start">
+                <span class="level-item">idea</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/java/">
+            <span class="level-start">
+                <span class="level-item">java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/layui/">
+            <span class="level-start">
+                <span class="level-item">layui</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/life/">
+            <span class="level-start">
+                <span class="level-item">life</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">9</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/mail/">
+            <span class="level-start">
+                <span class="level-item">mail</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/mysql/">
+            <span class="level-start">
+                <span class="level-item">mysql</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/nginx/">
+            <span class="level-start">
+                <span class="level-item">nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/redis/">
+            <span class="level-start">
+                <span class="level-item">redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/transaction/">
+            <span class="level-start">
+                <span class="level-item">transaction</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vhr/">
+            <span class="level-start">
+                <span class="level-item">vhr</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/video/">
+            <span class="level-start">
+                <span class="level-item">video</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vue/">
+            <span class="level-start">
+                <span class="level-item">vue</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/weixin/">
+            <span class="level-start">
+                <span class="level-item">weixin</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/侃侃而谈/">
+            <span class="level-start">
+                <span class="level-item">侃侃而谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">21</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/分布式事务/">
+            <span class="level-start">
+                <span class="level-item">分布式事务</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/分布式系统/">
+            <span class="level-start">
+                <span class="level-item">分布式系统</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/前后端分离/">
+            <span class="level-start">
+                <span class="level-item">前后端分离</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/华为/">
+            <span class="level-start">
+                <span class="level-item">华为</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/外包/">
+            <span class="level-start">
+                <span class="level-item">外包</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/学习资源/">
+            <span class="level-start">
+                <span class="level-item">学习资源</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">7</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/定时任务/">
+            <span class="level-start">
+                <span class="level-item">定时任务</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/工具/">
+            <span class="level-start">
+                <span class="level-item">工具</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微人事/">
+            <span class="level-start">
+                <span class="level-item">微人事</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微服务/">
+            <span class="level-start">
+                <span class="level-item">微服务</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/杂谈/">
+            <span class="level-start">
+                <span class="level-item">杂谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/生活/">
+            <span class="level-start">
+                <span class="level-item">生活</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/程序人生/">
+            <span class="level-start">
+                <span class="level-item">程序人生</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/视频教程/">
+            <span class="level-start">
+                <span class="level-item">视频教程</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/资料/">
+            <span class="level-start">
+                <span class="level-item">资料</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/面试/">
+            <span class="level-start">
+                <span class="level-item">面试</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/项目实战/">
+            <span class="level-start">
+                <span class="level-item">项目实战</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/2019-article/" style="font-size: 10px;">2019-article</a> <a href="/tags/Actuator/" style="font-size: 10px;">Actuator</a> <a href="/tags/Blog/" style="font-size: 10px;">Blog</a> <a href="/tags/Bug/" style="font-size: 10px;">Bug</a> <a href="/tags/CAS/" style="font-size: 11.36px;">CAS</a> <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 11.36px;">Chrome</a> <a href="/tags/Docker/" style="font-size: 11.36px;">Docker</a> <a href="/tags/Druid/" style="font-size: 10px;">Druid</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/ElasticJob/" style="font-size: 10px;">ElasticJob</a> <a href="/tags/ElasticSearch/" style="font-size: 11.36px;">ElasticSearch</a> <a href="/tags/ElasticSerach/" style="font-size: 10px;">ElasticSerach</a> <a href="/tags/Eureka/" style="font-size: 10px;">Eureka</a> <a href="/tags/FastDFS/" style="font-size: 10.91px;">FastDFS</a> <a href="/tags/Flowable/" style="font-size: 10px;">Flowable</a> <a href="/tags/Flyway/" style="font-size: 10px;">Flyway</a> <a href="/tags/Freemarker/" style="font-size: 10.91px;">Freemarker</a> <a href="/tags/Git/" style="font-size: 14.09px;">Git</a> <a href="/tags/GitHub/" style="font-size: 10.45px;">GitHub</a> <a href="/tags/Https/" style="font-size: 10px;">Https</a> <a href="/tags/I18N/" style="font-size: 10px;">I18N</a> <a href="/tags/IDEA/" style="font-size: 14.55px;">IDEA</a> <a href="/tags/IDEA，EasyCode/" style="font-size: 10px;">IDEA，EasyCode</a> <a href="/tags/IntelliJ-IDEA/" style="font-size: 10.91px;">IntelliJ IDEA</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/Java/" style="font-size: 11.36px;">Java</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 10.45px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jpa/" style="font-size: 11.82px;">Jpa</a> <a href="/tags/LiveReload/" style="font-size: 10px;">LiveReload</a> <a href="/tags/Log/" style="font-size: 10px;">Log</a> <a href="/tags/Lombok/" style="font-size: 10px;">Lombok</a> <a href="/tags/MacBook/" style="font-size: 10px;">MacBook</a> <a href="/tags/MacBookPro/" style="font-size: 10px;">MacBookPro</a> <a href="/tags/Mail/" style="font-size: 10.45px;">Mail</a> <a href="/tags/Maven/" style="font-size: 12.27px;">Maven</a> <a href="/tags/MongoDB/" style="font-size: 15.91px;">MongoDB</a> <a href="/tags/MyBatis/" style="font-size: 13.64px;">MyBatis</a> <a href="/tags/MyBatisPlus/" style="font-size: 10px;">MyBatisPlus</a> <a href="/tags/MyCat/" style="font-size: 11.36px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 19.09px;">MySQL</a> <a href="/tags/MySQL8/" style="font-size: 10px;">MySQL8</a> <a href="/tags/Nacos/" style="font-size: 10px;">Nacos</a> <a href="/tags/Nginx/" style="font-size: 10.45px;">Nginx</a> <a href="/tags/OAuth2/" style="font-size: 14.09px;">OAuth2</a> <a href="/tags/PicGo/" style="font-size: 10px;">PicGo</a> <a href="/tags/Platform/" style="font-size: 10px;">Platform</a> <a href="/tags/Plugin/" style="font-size: 10px;">Plugin</a> <a href="/tags/RabbitMQ/" style="font-size: 15.45px;">RabbitMQ</a> <a href="/tags/Redis/" style="font-size: 16.82px;">Redis</a> <a href="/tags/Resume/" style="font-size: 10px;">Resume</a> <a href="/tags/SSM/" style="font-size: 16.36px;">SSM</a> <a href="/tags/Shiro/" style="font-size: 10.91px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 16.36px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Cloud/" style="font-size: 11.36px;">Spring Cloud</a> <a href="/tags/Spring-Data/" style="font-size: 10.45px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 19.55px;">Spring Security</a> <a href="/tags/SpringBoot/" style="font-size: 17.73px;">SpringBoot</a> <a href="/tags/SpringData/" style="font-size: 10px;">SpringData</a> <a href="/tags/SpringDataJpa/" style="font-size: 10px;">SpringDataJpa</a> <a href="/tags/SpringMVC/" style="font-size: 17.27px;">SpringMVC</a> <a href="/tags/SpringSecurity/" style="font-size: 10.45px;">SpringSecurity</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Swagger3/" style="font-size: 10px;">Swagger3</a> <a href="/tags/Tencent/" style="font-size: 10px;">Tencent</a> <a href="/tags/Thymeleaf/" style="font-size: 10.45px;">Thymeleaf</a> <a href="/tags/TienChin/" style="font-size: 18.18px;">TienChin</a> <a href="/tags/Transaction/" style="font-size: 10.91px;">Transaction</a> <a href="/tags/Video/" style="font-size: 10px;">Video</a> <a href="/tags/ViewResolver/" style="font-size: 10px;">ViewResolver</a> <a href="/tags/Vue/" style="font-size: 18.64px;">Vue</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/WebFlux/" style="font-size: 14.55px;">WebFlux</a> <a href="/tags/blog/" style="font-size: 10.45px;">blog</a> <a href="/tags/docker/" style="font-size: 13.18px;">docker</a> <a href="/tags/domain/" style="font-size: 10px;">domain</a> <a href="/tags/elasticjob/" style="font-size: 10px;">elasticjob</a> <a href="/tags/es/" style="font-size: 11.82px;">es</a> <a href="/tags/hdz/" style="font-size: 10px;">hdz</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/huawei/" style="font-size: 10px;">huawei</a> <a href="/tags/i18n/" style="font-size: 10px;">i18n</a> <a href="/tags/idea/" style="font-size: 10px;">idea</a> <a href="/tags/java/" style="font-size: 10px;">java</a> <a href="/tags/life/" style="font-size: 15.45px;">life</a> <a href="/tags/mail/" style="font-size: 10px;">mail</a> <a href="/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/router/" style="font-size: 10px;">router</a> <a href="/tags/saga/" style="font-size: 10px;">saga</a> <a href="/tags/seata/" style="font-size: 11.36px;">seata</a> <a href="/tags/tcc/" style="font-size: 10px;">tcc</a> <a href="/tags/transaction/" style="font-size: 10.45px;">transaction</a> <a href="/tags/vhr/" style="font-size: 12.27px;">vhr</a> <a href="/tags/video/" style="font-size: 10.91px;">video</a> <a href="/tags/vue/" style="font-size: 10px;">vue</a> <a href="/tags/vuepress/" style="font-size: 10px;">vuepress</a> <a href="/tags/weixin/" style="font-size: 10.91px;">weixin</a> <a href="/tags/xa/" style="font-size: 10px;">xa</a> <a href="/tags/xxl-job/" style="font-size: 10px;">xxl-job</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/七牛云/" style="font-size: 10px;">七牛云</a> <a href="/tags/中间件/" style="font-size: 10px;">中间件</a> <a href="/tags/主从复制/" style="font-size: 10px;">主从复制</a> <a href="/tags/事务/" style="font-size: 10px;">事务</a> <a href="/tags/侃侃而谈/" style="font-size: 15px;">侃侃而谈</a> <a href="/tags/全局ID/" style="font-size: 10px;">全局ID</a> <a href="/tags/分布式/" style="font-size: 10px;">分布式</a> <a href="/tags/分布式事务/" style="font-size: 11.82px;">分布式事务</a> <a href="/tags/分布式锁/" style="font-size: 10px;">分布式锁</a> <a href="/tags/前后端分离/" style="font-size: 11.82px;">前后端分离</a> <a href="/tags/华为/" style="font-size: 10px;">华为</a> <a href="/tags/单体应用/" style="font-size: 10px;">单体应用</a> <a href="/tags/外包/" style="font-size: 10.45px;">外包</a> <a href="/tags/学习资源/" style="font-size: 11.82px;">学习资源</a> <a href="/tags/定时任务/" style="font-size: 10.45px;">定时任务</a> <a href="/tags/工具/" style="font-size: 10.45px;">工具</a> <a href="/tags/干货汇总/" style="font-size: 10px;">干货汇总</a> <a href="/tags/延迟队列/" style="font-size: 10px;">延迟队列</a> <a href="/tags/微人事/" style="font-size: 10.45px;">微人事</a> <a href="/tags/微服务/" style="font-size: 10.45px;">微服务</a> <a href="/tags/杂谈/" style="font-size: 12.73px;">杂谈</a> <a href="/tags/条件注解/" style="font-size: 10px;">条件注解</a> <a href="/tags/死信队列/" style="font-size: 10px;">死信队列</a> <a href="/tags/消息过期/" style="font-size: 10px;">消息过期</a> <a href="/tags/消息驱动/" style="font-size: 10px;">消息驱动</a> <a href="/tags/源码解析/" style="font-size: 11.36px;">源码解析</a> <a href="/tags/源码解读/" style="font-size: 12.73px;">源码解读</a> <a href="/tags/生活/" style="font-size: 10.91px;">生活</a> <a href="/tags/私活/" style="font-size: 10px;">私活</a> <a href="/tags/程序人生/" style="font-size: 10.45px;">程序人生</a> <a href="/tags/程序员/" style="font-size: 10px;">程序员</a> <a href="/tags/腾讯/" style="font-size: 10px;">腾讯</a> <a href="/tags/自学/" style="font-size: 10px;">自学</a> <a href="/tags/视频/" style="font-size: 10.45px;">视频</a> <a href="/tags/视频教程/" style="font-size: 10px;">视频教程</a> <a href="/tags/资料/" style="font-size: 10px;">资料</a> <a href="/tags/逆向工程/" style="font-size: 10.45px;">逆向工程</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow  ">
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2022-07-18T15:22:10.000Z">2022-07-18</time></div>
+                    <a href="/2022/0718/vue3-vs-vue2.html" class="has-link-black-ter is-size-6">一个 Java 猿眼中 Vue3 和 Vue2 的差异</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/TienChin/">TienChin</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2022-07-15T15:21:59.000Z">2022-07-15</time></div>
+                    <a href="/2022/0715/nodejs-nvm.html" class="has-link-black-ter is-size-6">如何随意切换 NodeJs 版本？</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/TienChin/">TienChin</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2022-07-14T15:21:48.000Z">2022-07-14</time></div>
+                    <a href="/2022/0714/vue3-dynamic-menu.html" class="has-link-black-ter is-size-6">Spring Boot+Vue3 动态菜单实现思路梳理</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/TienChin/">TienChin</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2022-07-11T15:21:31.000Z">2022-07-11</time></div>
+                    <a href="/2022/0711/dynamic-menu.html" class="has-link-black-ter is-size-6">TienChin 项目动态菜单接口分析</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/TienChin/">TienChin</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2022-07-05T15:21:07.000Z">2022-07-05</time></div>
+                    <a href="/2022/0705/spring-transaction.html" class="has-link-black-ter is-size-6">Spring 事务失效了，怎么办？</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/TienChin/">TienChin</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2022/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2022</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2022/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2022</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">13</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2022/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2022</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">16</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2022/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2022</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">13</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2022/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2022</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">13</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2022/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2022</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2022/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2022</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">9</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">13</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">10</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">9</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">8</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">7</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">9</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">4</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">13</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">5</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">8</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">7</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">4</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">9</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">22</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">21</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">23</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">25</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">25</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">20</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">40</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">17</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">22</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">12</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">43</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">16</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">26</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+            
+
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            友链
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itboyhub.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">江南一点雨-国内站(速度快)</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itboyhub.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.ityouknow.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">纯洁的微笑</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.ityouknow.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cxy521.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">程序员一站式导航</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cxy521.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://bugstack.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">bugstack虫洞栈</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">bugstack.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itwanger.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">沉默王二</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itwanger.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://tanqingbo.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">IT码农</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">tanqingbo.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.cxyxiaowu.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">五分钟学算法</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.cxyxiaowu.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.justdojava.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 极客技术</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.justdojava.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cxytiandi.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">猿天地</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cxytiandi.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://vimjc.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Vim教程网</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">vimjc.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://muggle.javaboy.org/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">muggle</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">muggle.javaboy.org</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://crossoverjie.top/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">crossoverJie&#39;s Blog</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">crossoverjie.top</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cmsblogs.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 技术驿站</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cmsblogs.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://maizitoday.github.io/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">麦子的博客</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">maizitoday.github.io</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.haoservice.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">码农code之路</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.haoservice.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.jitwxs.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Jitwxs</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.jitwxs.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.gameboys.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 烂笔头</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.gameboys.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.a2data.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">A2Data</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.a2data.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.itechyou.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">I Tech You, 我教你！</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itechyou.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="Spring Boot+Vue3 动态菜单实现思路梳理" height="28">
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2022 江南一点雨&nbsp;
+				<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><!--
+PV <span id="busuanzi_value_site_pv"></span>&nbsp;|&nbsp;<i class="fa fa-user-md"></i>  UV <span id="busuanzi_value_site_uv"></span>&nbsp;-->
+				<script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? "https://" : "http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1276890692'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s96.cnzz.com/z_stat.php%3Fid%3D1276890692%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+				<a href="http://www.beian.miit.gov.cn/" style="color: black;">粤ICP备19111220号</a>
+                <!--Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么...">
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>
