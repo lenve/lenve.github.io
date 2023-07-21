@@ -1,0 +1,2356 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head><meta name="generator" content="Hexo 3.8.0">
+    <meta charset="utf-8">
+<title>MySQL索引数据结构入门 - 江南一点雨</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+
+
+    <meta name="description" content="之前松哥写过一个 MySQL 系列，但是当时是基于 MySQL5.7 的，最近有空在看 MySQL8 的文档，发现和 MySQL5.7 相比还是有不少变化，同时 MySQL 又是小伙伴们在面试时一个非常重要的知识点，因此松哥打算最近再抽空和小伙伴们聊一聊 MySQL，讲讲原理，讲讲优化，我会从最基本最简单的开始，和大家梳理 MySQL 中常见的面试知识点。">
+<meta name="keywords" content="MySQL,MySQL8">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL索引数据结构入门">
+<meta property="og:url" content="http://www.javaboy.org/2023/0412/mysql_index.html">
+<meta property="og:site_name" content="江南一点雨">
+<meta property="og:description" content="之前松哥写过一个 MySQL 系列，但是当时是基于 MySQL5.7 的，最近有空在看 MySQL8 的文档，发现和 MySQL5.7 相比还是有不少变化，同时 MySQL 又是小伙伴们在面试时一个非常重要的知识点，因此松哥打算最近再抽空和小伙伴们聊一聊 MySQL，讲讲原理，讲讲优化，我会从最基本最简单的开始，和大家梳理 MySQL 中常见的面试知识点。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="http://www.javaboy.org/images/og_image.png">
+<meta property="og:updated_time" content="2023-07-21T11:16:35.869Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MySQL索引数据结构入门">
+<meta name="twitter:description" content="之前松哥写过一个 MySQL 系列，但是当时是基于 MySQL5.7 的，最近有空在看 MySQL8 的文档，发现和 MySQL5.7 相比还是有不少变化，同时 MySQL 又是小伙伴们在面试时一个非常重要的知识点，因此松哥打算最近再抽空和小伙伴们聊一聊 MySQL，讲讲原理，讲讲优化，我会从最基本最简单的开始，和大家梳理 MySQL 中常见的面试知识点。">
+<meta name="twitter:image" content="http://www.javaboy.org/images/og_image.png">
+
+
+
+
+
+
+
+<link rel="icon" href="https://www.javaboy.org/favicon.ico">
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.7.2/css/bulma.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,600|Source+Code+Pro">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css">
+
+
+    
+    
+    
+    <style>body>.footer,body>.navbar,body>.section{opacity:0}</style>
+    
+
+    
+    
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+    
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+    
+    
+    
+
+<link rel="stylesheet" href="/css/back-to-top.css">
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+<link rel="stylesheet" href="/css/progressbar.css">
+<script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script>
+
+    
+    
+    
+
+    
+    
+    
+
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="is-2-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+                
+                <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="MySQL索引数据结构入门" height="28">
+                
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item" href="/">江南一点雨</a>
+                
+                <a class="navbar-item" href="/archives">归档</a>
+                
+                <a class="navbar-item" href="/fronted-backend">前后端分离</a>
+                
+                <a class="navbar-item" href="http://docs.javaboy.org/ssm/">SSM</a>
+                
+                <a class="navbar-item" href="http://springboot.javaboy.org">Spring Boot</a>
+                
+                <a class="navbar-item" href="http://www.javaboy.org/springsecurity">Spring Security</a>
+                
+                <a class="navbar-item" href="/redis">Redis</a>
+                
+                <a class="navbar-item" href="/mongodb">MongoDB</a>
+                
+                <a class="navbar-item" href="/mysql">MySQL</a>
+                
+                <a class="navbar-item" href="/docker">Docker</a>
+                
+                <a class="navbar-item" href="/git">Git</a>
+                
+                <a class="navbar-item" href="/about">About</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                
+                
+                <a class="navbar-item search" style="height: 40px;line-height: 60px;width: 180px;margin: 12px 15px;box-sizing: border-box;border: 1px solid #dedede;border-radius: 20px;display: flex;justify-content: space-between;padding-left: 12px;padding-right: 10px" title="搜索" href="javascript:;">
+                    <!--<div style="border: 1px solid #dedede;border-radius: 10px;">-->
+                    <div>搜索</div>
+                        <i class="fas fa-search"></i>
+                    <!--</div>-->
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2023-04-12T10:59:26.000Z">2023-04-12</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/MySQL/">MySQL</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    28 分钟 读完 (大约 4178 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                MySQL索引数据结构入门
+            
+        </h1>
+        
+            <div class="content" id="content">
+                    <p>之前松哥写过一个 MySQL 系列，但是当时是基于 MySQL5.7 的，最近有空在看 MySQL8 的文档，发现和 MySQL5.7 相比还是有不少变化，同时 MySQL 又是小伙伴们在面试时一个非常重要的知识点，因此松哥打算最近再抽空和小伙伴们聊一聊 MySQL，讲讲原理，讲讲优化，我会从最基本最简单的开始，和大家梳理 MySQL 中常见的面试知识点。</p>
+<a id="more"></a>
+<p>本文我们就先从最简单的索引开始吧～</p>
+<h2 id="1-什么是索引"><a href="#1-什么是索引" class="headerlink" title="1. 什么是索引"></a>1. 什么是索引</h2><p>说到索引，最常见的例子就是查字典，当我们需要查询某一个字的含义时，正常操作都是先根据字典的索引，找到该字在哪一页，然后直接翻到该页就行了。如果没有这个索引的话，那么我们就得一页一页的翻字典，直到找到该字。很明显，相对于第一种方案，第二种方案效率就要低很多了。</p>
+<p>数据库中的索引也是类似的。</p>
+<p>索引，我们也称之为 index 或者 key，当数据量比较少的时候，索引对于查询产生的效果并不明显，所以索引常常被人所忽略，但是当数据量比较大的时候，一个优秀的索引对查询产生的影响就是非常明显的了。在我们所掌握的各种 SQL 优化策略中，索引对 SQL 优化产生的效果算是最好的了，用好索引，SQL 性能可能会提升好几个数量级。</p>
+<blockquote>
+<p>这里有的小伙伴可能会有一个疑惑，很多索引优化策略都是针对传统的机械硬盘的，然而现在我们大部分都是固态硬盘（SSD），很多针对机械硬盘的优化策略在 SSD 上似乎并没有必要，那还有必要去考虑索引优化吗？答案当然是有！无论是用什么样的磁盘，索引优化的整体原则都是不变的，只不过在 SSD 上，如果你的索引没有创建好，那么它对查询的影响不像对机械硬盘那么糟糕。</p>
+</blockquote>
+<h2 id="2-索引的数据结构"><a href="#2-索引的数据结构" class="headerlink" title="2. 索引的数据结构"></a>2. 索引的数据结构</h2><h3 id="2-1-B-Tree-和-B-Tree"><a href="#2-1-B-Tree-和-B-Tree" class="headerlink" title="2.1 B+Tree 和 B-Tree"></a>2.1 B+Tree 和 B-Tree</h3><p>小伙伴们知道，由于 MySQL 中的存储引擎设计成了可插拔的形式，任何机构和个人如果你有能力，都可以设计自己的存储引擎，而 MySQL 的索引是在存储引擎层实现的，而不是在服务器层实现的，所以不同存储引擎的索引工作方式都不一样，甚至，相同类型的索引，在不同的存储引擎中实现方案都不同。</p>
+<p>本文松哥主要和小伙伴们介绍我们日常开发中最最常见的 InnoDB 存储引擎中的索引。</p>
+<p>小伙伴们知道，InnoDB 存储引擎的索引数据结构是一个 B+Tree，至于什么是 B+Tree，这并非本文的重点，我这里不啰嗦，不了解 B+Tree 的小伙伴可以自行搜索一下学习一下。</p>
+<p>假设我有如下数据：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">id</th>
+<th style="text-align:left">username</th>
+<th style="text-align:left">age</th>
+<th style="text-align:left">address</th>
+<th style="text-align:left">gender</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">1</td>
+<td style="text-align:left">ab</td>
+<td style="text-align:left">99</td>
+<td style="text-align:left">深圳</td>
+<td style="text-align:left">男</td>
+</tr>
+<tr>
+<td style="text-align:left">2</td>
+<td style="text-align:left">ac</td>
+<td style="text-align:left">98</td>
+<td style="text-align:left">广州</td>
+<td style="text-align:left">男</td>
+</tr>
+<tr>
+<td style="text-align:left">3</td>
+<td style="text-align:left">af</td>
+<td style="text-align:left">88</td>
+<td style="text-align:left">北京</td>
+<td style="text-align:left">女</td>
+</tr>
+<tr>
+<td style="text-align:left">4</td>
+<td style="text-align:left">bc</td>
+<td style="text-align:left">80</td>
+<td style="text-align:left">上海</td>
+<td style="text-align:left">女</td>
+</tr>
+<tr>
+<td style="text-align:left">5</td>
+<td style="text-align:left">bg</td>
+<td style="text-align:left">85</td>
+<td style="text-align:left">重庆</td>
+<td style="text-align:left">女</td>
+</tr>
+<tr>
+<td style="text-align:left">6</td>
+<td style="text-align:left">bw</td>
+<td style="text-align:left">95</td>
+<td style="text-align:left">天津</td>
+<td style="text-align:left">男</td>
+</tr>
+<tr>
+<td style="text-align:left">7</td>
+<td style="text-align:left">bw</td>
+<td style="text-align:left">99</td>
+<td style="text-align:left">海口</td>
+<td style="text-align:left">女</td>
+</tr>
+<tr>
+<td style="text-align:left">8</td>
+<td style="text-align:left">cc</td>
+<td style="text-align:left">92</td>
+<td style="text-align:left">武汉</td>
+<td style="text-align:left">男</td>
+</tr>
+<tr>
+<td style="text-align:left">9</td>
+<td style="text-align:left">ck</td>
+<td style="text-align:left">90</td>
+<td style="text-align:left">深圳</td>
+<td style="text-align:left">男</td>
+</tr>
+<tr>
+<td style="text-align:left">10</td>
+<td style="text-align:left">cx</td>
+<td style="text-align:left">93</td>
+<td style="text-align:left">深圳</td>
+<td style="text-align:left">男</td>
+</tr>
+</tbody>
+</table>
+<p>现在我给 username 和 age 字段建立联合索引，那么最终数据在磁盘上的存储结构是 B+Tree，为了小伙伴能够更好的理解 B+Tree 和 B-Tree，我画了如下两张图：</p>
+<p><img src="http://img.itboyhub.com/2022/08/mysql8_index_b_tree.drawio-99.png" alt></p>
+<p><img src="http://img.itboyhub.com/2022/08/mysql8_index.drawio-99.png" alt></p>
+<p>这两张图看懂了，InnoDB 存储引擎的索引我觉得基本上都搞懂了 80% 了，松哥来和大家稍微梳理一下这张图：</p>
+<ol>
+<li>首先这两张图都是一个多路平衡查找树，即，不是二叉树，是多叉树。</li>
+<li>绿色的方块表示指向下一个节点的指针；红色的方块表示指向下一个叶子节点的指针（B-Tree 中不存在该部分）；带阴影的矩形则表示索引数据。</li>
+<li><p>B+Tree 非叶子节点只保存关键字的索引和指向下一个节点的指针（绿色区域），所有的数据最终都会保存到叶子节点。因此在具体的搜索过程中，所有数据都必须要到叶子节点才能获取到，因此每次数据查询所需的 IO 次数都一样，这也就意味着 B+Tree 的查询速度比较稳定。</p>
+<blockquote>
+<p>如果是 B-Tree 则分支节点上也保存了指向具体数据的指针，并且分支节点上出现的索引数据不会再次出现在叶子节点中，所以搜索的时候可能搜索到分支节点就找到需要的数据了，搜索效率不稳定，如 af 在分支节点上就找到了，而 ac 则要到叶子节点上才能找到）。</p>
+</blockquote>
+</li>
+<li><p>B+Tree 中，由于分支节点只保存索引数据和指向下一个节点的指针，所以在相同的磁盘空间中，能够指向更多的子节点，这就意味树的高度更低，搜索所需要的 IO 次数更少，搜索效率更高。</p>
+<blockquote>
+<p>B-Tree 中，由于分支节点不仅保存索引数据和指向下一个节点的指针，还保存了指向具体数据的指针，所以在相同的空间下能够指向的子节点数量就少于 B+Tree，这就意味着相同的数据量，B-Tree 树高更高，搜索所需的 IO 次数更多，搜索效率低。</p>
+</blockquote>
+</li>
+<li><p>B+Tree 叶子节点的关键字从小到大按顺序排列，左边结尾数据都会保存右边节点开始数据的指针（红色区域），这个指针在范围搜索的时候非常有用，例如想搜索姓名在 ac～bc 之间的数据，按照树找到第一个节点 ac 之后，顺着指针一直往后找，找到第一个不满足条件的数据结束。</p>
+<blockquote>
+<p>如果是 B-Tree 则没有 ac 指向 bc 的指针，需要先回到分支节点 af 再继续向下搜索，效率就会低很多。</p>
+</blockquote>
+</li>
+<li><p>B+Tree 的叶子节点都是有序排列的，所以 B+Tree 对于数据的排序有着更好的支持。</p>
+<blockquote>
+<p>B-Tree 由于有一部分数据保存在分支节点中，叶子节点并不是完整的数据，所以对于排序、范围搜索的支持并不如 B+Tree。</p>
+</blockquote>
+</li>
+<li><p>B+Tree 数据划分的原则是左闭右开，以 (af,88) 这个节点为例，小于 (af,88) 节点的在左边，大于等于 (af,88) 节点的在右边。</p>
+<blockquote>
+<p>B-Tree 则是左开右开。</p>
+</blockquote>
+</li>
+<li><p>B+Tree 全表扫描更快，因为所有数据都出现在叶子节点上，并且叶子节点之间还有指针相连，直接遍历即可。</p>
+<blockquote>
+<p>B-Tree 在全表扫描的时候则需要对树的每一层进行遍历才能读到所有数据。</p>
+</blockquote>
+</li>
+<li><p>叶子节点指向数据的指针，如果是聚簇索引，则指向的是表中一条完整的记录；如果是非聚簇索引，则指向的是具体的主键值。在以非聚簇索引为依据进行搜索的时候，先找到记录的主键值，再根据 主键值去聚簇索引找到完整的记录，这个过程就是回表（InnoDB 中）。</p>
+</li>
+</ol>
+<p>好了，相信通过上面八点的介绍，大家对于 B-Tree 和 B+Tree 已经有了基本的认知了。</p>
+<p>当我们想要搜索一条记录的时候，顺着根节点从上往下扫描树，比直接遍历一条一条的记录显然是要快很多。</p>
+<blockquote>
+<p>说一个不太恰当的比喻，MySQL 中的数据存储，就像是通过一个链表把所有数据按照顺序串到一起，然后在这个链表上面又架了一个多路平衡查找树的感觉，搜索的时候，按照链表一个一个找，就是全表扫描；从树的根节点开始找，就是用索引。</p>
+</blockquote>
+<h3 id="2-2-树高问题"><a href="#2-2-树高问题" class="headerlink" title="2.2 树高问题"></a>2.2 树高问题</h3><p>一个经典的问题，高度为 3 的 B+Tree 大概可以保存多少条数据？</p>
+<p>计算机在存储数据的时候，最小存储单元是扇区，一个扇区的大小是 512 字节，而文件系统（例如 XFS/EXT4）最小单元是块，一个块的大小是 4KB。但是 InnoDB 在进行磁盘操作的时候，并不是以扇区或者块为依据的，InnoDB 在进行磁盘操作的时候，是以页为单位的，有时候也称作逻辑页，每个逻辑页的大小默认是 16KB，即四个块。这就意味着，InnoDB 在实际操作磁盘的时候，每次从磁盘上读取数据，至少读取 16KB，每次向磁盘上写数据，也至少写 16KB，并不是你需要 1KB 就读取 1KB，即使你只需要 1KB 的数据，InnoDB 也会从磁盘中将 16KB 的数据读取到内存中。</p>
+<p>通过如下命令我们可以查看 MySQL 中 InnoDB 存储引擎逻辑页的大小：</p>
+<p><img src="http://img.itboyhub.com/2022/08/20230410224833.png" alt></p>
+<p><code>16384/16=1024</code></p>
+<p>前面的结论没问题。</p>
+<p>以聚簇索引为例，现在我们假设数据库中一条记录的大小是 1KB，那么一个逻辑页就可以存 16 条数据（叶子节点）。</p>
+<p>对于非叶子节点存储的则是主键值+指针，在 InnoDB 中，一个指针的大小是 6 个字节，假设我们的主键是 bigint ，那么主键占 8 个字节，<strong>当然还有其他一些头信息也会占用字节我们这里就不考虑了</strong>，我们大概算一下，小伙伴们心里有数即可：</p>
+<p><code>16*1024/(8+6)=1170</code></p>
+<p>即一个非叶子节点可以指向 1170 个子节点，那么一个三层的 B+Tree 可以存储的数据量为：</p>
+<p><code>1170*1170*16=21902400</code></p>
+<p>可以存储 2100万 条数据。</p>
+<p>在 InnoDB 存储引擎中，B+Tree 的高度一般为 2-4 层，这就可以满足千万级的数据的存储，查找数据的时候，一次页的查找代表一次 IO，那我们通过主键索引查询的时候，其实最多只需要 2-4 次 IO 操作就可以了。</p>
+<h3 id="2-3-什么样的搜索可以用到索引？"><a href="#2-3-什么样的搜索可以用到索引？" class="headerlink" title="2.3 什么样的搜索可以用到索引？"></a>2.3 什么样的搜索可以用到索引？</h3><p>根据前面的介绍，我们可以得出结论，在以下类型的搜索中，会用到索引：</p>
+<ul>
+<li>全值匹配</li>
+</ul>
+<p>如上图中，如果我们要搜索 username 为 ac 且 age 为 98 的用户，就可以直接使用索引精确定位到。</p>
+<ul>
+<li>最左匹配</li>
+</ul>
+<p>如果我们只是想搜索 username 为 ac 的用户，很明显也可以使用上图索引，因为用户名是有序的。在上图中，username 和 age 组成了联合索引，其中 username 在前，age 在后，所以索引是先按照 username 进行排序，username 相同的时候，再按照 age 进行排序的（如 bw 这个用户），如果我们按照 username 进行搜索，那么没问题，可以用上索引；但是如果我们按照 age 进行搜索，很明显，age 在整个索引树中是无序的，所以当我们使用 age 作为搜索条件的时候，是没法使用上图这个联合索引的。</p>
+<ul>
+<li>前缀匹配</li>
+</ul>
+<p>如果我们搜索的关键字只是 username 字段的前半部分，那么很明显，也是可以使用索引的，例如搜索所有以 a 开始的 username。</p>
+<ul>
+<li>范围匹配</li>
+</ul>
+<p>如果我们的搜索条件是一个范围，很明显也可以使用到上述索引，例如搜索姓名介于 ab～cc 之间的用户，只需要先从索引树的根节点开始，先找到 ab，然后根据叶子节点之间的指针顺藤摸瓜，找到 cc 之后的第一个数据（不满足条件的第一个数据）结束。</p>
+<ul>
+<li>前面全值匹配，后面范围匹配</li>
+</ul>
+<p>例如查找 username 为 bw 且 age 介于 90～99 之间的用户，这种情况也可以使用到上图的索引。在上图索引树中，当 username 相同的时候，就是按照 age 排序的，所以对于 username 都为 bw 的用户，它就是按照 age 进行排序的，此时，我们当然可以按照 age 的范围进行搜索了。</p>
+<ul>
+<li>覆盖索引</li>
+</ul>
+<p>有的时候，我们搜索的数据都在索引树中了，例如上图中的索引，我们想搜索 username 为 bw 的用户的 age，由于 age 就在索引树中，直接返回即可，这就是覆盖索引了。</p>
+<h3 id="2-4-使用限制"><a href="#2-4-使用限制" class="headerlink" title="2.4 使用限制"></a>2.4 使用限制</h3><p>毫无疑问，基于 B+Tree 的索引，其实也存在一些使用限制。例如：</p>
+<ol>
+<li>如果我们将 age 作为搜索条件，虽然 age 也是联合索引的一部分，但是 age 整体上在索引树中是无序的，所以将 age 作为搜索条件是没法使用上述索引的。</li>
+<li>基于第一点，如果联合索引中还有第三、第四列等，那么凡是跳过第一列直接使用后面的列作为查询条件，索引都是不会生效的。</li>
+<li>范围条件的右边无法使用索引直接定位。例如搜索 username 以 a 开头并且年龄为 99 的用户：<code>where username like &#39;a%&#39; and age=99</code>，此时 age=99 这个条件就无法在索引树中直接处理了（可以通过索引下推过滤）。原因很简单，当我们找到所有 username 以 a 开始的用户之后，这些用户的 age 并不是有序的，所以 age 就没法继续使用索引搜索了（但是可以通过索引下推过滤）。</li>
+</ol>
+<p>关于第三点，我举一个例子，假设我们还有两个用户，分别是：</p>
+<ul>
+<li>username 为 ad 且 age 为 80；</li>
+<li>username 为 ae 且 age 为 88；</li>
+</ul>
+<p>那么我们完善一下上面 B+Tree 的图应该变成下面这样：</p>
+<p><img src="http://img.itboyhub.com/2022/08/mysql8_index_add_2_user.drawio.png" alt></p>
+<p>可以看到，username 以 a 开始的用户，age 并不是有序的，所以就只能通过索引下推过滤了，而无法直接通过索引扫描定位数据。</p>
+<p>对于第三点，如果范围搜索的字段值的可能性比较少，则可以通过多个等于比较来代替范围搜索。</p>
+<h3 id="2-5-自适应哈希索引"><a href="#2-5-自适应哈希索引" class="headerlink" title="2.5 自适应哈希索引"></a>2.5 自适应哈希索引</h3><p>Hash 索引在 MySQL 中主要是 Memory 和 NDB 引擎支持，InnoDB 索引本身是 不支持的，但是 InnoDB 索引有一个特性叫做自适应哈希索引，<strong>自适应</strong>三个字意味着整个过程是全自动的，不需要开发者配置。</p>
+<p>当 InnoDB 监控到某些索引值被频繁的访问时，那么它就会在 B+Tree 索引之上，构建一个 Hash 索引，进而通过 Hash 查找来快速访问数据。</p>
+<p>默认情况下，自适应哈希索引是开启的状态，通过如下 SQL 我们可以查看：</p>
+<p><img src="http://img.itboyhub.com/2022/08/20230411221054.png" alt></p>
+<p>可以看到，这个默认就是开启的。</p>
+<h2 id="3-小结"><a href="#3-小结" class="headerlink" title="3. 小结"></a>3. 小结</h2><p>整体上来说，使用索引有如下优点：</p>
+<ul>
+<li>减少了服务器需要扫描的数据量。</li>
+<li>索引可以帮助服务器避免排序和创建临时表。</li>
+<li>索引将随机 IO 变为了顺序 IO。</li>
+</ul>
+
+                    <!--<div class="asb-post-01">
+                        <div class="mask"></div>
+                        <div class="info" style="display: flex;justify-content:center;flex-direction:column;align-items:center">
+                                <div>扫码关注微信公众号：<span style="color: #E9405A; font-weight: bold;">江南一点雨</span></div>
+                                <div>
+                                    <span>发送 </span><span class="token" style="color: #e9415a; font-weight: bold; font-size: 17px; margin-bottom: 45px;">290992</span>
+                                </div>
+                                <div>
+                                    即可<span style="color: #e9415a; font-weight: bold;">立即永久</span>解锁本站全部文章（注意区分大小写哦）
+                                </div>
+                            <div>
+                                <img class="code-img" style="width: 300px;display:unset" src="https://www.javaboy.org/images/sb/javaboy.jpg">
+                            </div>
+                        </div>
+                    </div>-->
+                </div>
+        
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/MySQL/">MySQL</a>, <a class="has-link-grey -link" href="/tags/MySQL8/">MySQL8</a>
+                </div>
+            </div>
+        </div>
+		<div class="level is-size-6">
+						<p>喜欢这篇文章吗？扫码关注公众号<b>【江南一点雨】</b>，<b>【江南一点雨】</b>专注于 SPRING BOOT+微服务以及前后端分离技术，每天推送原创技术干货，关注后回复 JAVA，领取松哥为你精心准备的 JAVA 干货!
+</p>
+		</div>
+		<div class="level is-size-7 is-uppercase">
+<img class="menu-label has-text-centered" src="http://www.javaboy.org/images/sb/javaboy.jpg" alt>
+		</div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">觉得不错，可以给小编加个鸡腿</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="https://www.javaboy.org/images/sb/weixin_pay.png" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2023/0414/spring_security_json.html">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">新版SpringSecurity如何自定义JSON登录</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2023/0407/grpc_pdf.html">
+                <span class="level-item">gRPC 系列完结～PDF 可以下载啦！</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+	<section id="comments"></section>
+	<script src="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/gitment.browser.js"></script>
+	<!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/theme-next/theme-next-gitment@1/default.css"/>-->
+	<link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+	<script>
+		if (document.getElementById('comments')) {
+			var gitment = new Gitment({
+				id: '2023/0412/mysql_index.html'.length>50?'2023/0412/mysql_index.html'.substring(0,50):'2023/0412/mysql_index.html',
+				owner: 'lenve',
+				repo: 'javaboy_comment',
+				oauth: {
+					client_id: 'ecc1a65d7b7baf6a495c',
+					client_secret: '427ecd90ada169afa77fc164509449905dd37f67',
+				},
+			})
+			gitment.render('comments')
+		}
+	</script>
+	
+    </div>
+</div>
+<style>
+.lock {
+    position: relative;
+    overflow: hidden;
+    padding-bottom: 30px;
+}
+.asb-post-01 {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    display: block;
+    z-index: 10000;
+    margin-bottom: 0;
+}
+.asb-post-01 .info {
+    background: white;
+    height: 370px;
+}
+.asb-post-01 .mask {
+    height: 240px;
+    width: 100%;
+    background: -webkit-gradient(linear, 0 top, 0 bottom, from(rgba(255, 255, 255, 0)), to(#fff));
+}
+</style>
+<!--<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script>
+function getCookie(name) {
+	var value = "; " + document.cookie;
+	var parts = value.split("; " + name + "=");
+	if (parts.length == 2)
+		return parts.pop().split(";").shift();
+}
+
+function getToken() {
+	let value = getCookie('UM_distinctid');
+	if (!value) {
+		return defaultToken;
+	}
+	return value.substring(value.length - 6).toUpperCase();
+}
+
+
+
+// 文章所在容器的选择器
+// var articleSelector = 'article.article-content';
+
+// DOM 完全就绪时执行
+$(function() {
+    // 找到文章所在的容器
+    var $article = $("#content");
+    console.log($article)
+	if ($article.length > 0) {
+		// 文章的实际高度
+		var article = $article[0], height = article.clientHeight;
+		// 文章隐藏后的高度
+		var halfHeight = height * 0.3;
+		
+		// 篇幅短一点的文章就不需要解锁了
+		if (halfHeight > 800) {
+			
+            // 获取口令
+            var mytoken = window.localStorage.getItem("javaboytoken")
+            var token;
+            if(mytoken){
+                token=mytoken
+            }else{
+                token = 'B'+getToken();
+                window.localStorage.setItem("javaboytoken",token)
+            }
+			$('.asb-post-01').find('.token').text(token);
+			
+var _lock = function() {
+	$article.css('height', halfHeight + 'px');
+	$article.addClass('lock');
+	$('.asb-post-01').css('display', 'block');
+}
+
+var _unlock = function() {
+	$article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+
+// 查询后端的结果
+var _detect = function() {
+	$.ajax({
+		url : 'http://blog-wx.itboyhub.com/wx/checktoken',
+		method : 'GET',
+		data : {
+			token : token
+		},
+		success : function(data) {
+			if (data.locked === true) {
+				_lock();
+			} else {
+				_unlock();
+			}
+		},
+		error : function(data) {
+			_unlock();
+		}
+	})
+}
+
+_detect();
+setInterval(function() {
+    _detect();
+}, 5000);
+}else{
+    $article.css('height', 'initial');
+	$article.removeClass('lock');
+	$('.asb-post-01').css('display', 'none');
+}
+    }
+});
+</script>-->
+
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="江南一点雨">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        江南一点雨
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>China· ShenZhen</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        663
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        73
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        149
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/lenve" target="_blank">
+                扫码关注微信公众号</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="Github" href="https://github.com/lenve">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="envelope" href="mailto:wangsong0210@gmail.com">
+                
+                <i class="fa fa-envelope"></i>
+                
+            </a>
+            
+            <a class="level-item button is-white is-marginless" target="_blank" title="RSS" href="/atom.xml">
+                
+                <i class="fas fa-rss"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                分类
+            </h3>
+            <ul class="menu-list">
+            <li>
+        <a class="level is-marginless" href="/categories/2019/">
+            <span class="level-start">
+                <span class="level-item">2019</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Blog/">
+            <span class="level-start">
+                <span class="level-item">Blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Chrome/">
+            <span class="level-start">
+                <span class="level-item">Chrome</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Docker/">
+            <span class="level-start">
+                <span class="level-item">Docker</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/ElasticSearch/">
+            <span class="level-start">
+                <span class="level-item">ElasticSearch</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/FastDFS/">
+            <span class="level-start">
+                <span class="level-item">FastDFS</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Git/">
+            <span class="level-start">
+                <span class="level-item">Git</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">9</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/GitHub/">
+            <span class="level-start">
+                <span class="level-item">GitHub</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/HUAWEI/">
+            <span class="level-start">
+                <span class="level-item">HUAWEI</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IDEA/">
+            <span class="level-start">
+                <span class="level-item">IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/IntelliJ-IDEA/">
+            <span class="level-start">
+                <span class="level-item">IntelliJ IDEA</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Java/">
+            <span class="level-start">
+                <span class="level-item">Java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/JavaWeb/">
+            <span class="level-start">
+                <span class="level-item">JavaWeb</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MacBookPro/">
+            <span class="level-start">
+                <span class="level-item">MacBookPro</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Maven/">
+            <span class="level-start">
+                <span class="level-item">Maven</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MongoDB/">
+            <span class="level-start">
+                <span class="level-item">MongoDB</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MyBatis/">
+            <span class="level-start">
+                <span class="level-item">MyBatis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/MySQL/">
+            <span class="level-start">
+                <span class="level-item">MySQL</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">57</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Nginx/">
+            <span class="level-start">
+                <span class="level-item">Nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/OAuth2/">
+            <span class="level-start">
+                <span class="level-item">OAuth2</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">11</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/RabbitMQ/">
+            <span class="level-start">
+                <span class="level-item">RabbitMQ</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">16</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Redis/">
+            <span class="level-start">
+                <span class="level-item">Redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">19</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Resume/">
+            <span class="level-start">
+                <span class="level-item">Resume</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SSM/">
+            <span class="level-start">
+                <span class="level-item">SSM</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">25</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Shiro/">
+            <span class="level-start">
+                <span class="level-item">Shiro</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring/">
+            <span class="level-start">
+                <span class="level-item">Spring</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">18</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Boot/">
+            <span class="level-start">
+                <span class="level-item">Spring Boot</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">128</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Cloud/">
+            <span class="level-start">
+                <span class="level-item">Spring Cloud</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Spring-Security/">
+            <span class="level-start">
+                <span class="level-item">Spring Security</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">59</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringBoot/">
+            <span class="level-start">
+                <span class="level-item">SpringBoot</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">24</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringCloud/">
+            <span class="level-start">
+                <span class="level-item">SpringCloud</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringMVC/">
+            <span class="level-start">
+                <span class="level-item">SpringMVC</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/SpringSecurity/">
+            <span class="level-start">
+                <span class="level-item">SpringSecurity</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/TienChin/">
+            <span class="level-start">
+                <span class="level-item">TienChin</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">86</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/Transaction/">
+            <span class="level-start">
+                <span class="level-item">Transaction</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/WebFlux/">
+            <span class="level-start">
+                <span class="level-item">WebFlux</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">12</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/blog/">
+            <span class="level-start">
+                <span class="level-item">blog</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/chrome/">
+            <span class="level-start">
+                <span class="level-item">chrome</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/docker/">
+            <span class="level-start">
+                <span class="level-item">docker</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">8</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/domain/">
+            <span class="level-start">
+                <span class="level-item">domain</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/gRPC/">
+            <span class="level-start">
+                <span class="level-item">gRPC</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">11</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/hexo/">
+            <span class="level-start">
+                <span class="level-item">hexo</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/idea/">
+            <span class="level-start">
+                <span class="level-item">idea</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/java/">
+            <span class="level-start">
+                <span class="level-item">java</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/layui/">
+            <span class="level-start">
+                <span class="level-item">layui</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/life/">
+            <span class="level-start">
+                <span class="level-item">life</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">9</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/mail/">
+            <span class="level-start">
+                <span class="level-item">mail</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/mysql/">
+            <span class="level-start">
+                <span class="level-item">mysql</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/nginx/">
+            <span class="level-start">
+                <span class="level-item">nginx</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/redis/">
+            <span class="level-start">
+                <span class="level-item">redis</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/transaction/">
+            <span class="level-start">
+                <span class="level-item">transaction</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vhr/">
+            <span class="level-start">
+                <span class="level-item">vhr</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">4</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/video/">
+            <span class="level-start">
+                <span class="level-item">video</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/vue/">
+            <span class="level-start">
+                <span class="level-item">vue</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/weixin/">
+            <span class="level-start">
+                <span class="level-item">weixin</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/侃侃而谈/">
+            <span class="level-start">
+                <span class="level-item">侃侃而谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">21</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/分布式事务/">
+            <span class="level-start">
+                <span class="level-item">分布式事务</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/分布式系统/">
+            <span class="level-start">
+                <span class="level-item">分布式系统</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/前后端分离/">
+            <span class="level-start">
+                <span class="level-item">前后端分离</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/华为/">
+            <span class="level-start">
+                <span class="level-item">华为</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/外包/">
+            <span class="level-start">
+                <span class="level-item">外包</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/学习资源/">
+            <span class="level-start">
+                <span class="level-item">学习资源</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">7</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/定时任务/">
+            <span class="level-start">
+                <span class="level-item">定时任务</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/工具/">
+            <span class="level-start">
+                <span class="level-item">工具</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">3</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微人事/">
+            <span class="level-start">
+                <span class="level-item">微人事</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/微服务/">
+            <span class="level-start">
+                <span class="level-item">微服务</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/杂谈/">
+            <span class="level-start">
+                <span class="level-item">杂谈</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">6</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/生活/">
+            <span class="level-start">
+                <span class="level-item">生活</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/程序人生/">
+            <span class="level-start">
+                <span class="level-item">程序人生</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">5</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/视频教程/">
+            <span class="level-start">
+                <span class="level-item">视频教程</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/资料/">
+            <span class="level-start">
+                <span class="level-item">资料</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">2</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/面试/">
+            <span class="level-start">
+                <span class="level-item">面试</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li><li>
+        <a class="level is-marginless" href="/categories/项目实战/">
+            <span class="level-start">
+                <span class="level-item">项目实战</span>
+            </span>
+            <span class="level-end">
+                <span class="level-item tag">1</span>
+            </span>
+        </a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            标签云
+        </h3>
+        <a href="/tags/2019-article/" style="font-size: 10px;">2019-article</a> <a href="/tags/Actuator/" style="font-size: 10px;">Actuator</a> <a href="/tags/Blog/" style="font-size: 10px;">Blog</a> <a href="/tags/Bug/" style="font-size: 10px;">Bug</a> <a href="/tags/CAS/" style="font-size: 11.25px;">CAS</a> <a href="/tags/CORS/" style="font-size: 10px;">CORS</a> <a href="/tags/Chrome/" style="font-size: 11.25px;">Chrome</a> <a href="/tags/Docker/" style="font-size: 11.25px;">Docker</a> <a href="/tags/Druid/" style="font-size: 10px;">Druid</a> <a href="/tags/Ehcache/" style="font-size: 10px;">Ehcache</a> <a href="/tags/ElasticJob/" style="font-size: 10px;">ElasticJob</a> <a href="/tags/ElasticSearch/" style="font-size: 11.67px;">ElasticSearch</a> <a href="/tags/ElasticSerach/" style="font-size: 10px;">ElasticSerach</a> <a href="/tags/Eureka/" style="font-size: 10px;">Eureka</a> <a href="/tags/FastDFS/" style="font-size: 10.83px;">FastDFS</a> <a href="/tags/Flowable/" style="font-size: 17.5px;">Flowable</a> <a href="/tags/Flyway/" style="font-size: 10px;">Flyway</a> <a href="/tags/Freemarker/" style="font-size: 10.83px;">Freemarker</a> <a href="/tags/Git/" style="font-size: 13.75px;">Git</a> <a href="/tags/GitHub/" style="font-size: 10.42px;">GitHub</a> <a href="/tags/Https/" style="font-size: 10px;">Https</a> <a href="/tags/I18N/" style="font-size: 10px;">I18N</a> <a href="/tags/IDEA/" style="font-size: 14.17px;">IDEA</a> <a href="/tags/IDEA，EasyCode/" style="font-size: 10px;">IDEA，EasyCode</a> <a href="/tags/IntelliJ-IDEA/" style="font-size: 10.83px;">IntelliJ IDEA</a> <a href="/tags/JWT/" style="font-size: 10px;">JWT</a> <a href="/tags/Java/" style="font-size: 11.67px;">Java</a> <a href="/tags/JavaWeb/" style="font-size: 10px;">JavaWeb</a> <a href="/tags/JdbcTemplate/" style="font-size: 10.42px;">JdbcTemplate</a> <a href="/tags/Jedis/" style="font-size: 10px;">Jedis</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Jpa/" style="font-size: 11.67px;">Jpa</a> <a href="/tags/LiveReload/" style="font-size: 10px;">LiveReload</a> <a href="/tags/Log/" style="font-size: 10px;">Log</a> <a href="/tags/Lombok/" style="font-size: 10px;">Lombok</a> <a href="/tags/MacBook/" style="font-size: 10px;">MacBook</a> <a href="/tags/MacBookPro/" style="font-size: 10px;">MacBookPro</a> <a href="/tags/Mail/" style="font-size: 10.42px;">Mail</a> <a href="/tags/Maven/" style="font-size: 12.08px;">Maven</a> <a href="/tags/MongoDB/" style="font-size: 15.42px;">MongoDB</a> <a href="/tags/MyBatis/" style="font-size: 13.33px;">MyBatis</a> <a href="/tags/MyBatisPlus/" style="font-size: 10px;">MyBatisPlus</a> <a href="/tags/MyCat/" style="font-size: 11.25px;">MyCat</a> <a href="/tags/MySQL/" style="font-size: 18.75px;">MySQL</a> <a href="/tags/MySQL8/" style="font-size: 12.08px;">MySQL8</a> <a href="/tags/Nacos/" style="font-size: 10.42px;">Nacos</a> <a href="/tags/Nginx/" style="font-size: 11.25px;">Nginx</a> <a href="/tags/OAuth2/" style="font-size: 13.75px;">OAuth2</a> <a href="/tags/PicGo/" style="font-size: 10px;">PicGo</a> <a href="/tags/Platform/" style="font-size: 10px;">Platform</a> <a href="/tags/Plugin/" style="font-size: 10px;">Plugin</a> <a href="/tags/RabbitMQ/" style="font-size: 15px;">RabbitMQ</a> <a href="/tags/Redis/" style="font-size: 16.25px;">Redis</a> <a href="/tags/Resume/" style="font-size: 10px;">Resume</a> <a href="/tags/SSM/" style="font-size: 15.83px;">SSM</a> <a href="/tags/Shiro/" style="font-size: 10.83px;">Shiro</a> <a href="/tags/Spring/" style="font-size: 16.67px;">Spring</a> <a href="/tags/Spring-Boot/" style="font-size: 20px;">Spring Boot</a> <a href="/tags/Spring-Cloud/" style="font-size: 11.25px;">Spring Cloud</a> <a href="/tags/Spring-Data/" style="font-size: 10.42px;">Spring Data</a> <a href="/tags/Spring-Security/" style="font-size: 19.17px;">Spring Security</a> <a href="/tags/SpringBoot/" style="font-size: 17.92px;">SpringBoot</a> <a href="/tags/SpringBoot3/" style="font-size: 10px;">SpringBoot3</a> <a href="/tags/SpringCloud/" style="font-size: 11.25px;">SpringCloud</a> <a href="/tags/SpringData/" style="font-size: 10px;">SpringData</a> <a href="/tags/SpringDataJpa/" style="font-size: 10px;">SpringDataJpa</a> <a href="/tags/SpringMVC/" style="font-size: 17.08px;">SpringMVC</a> <a href="/tags/SpringSecurity/" style="font-size: 10.42px;">SpringSecurity</a> <a href="/tags/Swagger/" style="font-size: 10px;">Swagger</a> <a href="/tags/Swagger2/" style="font-size: 10px;">Swagger2</a> <a href="/tags/Swagger3/" style="font-size: 10px;">Swagger3</a> <a href="/tags/TLS/" style="font-size: 12.92px;">TLS</a> <a href="/tags/Tencent/" style="font-size: 10px;">Tencent</a> <a href="/tags/Thymeleaf/" style="font-size: 10.42px;">Thymeleaf</a> <a href="/tags/TienChin/" style="font-size: 19.58px;">TienChin</a> <a href="/tags/Transaction/" style="font-size: 10.83px;">Transaction</a> <a href="/tags/Video/" style="font-size: 10px;">Video</a> <a href="/tags/ViewResolver/" style="font-size: 10px;">ViewResolver</a> <a href="/tags/Vue/" style="font-size: 18.33px;">Vue</a> <a href="/tags/Vue3/" style="font-size: 11.67px;">Vue3</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/WebFlux/" style="font-size: 14.17px;">WebFlux</a> <a href="/tags/blog/" style="font-size: 10.42px;">blog</a> <a href="/tags/docker/" style="font-size: 12.92px;">docker</a> <a href="/tags/domain/" style="font-size: 10px;">domain</a> <a href="/tags/elasticjob/" style="font-size: 10px;">elasticjob</a> <a href="/tags/es/" style="font-size: 11.67px;">es</a> <a href="/tags/gRPC/" style="font-size: 13.75px;">gRPC</a> <a href="/tags/hdz/" style="font-size: 10px;">hdz</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/huawei/" style="font-size: 10px;">huawei</a> <a href="/tags/i18n/" style="font-size: 10px;">i18n</a> <a href="/tags/idea/" style="font-size: 10px;">idea</a> <a href="/tags/java/" style="font-size: 10px;">java</a> <a href="/tags/life/" style="font-size: 15px;">life</a> <a href="/tags/mail/" style="font-size: 10px;">mail</a> <a href="/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/router/" style="font-size: 10px;">router</a> <a href="/tags/saga/" style="font-size: 10px;">saga</a> <a href="/tags/seata/" style="font-size: 11.25px;">seata</a> <a href="/tags/tcc/" style="font-size: 10px;">tcc</a> <a href="/tags/transaction/" style="font-size: 10.42px;">transaction</a> <a href="/tags/vhr/" style="font-size: 12.08px;">vhr</a> <a href="/tags/video/" style="font-size: 10.83px;">video</a> <a href="/tags/vue/" style="font-size: 10px;">vue</a> <a href="/tags/vuepress/" style="font-size: 10px;">vuepress</a> <a href="/tags/weixin/" style="font-size: 10.83px;">weixin</a> <a href="/tags/xa/" style="font-size: 10px;">xa</a> <a href="/tags/xxl-job/" style="font-size: 10px;">xxl-job</a> <a href="/tags/yaml/" style="font-size: 10px;">yaml</a> <a href="/tags/七牛云/" style="font-size: 10px;">七牛云</a> <a href="/tags/中间件/" style="font-size: 10px;">中间件</a> <a href="/tags/主从复制/" style="font-size: 10px;">主从复制</a> <a href="/tags/事务/" style="font-size: 10px;">事务</a> <a href="/tags/侃侃而谈/" style="font-size: 14.58px;">侃侃而谈</a> <a href="/tags/全局ID/" style="font-size: 10px;">全局ID</a> <a href="/tags/分布式/" style="font-size: 10px;">分布式</a> <a href="/tags/分布式事务/" style="font-size: 11.67px;">分布式事务</a> <a href="/tags/分布式锁/" style="font-size: 10px;">分布式锁</a> <a href="/tags/前后端分离/" style="font-size: 11.67px;">前后端分离</a> <a href="/tags/华为/" style="font-size: 10px;">华为</a> <a href="/tags/单体应用/" style="font-size: 10px;">单体应用</a> <a href="/tags/外包/" style="font-size: 10.42px;">外包</a> <a href="/tags/学习资源/" style="font-size: 11.67px;">学习资源</a> <a href="/tags/定时任务/" style="font-size: 10.42px;">定时任务</a> <a href="/tags/工具/" style="font-size: 10.42px;">工具</a> <a href="/tags/干货汇总/" style="font-size: 10px;">干货汇总</a> <a href="/tags/延迟队列/" style="font-size: 10px;">延迟队列</a> <a href="/tags/微人事/" style="font-size: 10.42px;">微人事</a> <a href="/tags/微服务/" style="font-size: 12.5px;">微服务</a> <a href="/tags/杂谈/" style="font-size: 12.5px;">杂谈</a> <a href="/tags/条件注解/" style="font-size: 10px;">条件注解</a> <a href="/tags/死信队列/" style="font-size: 10px;">死信队列</a> <a href="/tags/消息过期/" style="font-size: 10px;">消息过期</a> <a href="/tags/消息驱动/" style="font-size: 10px;">消息驱动</a> <a href="/tags/源码解析/" style="font-size: 11.25px;">源码解析</a> <a href="/tags/源码解读/" style="font-size: 12.5px;">源码解读</a> <a href="/tags/生活/" style="font-size: 10.83px;">生活</a> <a href="/tags/私活/" style="font-size: 10px;">私活</a> <a href="/tags/程序人生/" style="font-size: 10.42px;">程序人生</a> <a href="/tags/程序员/" style="font-size: 10px;">程序员</a> <a href="/tags/腾讯/" style="font-size: 10px;">腾讯</a> <a href="/tags/自学/" style="font-size: 10px;">自学</a> <a href="/tags/视频/" style="font-size: 10.42px;">视频</a> <a href="/tags/视频教程/" style="font-size: 10px;">视频教程</a> <a href="/tags/资料/" style="font-size: 10px;">资料</a> <a href="/tags/逆向工程/" style="font-size: 10.42px;">逆向工程</a> <a href="/tags/面试/" style="font-size: 10px;">面试</a>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow  ">
+        
+            
+<div class="card widget">
+    <div class="card-content">
+        <h3 class="menu-label">
+            最新文章
+        </h3>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2023-05-04T11:00:59.000Z">2023-05-04</time></div>
+                    <a href="/2023/0504/spring_security_pdf.html" class="has-link-black-ter is-size-6">Spring Security PDF 教程来啦～</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring-Security/">Spring Security</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2023-04-28T11:00:41.000Z">2023-04-28</time></div>
+                    <a href="/2023/0428/springboot_maven.html" class="has-link-black-ter is-size-6">说一个大家都知道的 Spring Boot 小细节！</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/Spring-Boot/">Spring Boot</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2023-04-27T11:00:27.000Z">2023-04-27</time></div>
+                    <a href="/2023/0427/mysql_index_merge.html" class="has-link-black-ter is-size-6">索引合并，能不用就不要用吧！</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/MySQL/">MySQL</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2023-04-24T11:00:15.000Z">2023-04-24</time></div>
+                    <a href="/2023/0424/mysql_prefix_index.html" class="has-link-black-ter is-size-6">前缀索引，在性能和空间中寻找平衡</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/MySQL/">MySQL</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+        <article class="media">
+            
+            <div class="media-content">
+                <div class="content">
+                    <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2023-04-20T11:00:00.000Z">2023-04-20</time></div>
+                    <a href="/2023/0420/mysql_primary_key_autoincrement.html" class="has-link-black-ter is-size-6">MySQL 主键自增也有坑？</a>
+                    <p class="is-size-7 is-uppercase">
+                        <a class="has-link-grey -link" href="/categories/MySQL/">MySQL</a>
+                    </p>
+                </div>
+            </div>
+        </article>
+        
+    </div>
+</div>
+
+        
+            <div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            归档
+        </h3>
+        <ul class="menu-list">
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2023/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2023</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">1</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2023/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2023</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">9</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2023/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2023</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">7</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2023/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2023</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">5</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2023/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2023</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">5</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2022/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2022</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">7</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2022/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2022</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">10</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2022/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2022</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2022/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2022</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">12</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2022/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2022</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">12</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2022/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2022</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2022/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2022</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">13</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2022/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2022</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">16</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2022/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2022</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">13</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2022/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2022</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">13</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2022/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2022</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2022/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2022</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">9</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">13</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">10</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">9</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">8</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">7</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">9</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">4</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">13</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">5</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2021/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2021</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">6</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">8</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">7</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">4</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">9</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">22</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">21</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">23</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">25</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/03/">
+                <span class="level-start">
+                    <span class="level-item">三月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">25</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/02/">
+                <span class="level-start">
+                    <span class="level-item">二月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2020/01/">
+                <span class="level-start">
+                    <span class="level-item">一月 2020</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">20</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/12/">
+                <span class="level-start">
+                    <span class="level-item">十二月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">40</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/11/">
+                <span class="level-start">
+                    <span class="level-item">十一月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">17</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/10/">
+                <span class="level-start">
+                    <span class="level-item">十月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">11</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/09/">
+                <span class="level-start">
+                    <span class="level-item">九月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">22</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/08/">
+                <span class="level-start">
+                    <span class="level-item">八月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">15</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/07/">
+                <span class="level-start">
+                    <span class="level-item">七月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">12</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/06/">
+                <span class="level-start">
+                    <span class="level-item">六月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">43</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/05/">
+                <span class="level-start">
+                    <span class="level-item">五月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">16</span>
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="level is-marginless" href="/archives/2019/04/">
+                <span class="level-start">
+                    <span class="level-item">四月 2019</span>
+                </span>
+                <span class="level-end">
+                    <span class="level-item tag">26</span>
+                </span>
+            </a>
+        </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+        
+            
+
+<div class="card widget">
+    <div class="card-content">
+        <div class="menu">
+        <h3 class="menu-label">
+            友链
+        </h3>
+        <ul class="menu-list">
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itboyhub.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">江南一点雨-国内站(速度快)</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itboyhub.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.ityouknow.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">纯洁的微笑</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.ityouknow.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cxy521.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">程序员一站式导航</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cxy521.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://bugstack.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">bugstack虫洞栈</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">bugstack.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.itwanger.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">沉默王二</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itwanger.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://tanqingbo.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">IT码农</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">tanqingbo.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.cxyxiaowu.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">五分钟学算法</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.cxyxiaowu.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.justdojava.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 极客技术</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.justdojava.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cxytiandi.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">猿天地</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cxytiandi.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://vimjc.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Vim教程网</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">vimjc.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://muggle.javaboy.org/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">muggle</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">muggle.javaboy.org</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://crossoverjie.top/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">crossoverJie&#39;s Blog</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">crossoverjie.top</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://cmsblogs.com/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 技术驿站</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">cmsblogs.com</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://maizitoday.github.io/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">麦子的博客</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">maizitoday.github.io</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.haoservice.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">码农code之路</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.haoservice.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.jitwxs.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Jitwxs</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.jitwxs.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="http://www.gameboys.cn" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">Java 烂笔头</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.gameboys.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.a2data.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">A2Data</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.a2data.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+            <li>
+                <a class="level is-mobile" href="https://www.itechyou.cn/" target="_blank">
+                    <span class="level-left">
+                        <span class="level-item">I Tech You, 我教你！</span>
+                    </span>
+                    <!--<span class="level-right">
+                        <span class="level-item tag">www.itechyou.cn</span>
+                    </span>-->
+                </a>
+            </li>
+        
+        </ul>
+        </div>
+    </div>
+</div>
+
+
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+                <a class="footer-logo is-block has-mb-6" href="/">
+                
+                    <img src="https://www.javaboy.org/images/sb/javaboy.jpg" alt="MySQL索引数据结构入门" height="28">
+                
+                </a>
+                <p class="is-size-7">
+                &copy; 2023 江南一点雨&nbsp;
+				<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><!--
+PV <span id="busuanzi_value_site_pv"></span>&nbsp;|&nbsp;<i class="fa fa-user-md"></i>  UV <span id="busuanzi_value_site_uv"></span>&nbsp;-->
+				<script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? "https://" : "http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1276890692'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s96.cnzz.com/z_stat.php%3Fid%3D1276890692%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+				<a href="http://www.beian.miit.gov.cn/" style="color: black;">粤ICP备19111220号</a>
+                <!--Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a
+                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+                
+                </p>
+            </div>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    <script src="/js/animation.js"></script>
+    
+
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+<script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.5/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    MathJax.Hub.Config({
+        'HTML-CSS': {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+});
+</script>
+
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么...">
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="/js/insight.js" defer></script>
+<link rel="stylesheet" href="/css/search.css">
+<link rel="stylesheet" href="/css/insight.css">
+    
+</body>
+</html>
